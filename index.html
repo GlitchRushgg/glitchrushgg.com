@@ -256,17 +256,13 @@
       <h2>Entra antes que nadie</h2>
       <p>Niveles nuevos, acceso anticipado a betas y nuestros próximos juegos — directo a tu correo. Sin spam.</p>
 
-      <!-- ════════════════════════════════════════════════════════════════
-           FORMULARIO MAILERLITE
-           Reemplaza la acción y el campo cuando crees tu formulario en
-           MailerLite → Forms → Embedded form. Pega el "action" y el
-           "name" del input que te da MailerLite. (Pasos en SETUP.md)
-           Mientras tanto, este form es funcional como maqueta.
-      ═════════════════════════════════════════════════════════════════ -->
+      <!-- Formulario MailerLite "Landing web" (grupo Newsletter GlitchRushGG, double opt-in ON) -->
       <form class="email-form"
-            action="REEMPLAZAR_CON_ENDPOINT_MAILERLITE"
+            action="https://assets.mailerlite.com/jsonp/2426433/forms/190000512101254203/subscribe"
             method="post" target="_blank">
-        <input type="email" name="fields[email]" placeholder="tu@email.com" required />
+        <input type="email" name="fields[email]" placeholder="tu@email.com" autocomplete="email" required />
+        <input type="hidden" name="ml-submit" value="1" />
+        <input type="hidden" name="anticsrf" value="true" />
         <button type="submit" class="btn btn-primary">UNIRME</button>
       </form>
 
