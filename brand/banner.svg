@@ -54,10 +54,5 @@
       <text x="1280" y="820" fill="#22e0ff" opacity="0.7" style="mix-blend-mode:screen" transform="translate(5,-3)">GLITCHRUSH<tspan>GG</tspan></text>
       <text x="1280" y="820" fill="#ffffff">GLITCHRUSH<tspan fill="#22e0ff">GG</tspan></text>
     </g>
-
-    <!-- tagline -->
-    <text class="t" x="1280" y="895" fill="#9aa6c8" font-size="40" letter-spacing="10" text-anchor="middle">
-      VIDEOJUEGOS · CONSTRUIDOS EN PÚBLICO 🌊
-    </text>
   </g>
 </svg>
