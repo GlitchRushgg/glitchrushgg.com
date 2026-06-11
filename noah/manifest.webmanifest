@@ -1,0 +1,25 @@
+{
+  "name": "Don't Drown, Noah!",
+  "short_name": "Noah",
+  "description": "Sube las plataformas, rescata a los animales y escapa de la inundación antes de que te trague.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#87CEEB",
+  "theme_color": "#1a5a90",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

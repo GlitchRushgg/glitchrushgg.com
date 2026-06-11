@@ -14,11 +14,19 @@
   <meta property="og:image" content="https://glitchrushgg.com/noah/assets/background.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <title>Don't Drown, Noah!</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="game-container"></div>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js"></script>
   <script type="module" src="src/main.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
 </body>
 </html>

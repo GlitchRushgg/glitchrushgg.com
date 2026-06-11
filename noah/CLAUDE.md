@@ -19,6 +19,8 @@ python -m http.server 8080      # from this folder, then open http://localhost:8
 
 Phaser is pinned to 3.88.0 via CDN in [index.html](index.html). Deployment is GitHub Pages with the custom domain `glitchrushgg.com`; the live URL is `https://glitchrushgg.com/noah/`.
 
+**PWA:** the game is installable ([manifest.webmanifest](manifest.webmanifest)) and works offline via [sw.js](sw.js) (stale-while-revalidate). ⚠️ **When adding/renaming any game file or asset, add it to the `ASSETS` list in `sw.js` AND bump the `CACHE` version constant** — otherwise installed players keep the old version. App icons (`assets/icon-*.png`, `apple-touch-icon.png`) are generated from `ark.png`.
+
 ## Architecture
 
 Phaser scene-based. Scenes are registered in [src/main.js](src/main.js) at a **fixed logical resolution of 390×844** (iPhone portrait) with `Scale.FIT`. All positions throughout the code are hard-coded against this 390×844 space — there is no responsive layout; CSS in `style.css` scales/centers the canvas.
