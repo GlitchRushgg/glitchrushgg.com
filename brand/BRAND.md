@@ -1,10 +1,19 @@
 # Marca GlitchRushGG — guía rápida
 
-## Archivos en esta carpeta
-- **`avatar.svg`** — foto de perfil (rayo glitch). Pensado para recorte circular (TikTok/IG/Discord/YouTube).
-- **`logo.svg`** — logotipo horizontal (wordmark + rayo). Para web, miniaturas, press kit.
-- **`banner.svg`** — banner de YouTube (2560×1440) con el lockup dentro de la zona segura.
-- **`export.html`** — ábrelo en el navegador y descarga el **avatar** (200/400/800px) y el **banner** (2560×1440) en PNG, con las zonas seguras de YouTube marcadas. TikTok/YouTube piden PNG/JPG, no SVG.
+> **Identidad oficial (desde 2026-06-11): el pixel-art dibujado a mano.** Los SVG anteriores (avatar.svg, logo.svg, banner.svg + export.html) quedan retirados/archivados.
+
+## Assets oficiales (PNG listos para usar)
+- **`avatar-pixel-400.png` / `avatar-pixel-800.png`** — foto de perfil (rayo pixel sobre navy). 400 para TikTok/IG, 800 para YouTube.
+- **`banner-youtube.png`** (2560×1440) — banner del canal, wordmark centrado en zona segura.
+- **`logo-pixel.png`** (1000×190, transparente) — wordmark para FONDOS CLAROS (texto negro).
+- **`logo-pixel-blanco.png`** (1000×190, transparente) — wordmark para FONDOS OSCUROS (texto blanco).
+- Fuente original: `Dibujos y Logo/GlitchRush logo.pixil` (100×19) — de ahí se regenera todo.
+
+## Regla de uso
+**Círculo pequeño (perfil) = solo el rayo · Espacio ancho (banner, miniatura, web) = wordmark completo.**
+
+## Archivos retirados (no usar)
+- `avatar.svg`, `logo.svg`, `banner.svg`, `export.html` — primera identidad SVG glitch, sustituida por el pixel-art.
 
 ## Cómo conseguir el PNG para TikTok
 1. Abre `brand/export.html` en tu navegador (doble clic o vía el servidor local).
