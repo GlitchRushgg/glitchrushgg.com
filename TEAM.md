@@ -24,8 +24,8 @@ GlitchRushGG es un estudio unipersonal: una fundadora + un consejo ejecutivo de 
    │ KPIs       │ │ de Noah      │ │ tiktok-     │ │ web-        │ │ cfo-           │
    └────────────┘ └──────────────┘ │ director    │ │ architect   │ │ monetization   │
                                    ├─────────────┤ ├─────────────┤ ├────────────────┤
-                                   │ youtube-    │ │ automation- │ │ legal-         │
-                                   │ director    │ │ engineer    │ │ director       │
+                                   │ youtube-    │ │ automation- │ │ legal-fiscal-  │
+                                   │ director    │ │ engineer    │ │ director (IT)  │
                                    ├─────────────┤ └─────────────┘ └────────────────┘
                                    │ community-  │
                                    │ director    │
@@ -47,7 +47,7 @@ GlitchRushGG es un estudio unipersonal: una fundadora + un consejo ejecutivo de 
 | `brand-director` | Identidad visual, tono de voz, consistencia | Nuevos assets, posicionamiento |
 | `web-architect` | glitchrushgg.com: SEO, conversión, nuevas páginas | Mejoras de la web |
 | `cfo-monetization` | Ingresos, costes, ROI, escenarios financieros | Evaluar cualquier iniciativa con dinero |
-| `legal-director` | GDPR, IP, marca, menores (deriva a profesionales) | Antes de captar datos o monetizar |
+| `legal-fiscal-director` | Legal + fiscal **Italia** 🇮🇹: partita IVA, forfettario, GDPR, IP, marca, menores (deriva a commercialista/avvocato) | Antes de captar datos, cobrar un euro o hacer sorteos |
 
 ## Cómo se trabaja
 
