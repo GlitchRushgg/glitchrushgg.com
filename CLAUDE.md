@@ -26,4 +26,4 @@ When working on a specific game, read that game's own `CLAUDE.md` for its archit
 
 ## Environment note
 
-This machine has **no git installed**. The user syncs to GitHub manually (web upload / GitHub Desktop). Don't attempt git commands locally; prepare files and give upload instructions instead.
+Git is installed **per-user** at `C:\Users\Rosselyn\AppData\Local\Programs\Git\cmd` — if `git` isn't found in a shell, append that to `$env:Path` first. Remote: `https://github.com/GlitchRushgg/glitchrushgg.com` (branch `main`). GitHub Pages serves this repo at `https://glitchrushgg.com` (CNAME at root); pushing to `main` deploys the live site.
