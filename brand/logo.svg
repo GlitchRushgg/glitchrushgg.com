@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320">
+  <defs>
+    <linearGradient id="bolt2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="55%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+    <filter id="glow2" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800;900&amp;display=swap');
+      .word { font-family: 'Orbitron', system-ui, sans-serif; font-weight: 900; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="320" fill="#0a0e27"/>
+
+  <!-- bolt mark -->
+  <g transform="translate(60,60) scale(0.62)">
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="#ff2da8" opacity="0.8" transform="translate(-6,3)" style="mix-blend-mode:screen"/>
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="#22e0ff" opacity="0.8" transform="translate(6,-3)" style="mix-blend-mode:screen"/>
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="url(#bolt2)" filter="url(#glow2)"/>
+  </g>
+
+  <!-- wordmark with RGB-split glitch -->
+  <g class="word" font-size="116" letter-spacing="2">
+    <text x="290" y="200" fill="#ff2da8" opacity="0.7" style="mix-blend-mode:screen" transform="translate(-4,2)">GLITCHRUSH</text>
+    <text x="290" y="200" fill="#22e0ff" opacity="0.7" style="mix-blend-mode:screen" transform="translate(4,-2)">GLITCHRUSH</text>
+    <text x="290" y="200" fill="#ffffff">GLITCHRUSH</text>
+    <text x="290" y="278" fill="#22e0ff" font-size="60" letter-spacing="14">GG</text>
+  </g>
+</svg>

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="32%" r="75%">
+      <stop offset="0%"  stop-color="#15224f"/>
+      <stop offset="60%" stop-color="#0d1230"/>
+      <stop offset="100%" stop-color="#080b20"/>
+    </radialGradient>
+    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff3b0"/>
+      <stop offset="55%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="2" fill="#ffffff" opacity="0.025"/>
+    </pattern>
+  </defs>
+
+  <!-- background -->
+  <rect width="400" height="400" fill="url(#bg)"/>
+  <rect width="400" height="400" fill="url(#scan)"/>
+
+  <!-- broken glitch ring (stays inside TikTok circle crop) -->
+  <g fill="none" stroke="#22e0ff" stroke-width="6" opacity="0.55" stroke-linecap="round">
+    <path d="M200 30 A170 170 0 0 1 350 130"/>
+    <path d="M370 200 A170 170 0 0 1 300 345"/>
+    <path d="M200 370 A170 170 0 0 1 55 290"/>
+    <path d="M30 200 A170 170 0 0 1 95 60"/>
+  </g>
+
+  <!-- lightning bolt: glitch RGB split (magenta + cyan ghosts) -->
+  <g>
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="#ff2da8" opacity="0.85" transform="translate(-7,4)" style="mix-blend-mode:screen"/>
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="#22e0ff" opacity="0.85" transform="translate(7,-4)" style="mix-blend-mode:screen"/>
+    <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+          fill="url(#bolt)" filter="url(#glow)"/>
+  </g>
+
+  <!-- glitch displacement slice -->
+  <rect x="120" y="208" width="170" height="7" fill="#22e0ff" opacity="0.65" style="mix-blend-mode:screen"/>
+</svg>

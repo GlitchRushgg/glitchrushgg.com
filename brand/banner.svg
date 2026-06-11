@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440">
+  <defs>
+    <radialGradient id="bbg" cx="50%" cy="42%" r="65%">
+      <stop offset="0%"  stop-color="#16244f"/>
+      <stop offset="55%" stop-color="#0d1230"/>
+      <stop offset="100%" stop-color="#070a1c"/>
+    </radialGradient>
+    <linearGradient id="bbolt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff3b0"/>
+      <stop offset="55%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#ffb300"/>
+    </linearGradient>
+    <filter id="bglow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="bscan" width="6" height="6" patternUnits="userSpaceOnUse">
+      <rect width="6" height="3" fill="#ffffff" opacity="0.02"/>
+    </pattern>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@800;900&amp;display=swap');
+      .w { font-family:'Orbitron','Arial Black',system-ui,sans-serif; font-weight:900; }
+      .t { font-family:'Orbitron','Arial Black',system-ui,sans-serif; font-weight:800; }
+    </style>
+  </defs>
+
+  <!-- full-bleed background (visible on TV) -->
+  <rect width="2560" height="1440" fill="url(#bbg)"/>
+  <rect width="2560" height="1440" fill="url(#bscan)"/>
+
+  <!-- faint grid -->
+  <g stroke="#22e0ff" stroke-width="1" opacity="0.05">
+    <line x1="0" y1="360" x2="2560" y2="360"/>
+    <line x1="0" y1="1080" x2="2560" y2="1080"/>
+    <line x1="640" y1="0" x2="640" y2="1440"/>
+    <line x1="1920" y1="0" x2="1920" y2="1440"/>
+  </g>
+
+  <!-- ════ SAFE ZONE (center 1546×423) — everything important lives here ════ -->
+  <g>
+    <!-- bolt mark, centered above wordmark -->
+    <g transform="translate(1180,560) scale(0.62)">
+      <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+            fill="#ff2da8" opacity="0.8" transform="translate(-6,3)" style="mix-blend-mode:screen"/>
+      <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+            fill="#22e0ff" opacity="0.8" transform="translate(6,-3)" style="mix-blend-mode:screen"/>
+      <path d="M235 65 L120 220 L185 220 L165 335 L285 180 L215 180 Z"
+            fill="url(#bbolt)" filter="url(#bglow)"/>
+    </g>
+
+    <!-- wordmark, centered, with RGB-split glitch -->
+    <g class="w" font-size="150" letter-spacing="4" text-anchor="middle">
+      <text x="1280" y="820" fill="#ff2da8" opacity="0.7" style="mix-blend-mode:screen" transform="translate(-5,3)">GLITCHRUSH<tspan>GG</tspan></text>
+      <text x="1280" y="820" fill="#22e0ff" opacity="0.7" style="mix-blend-mode:screen" transform="translate(5,-3)">GLITCHRUSH<tspan>GG</tspan></text>
+      <text x="1280" y="820" fill="#ffffff">GLITCHRUSH<tspan fill="#22e0ff">GG</tspan></text>
+    </g>
+
+    <!-- tagline -->
+    <text class="t" x="1280" y="895" fill="#9aa6c8" font-size="40" letter-spacing="10" text-anchor="middle">
+      VIDEOJUEGOS · CONSTRUIDOS EN PÚBLICO 🌊
+    </text>
+  </g>
+</svg>
