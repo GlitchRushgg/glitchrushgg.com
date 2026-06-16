@@ -43,11 +43,14 @@ Los guiones de los vídeos que usarán estas imágenes están en
 | 3 | `elizabeth-running.png` | Corriendo hacia cámara |
 | 4 | `elizabeth-celebrating.png` | Celebración con confeti |
 | 5 | `elizabeth-surprised.png` | Sorprendida ("vi un glitch") |
-| 6 | `elizabeth-skin-candy.png` | Skin Caramelo (100 Días) |
+| 6 | `elizabeth-skin-fairy.png` | Skin Hada (100 Días) |
 | 7 | `flofy-front.png` | Flofy de frente (imagen madre) |
 | 8 | `flofy-jumping.png` | Salto del abrazo purificador |
 | 9 | `flofy-offended.png` | Pose meme ofendido |
 | 10 | `duo-hero.png` | Key art del dúo (portada/miniaturas) |
+| 11 | `mama-front.png` | Mamá de Elizabeth de frente (imagen madre) |
+| 12 | `mama-profile.png` | Mamá de Elizabeth de perfil |
+| 13 | `mama-running.png` | Mamá de Elizabeth corriendo |
 
 7. Commit + push y enviar las imágenes para aprobación antes de usarlas.
 

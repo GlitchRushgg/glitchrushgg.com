@@ -29,13 +29,15 @@ se usan como imagen inicial / referencia de personaje en cada clip de video
 
 ## ELIZABETH (imágenes 1-6)
 
-**Bloque de personaje** (idéntico en las 6 — NO cambiar ni una palabra):
+**Bloque de personaje** (idéntico en las 6 — actualizado por la fundadora: niña de
+6 años, cabello más amarillo, más pecas):
 
-> A heroic 7-year-old girl video game character: light golden-brown hair in two
-> braided pigtails with small pink hair ties, big warm brown eyes, light freckles
-> on her cheeks, huge confident gap-toothed grin. Adventurer outfit: pink hoodie
-> with a white bunny emblem on the chest, yellow t-shirt underneath, dark leggings,
-> chunky pink-and-white sneakers, small tan explorer backpack.
+> A heroic 6-year-old girl video game character: bright golden-blonde yellow hair in
+> two braided pigtails with small pink hair ties, big warm brown eyes, lots of cute
+> freckles scattered across her cheeks and nose, huge confident gap-toothed grin.
+> Adventurer outfit: pink hoodie with a white bunny emblem on the chest, yellow
+> t-shirt underneath, dark leggings, chunky pink-and-white sneakers, small tan
+> explorer backpack.
 
 ### 1. `elizabeth-front.png` — pose T de frente (imagen madre)
 ```
@@ -71,11 +73,12 @@ of surprise, hands slightly raised, leaning back a little, comic exaggerated
 expression. [STYLE] [NEGATIVE]
 ```
 
-### 6. `elizabeth-skin-candy.png` — skin Caramelo (para los 100 Días)
+### 6. `elizabeth-skin-fairy.png` — skin Hada (para los 100 Días)
 ```
-[BLOQUE DE PERSONAJE, sustituyendo el outfit por:] Candy adventurer outfit: pastel
-candy-armor chest plate with a white bunny emblem made of frosting, lollipop staff
-in one hand, same braided pigtails, same face. Standing in A-pose facing camera.
+[BLOQUE DE PERSONAJE, sustituyendo el outfit por:] Fairy outfit: pastel sparkly
+fairy dress with a white bunny emblem on the chest, large glittering translucent
+fairy wings, a small star-tipped magic wand in one hand, golden glitter sparkles
+around her, same braided pigtails, same face. Standing in A-pose facing camera.
 [STYLE] [NEGATIVE]
 ```
 

@@ -23,20 +23,24 @@ const NEGATIVE =
   "NEGATIVE PROMPT (strictly avoid): photorealistic, realistic skin, real child, " +
   "uncanny, dark, scary, extra fingers, deformed hands, text, watermark";
 
+// Ajustes pedidos por la fundadora: cabello más amarillo, más pecas, niña de 6 años.
 const ELIZABETH =
-  "A heroic 7-year-old girl video game character: light golden-brown hair in two " +
-  "braided pigtails with small pink hair ties, big warm brown eyes, light freckles " +
-  "on her cheeks, huge confident gap-toothed grin. Adventurer outfit: pink hoodie " +
-  "with a white bunny emblem on the chest, yellow t-shirt underneath, dark leggings, " +
-  "chunky pink-and-white sneakers, small tan explorer backpack.";
+  "A heroic 6-year-old girl video game character: bright golden-blonde yellow hair in " +
+  "two braided pigtails with small pink hair ties, big warm brown eyes, lots of cute " +
+  "freckles scattered across her cheeks and nose, huge confident gap-toothed grin. " +
+  "Adventurer outfit: pink hoodie with a white bunny emblem on the chest, yellow " +
+  "t-shirt underneath, dark leggings, chunky pink-and-white sneakers, small tan " +
+  "explorer backpack.";
 
-// Para la skin Caramelo el bloque sustituye el outfit (el resto idéntico).
-const ELIZABETH_CANDY =
-  "A heroic 7-year-old girl video game character: light golden-brown hair in two " +
-  "braided pigtails with small pink hair ties, big warm brown eyes, light freckles " +
-  "on her cheeks, huge confident gap-toothed grin. Candy adventurer outfit: pastel " +
-  "candy-armor chest plate with a white bunny emblem made of frosting, lollipop staff " +
-  "in one hand, same braided pigtails, same face. Standing in A-pose facing camera.";
+// Skin especial de los 100 Días (sustituye la antigua "Caramelo"): hada con alas.
+const ELIZABETH_FAIRY =
+  "A heroic 6-year-old girl video game character: bright golden-blonde yellow hair in " +
+  "two braided pigtails with small pink hair ties, big warm brown eyes, lots of cute " +
+  "freckles scattered across her cheeks and nose, huge confident gap-toothed grin. " +
+  "Fairy outfit: pastel sparkly fairy dress with a white bunny emblem on the chest, " +
+  "large glittering translucent fairy wings, a small star-tipped magic wand in one " +
+  "hand, golden glitter sparkles around her, same braided pigtails, same face. " +
+  "Standing in A-pose facing camera.";
 
 const FLOFY =
   'Flofy, a white plush bunny video game companion: cream-white shaggy soft fur, ' +
@@ -77,8 +81,8 @@ const IMAGES = {
     prompt: `${SAME}${ELIZABETH} Frozen mid-step with wide eyes and mouth open in an "oh!" of surprise, hands slightly raised, leaning back a little, comic exaggerated expression.`,
     refs: ["elizabeth-front"],
   },
-  "elizabeth-skin-candy": {
-    prompt: `${SAME}${ELIZABETH_CANDY}`,
+  "elizabeth-skin-fairy": {
+    prompt: `${SAME}${ELIZABETH_FAIRY}`,
     refs: ["elizabeth-front"],
   },
   "flofy-front": {
