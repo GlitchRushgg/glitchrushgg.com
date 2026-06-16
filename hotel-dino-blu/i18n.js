@@ -37,6 +37,7 @@ const DICTS = {
       { img: 'anna', name: 'Anna', role: '1º piso' },
       { img: 'giulia', name: 'Giulia', role: '3º piso' },
       { img: 'martina', name: 'Martina', role: '4º piso' },
+      { img: 'marco', name: 'Marco', role: 'Áreas comunes' },
       { img: 'carmela', name: 'Carmela', role: 'Lavandería' },
     ],
 
@@ -129,6 +130,7 @@ const DICTS = {
     signWashers: 'LAVADORAS · AQUA', signDryers: 'SECADORAS', signDirty: 'ROPA SUCIA',
 
     maidLabel: (n, f) => `${n} · ${f}º piso`,
+    marcoLabel: 'Marco · Áreas comunes',
     carmelaLabel: 'Carmela · Lavandería',
     luciaLabel: 'Lucía · Gobernanta',
 
@@ -176,6 +178,7 @@ const DICTS = {
       { img: 'anna', name: 'Anna', role: 'Floor 1' },
       { img: 'giulia', name: 'Giulia', role: 'Floor 3' },
       { img: 'martina', name: 'Martina', role: 'Floor 4' },
+      { img: 'marco', name: 'Marco', role: 'Common areas' },
       { img: 'carmela', name: 'Carmela', role: 'Laundry' },
     ],
 
@@ -268,6 +271,7 @@ const DICTS = {
     signWashers: 'WASHERS · AQUA', signDryers: 'DRYERS', signDirty: 'DIRTY LINEN',
 
     maidLabel: (n, f) => `${n} · floor ${f}`,
+    marcoLabel: 'Marco · Common areas',
     carmelaLabel: 'Carmela · Laundry',
     luciaLabel: 'Lucía · Head housekeeper',
 
@@ -315,6 +319,7 @@ const DICTS = {
       { img: 'anna', name: 'Anna', role: '1º piano' },
       { img: 'giulia', name: 'Giulia', role: '3º piano' },
       { img: 'martina', name: 'Martina', role: '4º piano' },
+      { img: 'marco', name: 'Marco', role: 'Aree comuni' },
       { img: 'carmela', name: 'Carmela', role: 'Lavanderia' },
     ],
 
@@ -407,6 +412,7 @@ const DICTS = {
     signWashers: 'LAVATRICI · AQUA', signDryers: 'ASCIUGATRICI', signDirty: 'BIANCHERIA SPORCA',
 
     maidLabel: (n, f) => `${n} · ${f}º piano`,
+    marcoLabel: 'Marco · Aree comuni',
     carmelaLabel: 'Carmela · Lavanderia',
     luciaLabel: 'Lucia · Governante',
 

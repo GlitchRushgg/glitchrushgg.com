@@ -751,6 +751,14 @@ function buildLobby() {
   }
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
+
+  // Marco — housekeeper de áreas comunes (equipo mixto): uniforme masculino
+  // (camisa azul celeste, cuello/ribete blancos, pantalón azul marino y delantal blanco)
+  const marco = makePerson({ shirt: 0xa8cce8, pants: 0x27344a, trim: 0xffffff, apron: 0xffffff, hair: 0x2a2018 });
+  marco.add(nameSprite(S.marcoLabel));
+  marco.position.set(0, 0, -2.5);
+  g.add(marco);
+  NPCS.push({ mesh: marco, x0: -7, x1: 7, z: -2.5, dir: 1, speed: 1.0, floor: 0, name: 'Marco' });
 }
 
 // ----------------------------------------------------------------------------
