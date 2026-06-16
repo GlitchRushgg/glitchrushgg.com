@@ -87,7 +87,7 @@ const DICTS = {
     toastLaundry: '🧺 Lavandería: 5 lavadoras y 2 secadoras a pleno rendimiento.',
     toastLobby: '🛎 Recepción del Hotel Dino Blu. ¡La piazzetta y el mar están ahí fuera!',
     toastMyFloor: '🧹 Tu piso. ¡A por esas habitaciones!',
-    toastStart: '🧹 ¡Buenos días, Sofía! Empieza por las habitaciones de SALIDA: los nuevos huéspedes llegan a las 14:00.',
+    toastStart: '👩‍💼 Lucía: «Buenos días, Sofía. Aquí tienes tu carro: sábanas, toallas, alfombrines y cortesías. Empieza por las habitaciones de SALIDA — los nuevos huéspedes llegan a las 14:00.»',
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: «¡Sofía! Las toallas de la ${num} NO están bien. ${g} huéspedes: ${g} grandes, ${g} de bidet, ${g} pequeñas y 1 alfombrín.» (fallo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: «La ${num} está perfecta, brava Sofía.» (+30)`,
@@ -227,7 +227,7 @@ const DICTS = {
     toastLaundry: '🧺 Laundry: 5 washers and 2 dryers running at full steam.',
     toastLobby: '🛎 Hotel Dino Blu reception. The piazzetta and the sea are right outside!',
     toastMyFloor: '🧹 Your floor. Go get those rooms!',
-    toastStart: '🧹 Good morning, Sofía! Start with the CHECK-OUT rooms: new guests arrive at 14:00.',
+    toastStart: '👩‍💼 Lucía: "Good morning, Sofía. Here\'s your cart: sheets, towels, bath mats and amenities. Start with the CHECK-OUT rooms — new guests arrive at 14:00."',
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: "Sofía! The towels in ${num} are NOT right. ${g} guests: ${g} bath, ${g} bidet, ${g} hand towels and 1 bath mat." (strike ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: "Room ${num} is perfect, brava Sofía." (+30)`,
@@ -367,7 +367,7 @@ const DICTS = {
     toastLaundry: '🧺 Lavanderia: 5 lavatrici e 2 asciugatrici a pieno regime.',
     toastLobby: `🛎 Reception dell'Hotel Dino Blu. La piazzetta e il mare sono lì fuori!`,
     toastMyFloor: '🧹 Il tuo piano. Sotto con quelle camere!',
-    toastStart: '🧹 Buongiorno, Sofia! Comincia dalle PARTENZE: i nuovi ospiti arrivano alle 14:00.',
+    toastStart: '👩‍💼 Lucia: «Buongiorno, Sofia. Ecco il tuo carrello: lenzuola, asciugamani, tappetini e cortesie. Comincia dalle camere in PARTENZA — i nuovi ospiti arrivano alle 14:00.»',
 
     luciaBad: (num, g, w) => `👩‍💼 Lucia: «Sofia! Gli asciugamani della ${num} NON vanno bene. ${g} ospiti: ${g} grandi, ${g} bidet, ${g} piccoli e 1 tappetino.» (richiamo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucia: «La ${num} è perfetta, brava Sofia.» (+30)`,

@@ -369,15 +369,36 @@ function buildElevator(g, f) {
   ELEV_MARK[f] = mk;
 }
 
+// Carro de camarera de pisos (como la foto real): estructura tubular gris,
+// tres bandejas, bolsas de tela laterales, toallas/sábanas y botes de cortesía.
 function buildCart(g, x, z) {
   const c = new THREE.Group();
-  add(c, bx(1.1, 0.06, 0.55), 0, 0.12, 0).material = MAT.steel;
-  add(c, bx(1.1, 0.06, 0.55), 0, 0.95, 0).material = MAT.steel;
-  for (const [dx, dz] of [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]])
-    add(c, bx(0.05, 0.95, 0.05), dx, 0.55, dz).material = MAT.steel;
-  add(c, bx(0.9, 0.18, 0.4), 0, 0.45, 0).material = MAT.towel;   // pila de toallas
-  add(c, bx(0.7, 0.14, 0.35), 0, 0.61, 0).material = lamb(0xdfe8f2); // sábanas
-  add(c, cyl(0.2, 0.16, 0.5, lamb(0xccc4b0)), -0.75, 0.45, 0);   // saco de ropa sucia
+  const steel = MAT.steel, gray = lamb(0x9aa1a8), grayD = lamb(0x767d84);
+  // ruedas
+  for (const [dx, dz] of [[-0.5, -0.22], [0.5, -0.22], [-0.5, 0.22], [0.5, 0.22]]) {
+    const w = cyl(0.06, 0.06, 0.05, MAT.black, 10); w.rotation.z = Math.PI / 2; add(c, w, dx, 0.06, dz);
+  }
+  // postes tubulares + 3 bandejas
+  for (const [dx, dz] of [[-0.52, -0.24], [0.52, -0.24], [-0.52, 0.24], [0.52, 0.24]])
+    add(c, cyl(0.022, 0.022, 1.0, steel, 8), dx, 0.55, dz);
+  for (const yy of [0.95, 0.6, 0.2]) add(c, bx(1.06, 0.04, 0.52), 0, yy, 0).material = steel;
+  // asa de empuje
+  const handle = cyl(0.02, 0.02, 0.5, steel, 8); handle.rotation.x = Math.PI / 2; add(c, handle, 0.53, 1.04, 0);
+  // dos bolsas de tela grandes al frente (lencería limpia / ropa sucia)
+  for (const dx of [-0.27, 0.27]) {
+    add(c, bx(0.46, 0.52, 0.42), dx, 0.4, 0.16).material = gray;
+    add(c, bx(0.48, 0.06, 0.44), dx, 0.67, 0.16).material = grayD;
+  }
+  // pilas de toallas blancas y sábanas dobladas (bandeja superior)
+  add(c, bx(0.3, 0.16, 0.36), -0.3, 1.06, -0.06).material = MAT.towel;
+  add(c, bx(0.28, 0.1, 0.34), -0.3, 1.18, -0.06).material = lamb(0xf2f2f2);
+  add(c, bx(0.3, 0.14, 0.36), 0.05, 1.05, -0.06).material = lamb(0xdfe8f2);     // sábanas azul claro
+  add(c, bx(0.22, 0.08, 0.3), 0.36, 1.03, -0.06).material = lamb(0xeef3d8);      // alfombrines
+  // botes de cortesía de colores (bandeja media)
+  const cols = [0xe8a87c, 0x7cc4e8, 0x9be24a, 0xe87c9b];
+  for (let i = 0; i < 4; i++) add(c, cyl(0.03, 0.03, 0.12, lamb(cols[i]), 8), -0.42 + i * 0.09, 0.71, -0.12);
+  // bolsa negra de basura/ropa sucia colgando del lateral
+  add(c, cyl(0.15, 0.12, 0.4, MAT.black, 10), 0.66, 0.42, 0.16);
   c.position.set(x, 0, z);
   g.add(c);
   return c;
@@ -1211,9 +1232,9 @@ function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair) {
 let lucia = null, luciaState = { mode: 'patrol', t: 0 };
 function spawnLucia(gFloor2) {
   lucia = billboard('lucia', S.luciaLabel);  // gobernanta (uniforme azul marino)
-  lucia.position.set(-6, 0, 0);
+  lucia.position.set(11.7, 0, 0.7);          // junto al carro: te lo entrega al empezar
   gFloor2.add(lucia);
-  NPCS.push({ mesh: lucia, x0: -11, x1: 11, z: 0, dir: 1, speed: 1.1, floor: PLAYER_FLOOR, name: 'Lucía', isBoss: true });
+  NPCS.push({ mesh: lucia, x0: -11, x1: 11, z: 0.7, dir: 1, speed: 1.1, floor: PLAYER_FLOOR, name: 'Lucía', isBoss: true });
 }
 
 // ----------------------------------------------------------------------------
