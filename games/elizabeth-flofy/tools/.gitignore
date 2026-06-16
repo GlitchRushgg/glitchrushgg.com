@@ -1,0 +1,2 @@
+# Replicate generation state (output URLs) — never commit
+.state.json
