@@ -1,7 +1,7 @@
 // Service worker de "Don't Drown, Noah!"
 // IMPORTANTE: al añadir/renombrar archivos del juego, añádelos a ASSETS
 // y sube la versión de CACHE — si no, los jugadores instalados verán la versión vieja.
-const CACHE = 'noah-v1';
+const CACHE = 'noah-v2';
 
 const ASSETS = [
   './',
@@ -15,7 +15,6 @@ const ASSETS = [
   './src/scenes/UIScene.js',
   './src/scenes/WinScene.js',
   './src/scenes/GameOverScene.js',
-  './src/scenes/ColorScene.js',
   './src/utils/Graphics.js',
   './src/utils/SoundManager.js',
   './src/utils/Scores.js',
@@ -29,6 +28,11 @@ const ASSETS = [
   './assets/water.png',
   './assets/background.png',
   './assets/raindrop.png',
+  './assets/images/giraffe.png',
+  './assets/images/zebra.png',
+  './assets/images/monkey.png',
+  './assets/images/rabbit.png',
+  './assets/images/bear.png',
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/apple-touch-icon.png',
