@@ -26,13 +26,12 @@ Phaser is pinned to 3.88.0 via CDN in [index.html](index.html). Deployment is Gi
 Phaser scene-based. Scenes are registered in [src/main.js](src/main.js) at a **fixed logical resolution of 390×844** (iPhone portrait) with `Scale.FIT`. All positions throughout the code are hard-coded against this 390×844 space — there is no responsive layout; CSS in `style.css` scales/centers the canvas.
 
 ### Scene flow
-`Boot → Menu → Game (+ UI overlay) → Win / GameOver → back to Game or Menu`. Menu also branches to `Color` (a standalone coloring-book mini-game).
+`Boot → Menu → Game (+ UI overlay) → Win / GameOver → back to Game or Menu`.
 
-- **Boot** ([src/scenes/BootScene.js](src/scenes/BootScene.js)) — loads PNG assets from `assets/` and **procedurally generates** the remaining textures (8 animals, star, heart) via `Graphics.js` calls + `generateTexture`. Animal sprite keys: `elephant, giraffe, lion, zebra, monkey, rabbit, penguin, bear`.
+- **Boot** ([src/scenes/BootScene.js](src/scenes/BootScene.js)) — loads PNG assets from `assets/` and **procedurally generates** the remaining textures (star, heart, and the animals without pixel art) via `Graphics.js` calls + `generateTexture`. Animal sprite keys: `elephant, giraffe, lion, zebra, monkey, rabbit, penguin, bear`. Five animals (`giraffe, zebra, monkey, rabbit, bear`) ship as hand-drawn pixel-art PNGs in `assets/images/` and are loaded in `preload()` (see `PIXEL_ART_ANIMALS`); the rest (`elephant, lion, penguin`) are still drawn procedurally in `Graphics.js`.
 - **Game** ([src/scenes/GameScene.js](src/scenes/GameScene.js)) — the core. See below.
 - **UI** ([src/scenes/UIScene.js](src/scenes/UIScene.js)) — a HUD overlay launched in parallel (`scene.launch('UI', { gameScene })`). It does not own game state; it listens to events emitted on the GameScene's emitter (`levelUpdate`, `scoreUpdate`, `livesUpdate`, `heightUpdate`, `waterUpdate`) and unregisters them on `shutdown`.
 - **Win / GameOver** ([src/scenes/WinScene.js](src/scenes/WinScene.js), [src/scenes/GameOverScene.js](src/scenes/GameOverScene.js)) — results screens; persist score and offer a shareable score card.
-- **Color** ([src/scenes/ColorScene.js](src/scenes/ColorScene.js)) — independent coloring-book activity driven by the large `PAGES` data table (vector shapes per animal); not part of the platformer loop.
 
 ### GameScene specifics (read before touching gameplay)
 - **State passed between levels via `init(data)`**: `{ level, score }`. Lives reset to 3 each scene start. `Win` advances with `level+1` and carried score; `GameOver` and Menu restart at `level 1, score 0`.
