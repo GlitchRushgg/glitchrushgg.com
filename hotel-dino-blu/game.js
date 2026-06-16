@@ -303,9 +303,8 @@ function buildGuestFloor(f) {
 
   if (!full) {
     if (f === 4) {
-      // Marco — housekeeper del 4º piso (equipo mixto): uniforme masculino
-      const marco = makePerson({ shirt: 0xa8cce8, pants: 0x27344a, trim: 0xffffff, apron: 0xffffff, hair: 0x2a2018 });
-      marco.add(nameSprite(S.marcoLabel));
+      // Marco — housekeeper del 4º piso (equipo mixto)
+      const marco = billboard('marco', S.marcoLabel);
       marco.position.set(rand(-10, 10), 0, 0);
       g.add(marco);
       NPCS.push({ mesh: marco, x0: -10, x1: 10, z: 0, dir: 1, speed: 1.0, floor: f, name: 'Marco' });
@@ -1167,21 +1166,34 @@ const doorMark = arrowSprite();
 doorMark.visible = false;
 scene.add(doorMark);
 
-function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair = 0x3d2817) {
-  // uniforme del Hotel Dino Blu: vestido azul celeste, cuello/ribete blancos y delantal blanco
-  const p = makePerson({ shirt: 0xa8cce8, skirt: 0xa8cce8, trim: 0xffffff, apron: 0xffffff, cap: false, hair });
-  p.add(nameSprite(label));
-  p.position.set(rand(x0, x1), 0, z);
-  g.add(p);
-  NPCS.push({ mesh: p, x0, x1, z, dir: 1, speed: rand(0.8, 1.2), floor, name });
-  return p;
+// Personajes como FIGURAS (billboards) con los avatares generados (idénticos a
+// los de la intro): plano vertical con la imagen recortada que mira a la cámara.
+const AVTEX = new THREE.TextureLoader();
+function billboard(imgKey, label, h = 2.0) {
+  const mat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+  AVTEX.load(`assets/housekeper/${imgKey}-cut.png`, t => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    mat.map = t; mat.needsUpdate = true;
+  });
+  const geo = new THREE.PlaneGeometry(h * 2 / 3, h);
+  geo.translate(0, h / 2, 0);             // pivote en los pies (y=0 = suelo)
+  const m = new THREE.Mesh(geo, mat);
+  if (label) { const sp = nameSprite(label); sp.position.y = h + 0.12; m.add(sp); }
+  m.userData.billboard = true;
+  return m;
+}
+
+function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair) {
+  const m = billboard(name.toLowerCase(), label);
+  m.position.set(rand(x0, x1), 0, z);
+  g.add(m);
+  NPCS.push({ mesh: m, x0, x1, z, dir: 1, speed: rand(0.8, 1.2), floor, name });
+  return m;
 }
 
 let lucia = null, luciaState = { mode: 'patrol', t: 0 };
 function spawnLucia(gFloor2) {
-  // gobernanta: vestido azul marino con ribete dorado (más veterana)
-  lucia = makePerson({ shirt: 0x27374f, skirt: 0x27374f, trim: 0xcbb06a, hair: 0x2c2018 });
-  lucia.add(nameSprite(S.luciaLabel));
+  lucia = billboard('lucia', S.luciaLabel);  // gobernanta (uniforme azul marino)
   lucia.position.set(-6, 0, 0);
   gFloor2.add(lucia);
   NPCS.push({ mesh: lucia, x0: -11, x1: 11, z: 0, dir: 1, speed: 1.1, floor: PLAYER_FLOOR, name: 'Lucía', isBoss: true });
@@ -1844,20 +1856,16 @@ function updateInteraction(dt) {
 // NPCs y animación
 // ----------------------------------------------------------------------------
 function updateNPCs(dt, t) {
-  if (G.celebrating) { // ¡tarantela! todas bailan
+  if (G.celebrating) { // ¡tarantela! las figuras saltan y se balancean
     for (const n of NPCS) {
-      const m = n.mesh, L = m.userData.limbs;
-      m.rotation.y += dt * 3.2;                              // giro de tarantela
-      m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.18; // saltitos
-      const sw = Math.sin(t * 11 + n.x0);
-      L.arms[0].rotation.z = 1.1; L.arms[1].rotation.z = -1.1; // brazos en alto
-      L.arms[0].rotation.x = sw * 0.5; L.arms[1].rotation.x = -sw * 0.5;
-      L.legs[0].rotation.x = sw * 0.6; L.legs[1].rotation.x = -sw * 0.6;
+      n.mesh.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.2;   // saltitos
+      n.mesh.userData.tilt = Math.sin(t * 7 + n.x0) * 0.18;          // balanceo (lo aplica el bucle)
     }
     for (const d of DRUMS) d.rotation.z += dt * 5;
     return;
   }
   for (const n of NPCS) {
+    n.mesh.userData.tilt = 0;
     if (n.isBoss && luciaState.mode === 'inspect') {
       luciaState.t -= dt;
       if (luciaState.t <= 0) luciaState.mode = 'patrol';
@@ -1866,13 +1874,18 @@ function updateNPCs(dt, t) {
     n.mesh.position.x += n.dir * n.speed * dt;
     if (n.mesh.position.x > n.x1) n.dir = -1;
     if (n.mesh.position.x < n.x0) n.dir = 1;
-    n.mesh.rotation.y = n.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
-    const L = n.mesh.userData.limbs;
-    const s = Math.sin(t * 6 + n.x0);
-    L.legs[0].rotation.x = s * 0.5; L.legs[1].rotation.x = -s * 0.5;
-    L.arms[0].rotation.x = -s * 0.4; L.arms[1].rotation.x = s * 0.4;
+    n.mesh.position.y = Math.abs(Math.sin(t * 5 + n.x0)) * 0.04;     // pasitos
   }
   for (const d of DRUMS) d.rotation.z += dt * 5;
+}
+// las figuras siempre miran a la cámara (billboard en eje Y) + balanceo festivo
+function faceNPCsToCamera() {
+  for (const n of NPCS) {
+    if (n.floor !== G.floor) continue;
+    const m = n.mesh;
+    m.rotation.y = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z);
+    m.rotation.z = n.mesh.userData.tilt || 0;
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -2024,6 +2037,7 @@ function loop() {
   const fy = G.floor * FH;
   camera.position.set(G.px, fy + EYE, G.pz);
   camera.rotation.set(G.pitch, G.yaw, 0);
+  faceNPCsToCamera();
   renderer.render(scene, camera);
 }
 loop();
