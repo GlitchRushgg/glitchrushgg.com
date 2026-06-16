@@ -1,5 +1,5 @@
 // ============================================================================
-//  HOTEL GARDEN — Turno de Limpieza 3D
+//  HOTEL DINO BLU — Turno de Limpieza 3D
 //  Praia a Mare · Calabria · frente a la Isola di Dino
 //  Eres Sofía, camarera del 2º piso: 12 habitaciones antes de las 14:00.
 // ============================================================================
@@ -724,7 +724,7 @@ function buildLobby() {
   add(g, bx(3.6, 0.06, 0.85), 9, 1.1, 1.6).material = MAT.woodDark;
   addSolid(f, 7.2, 10.8, 1.2, 2.0);
   add(g, bx(3.4, 1.6, 0.3), 9, 1.6, 3.2).material = MAT.woodDark;
-  add(g, textPlane(['HOTEL GARDEN ★★★', 'Reception'], 2.8, 0.8, { bg: '#c96f4a', fg: '#fff', size: 64 }), 9, 2.0, 3.05, Math.PI);
+  add(g, textPlane(['HOTEL DINO BLU ★★★', 'Reception'], 2.8, 0.8, { bg: '#c96f4a', fg: '#fff', size: 64 }), 9, 2.0, 3.05, Math.PI);
 
   // zona de sofás
   for (const [x, z] of [[-9, 1.5], [-9, -1.5]]) {
@@ -735,13 +735,13 @@ function buildLobby() {
   add(g, bx(1.1, 0.4, 1.1), -9, 0.2, 0).material = MAT.wood;
   addSolid(f, -9.6, -8.4, -0.6, 0.6);
 
-  // rincón restaurante "Garden" (decorativo)
+  // rincón restaurante "Blu" (decorativo)
   for (const [x, z] of [[-4, 5], [-1, 5], [-4, -5], [-1, -5]]) {
     add(g, cyl(0.55, 0.55, 0.06, MAT.white, 12), x, 0.74, z);
     add(g, cyl(0.06, 0.08, 0.72, MAT.woodDark), x, 0.37, z);
     addSolid(f, x - 0.6, x + 0.6, z - 0.6, z + 0.6);
   }
-  add(g, textPlane('🌿 Garden Restaurant 🌿', 3, 0.5, { bg: '#3fa15c', fg: '#fff', size: 60 }), -2.5, 2.4, BZ - 0.2, Math.PI);
+  add(g, textPlane('🌿 Ristorante Blu 🌿', 3, 0.5, { bg: '#3fa15c', fg: '#fff', size: 60 }), -2.5, 2.4, BZ - 0.2, Math.PI);
 
   // plantas
   for (const [x, z] of [[-11.5, 6], [-11.5, -6], [11.5, 6], [6, -6]]) {
@@ -916,7 +916,7 @@ function buildExterior() {
 
   // tejado y rótulo
   add(scene, bx(BX1 - BX0 + 0.8, 0.3, BZ * 2 + 0.8), (BX0 + BX1) / 2, 5 * FH + 0.15, 0).material = MAT.terra;
-  const sign1 = textPlane('HOTEL GARDEN ★★★', 10, 1.1, { bg: '#c96f4a', fg: '#fff', size: 90 });
+  const sign1 = textPlane('HOTEL DINO BLU ★★★', 10, 1.1, { bg: '#c96f4a', fg: '#fff', size: 90 });
   add(scene, sign1, 2, 5 * FH + 0.9, BZ + 0.5, 0);
   const sign2 = sign1.clone();
   add(scene, sign2, 2, 5 * FH + 0.9, -BZ - 0.5, Math.PI);
@@ -944,7 +944,7 @@ function buildExterior() {
   };
   for (const [x, z] of [[-16, BZ + 4], [-6, BZ + 4], [6, BZ + 4], [18, BZ + 4], [-16, -BZ - 3], [20, -BZ - 3], [-22, -BZ - 9]]) palm(x, z);
 
-  // sombrillas y hamacas del Garden Beach Club
+  // sombrillas y hamacas del Dino Blu Beach Club
   for (let x = -24; x <= 24; x += 7) for (let zr = 0; zr < 2; zr++) {
     const z = BZ + 18 + zr * 6;
     add(scene, cyl(0.04, 0.04, 2.0, MAT.steel, 6), x, 1.0, z);
@@ -1160,7 +1160,7 @@ doorMark.visible = false;
 scene.add(doorMark);
 
 function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair = 0x3d2817) {
-  // uniforme del Hotel Garden: vestido blanco con ribete naranja, delantal y cofia
+  // uniforme del Hotel Dino Blu: vestido azul celeste, cuello/ribete blancos y delantal blanco
   const p = makePerson({ shirt: 0xffffff, skirt: 0xffffff, trim: 0xe8853a, apron: 0xfbfbfb, cap: true, hair });
   p.add(nameSprite(label));
   p.position.set(rand(x0, x1), 0, z);

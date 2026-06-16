@@ -1,10 +1,10 @@
-# 🧹 Hotel Garden — Turno de Limpieza 3D
+# 🧹 Hotel Dino Blu — Turno de Limpieza 3D
 
-Juego 3D en primera persona ambientado en el **Hotel Garden** de **Praia a Mare**
+Juego 3D en primera persona ambientado en el **Hotel Dino Blu** de **Praia a Mare**
 (Calabria, Italia), frente a la **Isola di Dino**. Inspirado en el trabajo real de
 las camareras de piso de un hotel.
 
-**Jugar:** `https://glitchrushgg.com/hotel-garden/`
+**Jugar:** `https://glitchrushgg.com/hotel-dino-blu/`
 
 **Idiomas:** español · english · italiano (selector en la pantalla de inicio; se
 detecta el idioma del navegador automáticamente).
@@ -31,10 +31,11 @@ más la gobernanta**:
 
 ## Reglas del oficio (como en un hotel real)
 
-- 🔴 **PARTENZA** — el huésped se marcha: cambio **completo** (retirar toda la ropa,
-  sábanas nuevas, baño a fondo, toallas, suelo, papelera y cortesías).
-- 🔵 **FERMATA** — el huésped se queda: repaso diario. Las **sábanas se cambian
-  cada 3 noches** de estancia.
+- 🔴 **SALIDA** (it. *partenza* · en. *check-out*) — el huésped se marcha: cambio
+  **completo** (retirar toda la ropa, sábanas nuevas, baño a fondo, toallas, suelo,
+  papelera y cortesías).
+- 🔵 **ESTANCIA** (it. *fermata* · en. *stay-over*) — el huésped se queda: repaso
+  diario. Las **sábanas se cambian cada 3 noches** de estancia.
 - 🧺 **Toallas por habitación**: por cada huésped **1 grande + 1 de bidet +
   1 pequeña**, más **1 alfombrín** para el suelo del baño.
 - 👜 El carro lleva una cantidad limitada de lencería: baja en el ascensor a la
@@ -55,7 +56,7 @@ más la gobernanta**:
 
 ## Puntuación
 
-- +10 por tarea · +100 por habitación FERMATA · +125 por PARTENZA
+- +10 por tarea · +100 por habitación ESTANCIA · +125 por SALIDA
 - +30 por juego de toallas exacto · +30 por inspección superada
 - Bono de tiempo si terminas antes de las 14:00 · −60 por amonestación
 - De 0 a 5 ⭐ al final del turno
@@ -74,5 +75,5 @@ más la gobernanta**:
 
 ```bash
 python3 -m http.server 8080
-# abrir http://localhost:8080/hotel-garden/
+# abrir http://localhost:8080/hotel-dino-blu/
 ```

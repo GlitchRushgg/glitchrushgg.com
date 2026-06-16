@@ -1,23 +1,23 @@
 // ============================================================================
-//  HOTEL GARDEN — Traducciones (es / en / it)
+//  HOTEL DINO BLU — Traducciones (es / en / it)
 //  El idioma se elige en la pantalla de inicio (localStorage 'hg-lang') o se
-//  detecta del navegador; PARTENZA/FERMATA se mantienen en italiano en los
-//  tres idiomas porque son la jerga real del oficio.
+//  detecta del navegador. Los estados de habitación se localizan: ES SALIDA/
+//  ESTANCIA, EN CHECK-OUT/STAY-OVER, IT PARTENZA/FERMATA (su idioma original).
 // ============================================================================
 
 const DICTS = {
   // --------------------------------------------------------------- ESPAÑOL --
   es: {
-    htmlTitle: 'Hotel Garden — Turno de Limpieza 3D',
+    htmlTitle: 'Hotel Dino Blu — Turno de Limpieza 3D',
     sub: 'Praia a Mare · Calabria · frente a la Isola di Dino',
     story: `Eres <b>Sofía</b>, camarera de pisos de un hotel junto al mar. Limpia las
         <b>habitaciones de tu piso</b> antes de las <b>14:00</b>. Tranquila: el juego te guía —
         sigue el <b>letrero dorado</b> de arriba y la <b>flecha dorada ▼</b>.`,
     manualTitle: '📋 Manual de la camarera',
     manual: [
-      `🔴 <b>PARTENZA</b> (el huésped se va): cambio <b>completo</b> — retirar toda la ropa,
+      `🔴 <b>SALIDA</b> (el huésped se va): cambio <b>completo</b> — retirar toda la ropa,
         sábanas nuevas, baño a fondo, toallas nuevas, suelo, papelera y cortesías.`,
-      `🔵 <b>FERMATA</b> (el huésped se queda): repaso diario — hacer la cama, repasar el baño,
+      `🔵 <b>ESTANCIA</b> (el huésped se queda): repaso diario — hacer la cama, repasar el baño,
         cambiar toallas, papelera y suelo. Las <b>sábanas se cambian cada 3 noches</b>.`,
       `🧺 <b>Toallas por habitación</b>: por cada huésped <b>1 grande + 1 de bidet + 1 pequeña</b>,
         más <b>1 alfombrín</b> para el suelo del baño.`,
@@ -31,7 +31,7 @@ const DICTS = {
     touchHelp: `Joystick izquierdo para moverte · arrastra la pantalla para mirar ·
         mantén pulsado el botón ✋ para realizar tareas`,
     start: '🧹 Empezar el turno',
-    castTitle: '👭 El equipo del Hotel Garden',
+    castTitle: '👭 El equipo del Hotel Dino Blu',
     cast: [
       { img: 'sofia', name: 'Sofía', role: 'Tú · 2º piso' },
       { img: 'anna', name: 'Anna', role: '1º piso' },
@@ -53,10 +53,10 @@ const DICTS = {
     dirtyLabel: '🧺 Ropa sucia', heavy: ' (¡pesa!)',
     paceOk: 'Ritmo ✅', paceBad: 'Ritmo ⚠️ ¡date prisa!',
 
-    partenza: 'PARTENZA', fermata: 'FERMATA', libre: 'LIBRE', hecha: '✔ HECHA',
+    partenza: 'SALIDA', fermata: 'ESTANCIA', libre: 'LIBRE', hecha: '✔ HECHA',
     roomTitle: n => `Habitación ${n}`,
-    partenzaFull: '🔴 PARTENZA — cambio completo',
-    fermataNight: n => `🔵 FERMATA — noche ${n}`,
+    partenzaFull: '🔴 SALIDA — cambio completo',
+    fermataNight: n => `🔵 ESTANCIA — noche ${n}`,
     sheetDue: ' · ¡toca cambio de sábanas!',
     guests: n => `${n} huésped${n > 1 ? 'es' : ''}`,
     nightShort: n => ` · noche ${n}`,
@@ -85,9 +85,9 @@ const DICTS = {
       2: 'Piso 2 · TU PISO 🧹', 3: 'Piso 3 · Giulia', 4: 'Piso 4 · Martina',
     },
     toastLaundry: '🧺 Lavandería: 5 lavadoras y 2 secadoras a pleno rendimiento.',
-    toastLobby: '🛎 Recepción del Hotel Garden. ¡La piazzetta y el mar están ahí fuera!',
+    toastLobby: '🛎 Recepción del Hotel Dino Blu. ¡La piazzetta y el mar están ahí fuera!',
     toastMyFloor: '🧹 Tu piso. ¡A por esas habitaciones!',
-    toastStart: '🧹 ¡Buenos días, Sofía! Empieza por las PARTENZA: los nuevos huéspedes llegan a las 14:00.',
+    toastStart: '🧹 ¡Buenos días, Sofía! Empieza por las habitaciones de SALIDA: los nuevos huéspedes llegan a las 14:00.',
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: «¡Sofía! Las toallas de la ${num} NO están bien. ${g} huéspedes: ${g} grandes, ${g} de bidet, ${g} pequeñas y 1 alfombrín.» (fallo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: «La ${num} está perfecta, brava Sofía.» (+30)`,
@@ -147,16 +147,16 @@ const DICTS = {
 
   // --------------------------------------------------------------- ENGLISH --
   en: {
-    htmlTitle: 'Hotel Garden — Housekeeping Shift 3D',
+    htmlTitle: 'Hotel Dino Blu — Housekeeping Shift 3D',
     sub: 'Praia a Mare · Calabria · facing the Isola di Dino',
     story: `You are <b>Sofía</b>, a housekeeper at a seaside hotel. Clean the
         <b>rooms on your floor</b> before <b>14:00</b>. Don't worry: the game guides you —
         follow the <b>golden banner</b> at the top and the <b>golden arrow ▼</b>.`,
     manualTitle: '📋 Housekeeper’s manual',
     manual: [
-      `🔴 <b>PARTENZA</b> (the guest checks out): <b>full</b> changeover — strip all the linen,
+      `🔴 <b>CHECK-OUT</b> (the guest leaves): <b>full</b> changeover — strip all the linen,
         fresh sheets, deep-clean the bathroom, new towels, floor, bin and amenities.`,
-      `🔵 <b>FERMATA</b> (the guest stays): daily touch-up — make the bed, tidy the bathroom,
+      `🔵 <b>STAY-OVER</b> (the guest stays): daily touch-up — make the bed, tidy the bathroom,
         change towels, bin and floor. <b>Sheets are changed every 3 nights</b>.`,
       `🧺 <b>Towels per room</b>: for each guest <b>1 bath + 1 bidet + 1 hand towel</b>,
         plus <b>1 bath mat</b> for the bathroom floor.`,
@@ -170,7 +170,7 @@ const DICTS = {
     touchHelp: `Left joystick to move · drag the screen to look ·
         press and hold the ✋ button to do tasks`,
     start: '🧹 Start the shift',
-    castTitle: '👭 The Hotel Garden team',
+    castTitle: '👭 The Hotel Dino Blu team',
     cast: [
       { img: 'sofia', name: 'Sofía', role: 'You · Floor 2' },
       { img: 'anna', name: 'Anna', role: 'Floor 1' },
@@ -192,10 +192,10 @@ const DICTS = {
     dirtyLabel: '🧺 Dirty linen', heavy: ' (heavy!)',
     paceOk: 'Pace ✅', paceBad: 'Pace ⚠️ hurry up!',
 
-    partenza: 'PARTENZA', fermata: 'FERMATA', libre: 'VACANT', hecha: '✔ DONE',
+    partenza: 'CHECK-OUT', fermata: 'STAY-OVER', libre: 'VACANT', hecha: '✔ DONE',
     roomTitle: n => `Room ${n}`,
-    partenzaFull: '🔴 PARTENZA — full changeover',
-    fermataNight: n => `🔵 FERMATA — night ${n}`,
+    partenzaFull: '🔴 CHECK-OUT — full changeover',
+    fermataNight: n => `🔵 STAY-OVER — night ${n}`,
     sheetDue: ' · sheet change due!',
     guests: n => `${n} guest${n > 1 ? 's' : ''}`,
     nightShort: n => ` · night ${n}`,
@@ -224,9 +224,9 @@ const DICTS = {
       2: 'Floor 2 · YOUR FLOOR 🧹', 3: 'Floor 3 · Giulia', 4: 'Floor 4 · Martina',
     },
     toastLaundry: '🧺 Laundry: 5 washers and 2 dryers running at full steam.',
-    toastLobby: '🛎 Hotel Garden reception. The piazzetta and the sea are right outside!',
+    toastLobby: '🛎 Hotel Dino Blu reception. The piazzetta and the sea are right outside!',
     toastMyFloor: '🧹 Your floor. Go get those rooms!',
-    toastStart: '🧹 Good morning, Sofía! Start with the PARTENZA rooms: new guests arrive at 14:00.',
+    toastStart: '🧹 Good morning, Sofía! Start with the CHECK-OUT rooms: new guests arrive at 14:00.',
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: "Sofía! The towels in ${num} are NOT right. ${g} guests: ${g} bath, ${g} bidet, ${g} hand towels and 1 bath mat." (strike ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: "Room ${num} is perfect, brava Sofía." (+30)`,
@@ -286,7 +286,7 @@ const DICTS = {
 
   // -------------------------------------------------------------- ITALIANO --
   it: {
-    htmlTitle: 'Hotel Garden — Turno di Pulizie 3D',
+    htmlTitle: 'Hotel Dino Blu — Turno di Pulizie 3D',
     sub: `Praia a Mare · Calabria · di fronte all'Isola di Dino`,
     story: `Sei <b>Sofia</b>, cameriera ai piani di un hotel sul mare. Pulisci le
         <b>camere del tuo piano</b> prima delle <b>14:00</b>. Tranquilla: il gioco ti guida —
@@ -309,7 +309,7 @@ const DICTS = {
     touchHelp: `Joystick sinistro per muoverti · trascina lo schermo per guardare ·
         tieni premuto il pulsante ✋ per le attività`,
     start: '🧹 Inizia il turno',
-    castTitle: '👭 La squadra dell\'Hotel Garden',
+    castTitle: '👭 La squadra dell\'Hotel Dino Blu',
     cast: [
       { img: 'sofia', name: 'Sofia', role: 'Tu · 2º piano' },
       { img: 'anna', name: 'Anna', role: '1º piano' },
@@ -363,7 +363,7 @@ const DICTS = {
       2: '2º piano · IL TUO PIANO 🧹', 3: '3º piano · Giulia', 4: '4º piano · Martina',
     },
     toastLaundry: '🧺 Lavanderia: 5 lavatrici e 2 asciugatrici a pieno regime.',
-    toastLobby: `🛎 Reception dell'Hotel Garden. La piazzetta e il mare sono lì fuori!`,
+    toastLobby: `🛎 Reception dell'Hotel Dino Blu. La piazzetta e il mare sono lì fuori!`,
     toastMyFloor: '🧹 Il tuo piano. Sotto con quelle camere!',
     toastStart: '🧹 Buongiorno, Sofia! Comincia dalle PARTENZE: i nuovi ospiti arrivano alle 14:00.',
 
