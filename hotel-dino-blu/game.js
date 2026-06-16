@@ -1169,16 +1169,33 @@ scene.add(doorMark);
 // Personajes como FIGURAS (billboards) con los avatares generados (idénticos a
 // los de la intro): plano vertical con la imagen recortada que mira a la cámara.
 const AVTEX = new THREE.TextureLoader();
-function billboard(imgKey, label, h = 2.0) {
+function billboard(imgKey, label, h = 1.8) {
   const mat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.4, side: THREE.DoubleSide });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(h * 0.55, h), mat);
+  m.geometry.translate(0, h / 2, 0);      // provisional; se recalcula al cargar
   AVTEX.load(`assets/housekeper/${imgKey}-cut.png`, t => {
     t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    // escanear el alfa para recortar al contenido real (pies al suelo, sin flotar)
+    const iw = t.image.width, ih = t.image.height;
+    let top = ih, bot = 0, lft = iw, rgt = 0;
+    try {
+      const cv = document.createElement('canvas'); cv.width = iw; cv.height = ih;
+      const cx = cv.getContext('2d'); cx.drawImage(t.image, 0, 0);
+      const d = cx.getImageData(0, 0, iw, ih).data;
+      for (let y = 0; y < ih; y++) for (let x = 0; x < iw; x++)
+        if (d[(y * iw + x) * 4 + 3] > 25) { if (y < top) top = y; if (y > bot) bot = y; if (x < lft) lft = x; if (x > rgt) rgt = x; }
+    } catch (e) { top = 0; bot = ih - 1; lft = 0; rgt = iw - 1; }
+    const cw = Math.max(1, rgt - lft + 1), ch = Math.max(1, bot - top + 1);
+    t.offset.set(lft / iw, 1 - (bot + 1) / ih);   // UV recortado al contenido
+    t.repeat.set(cw / iw, ch / ih);
     mat.map = t; mat.needsUpdate = true;
+    // re-dimensionar el plano al alto/ancho reales, con los pies en y=0
+    m.geometry.dispose();
+    const geo = new THREE.PlaneGeometry(h * cw / ch, h);
+    geo.translate(0, h / 2, 0);
+    m.geometry = geo;
   });
-  const geo = new THREE.PlaneGeometry(h * 2 / 3, h);
-  geo.translate(0, h / 2, 0);             // pivote en los pies (y=0 = suelo)
-  const m = new THREE.Mesh(geo, mat);
-  if (label) { const sp = nameSprite(label); sp.position.y = h + 0.12; m.add(sp); }
+  if (label) { const sp = nameSprite(label); sp.position.y = h + 0.15; m.add(sp); }
   m.userData.billboard = true;
   return m;
 }
@@ -1856,25 +1873,19 @@ function updateInteraction(dt) {
 // NPCs y animación
 // ----------------------------------------------------------------------------
 function updateNPCs(dt, t) {
-  if (G.celebrating) { // ¡tarantela! las figuras saltan y se balancean
-    for (const n of NPCS) {
-      n.mesh.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.2;   // saltitos
-      n.mesh.userData.tilt = Math.sin(t * 7 + n.x0) * 0.18;          // balanceo (lo aplica el bucle)
-    }
-    for (const d of DRUMS) d.rotation.z += dt * 5;
-    return;
-  }
   for (const n of NPCS) {
-    n.mesh.userData.tilt = 0;
+    const m = n.mesh;
     if (n.isBoss && luciaState.mode === 'inspect') {
       luciaState.t -= dt;
       if (luciaState.t <= 0) luciaState.mode = 'patrol';
-      continue;
     }
-    n.mesh.position.x += n.dir * n.speed * dt;
-    if (n.mesh.position.x > n.x1) n.dir = -1;
-    if (n.mesh.position.x < n.x0) n.dir = 1;
-    n.mesh.position.y = Math.abs(Math.sin(t * 5 + n.x0)) * 0.04;     // pasitos
+    if (G.celebrating) {                                  // tarantela: saltan y se balancean
+      m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.2;
+      m.userData.tilt = Math.sin(t * 7 + n.x0) * 0.18;
+    } else {                                              // de pie, respiración suave
+      m.position.y = Math.abs(Math.sin(t * 1.6 + n.x0)) * 0.02;
+      m.userData.tilt = 0;
+    }
   }
   for (const d of DRUMS) d.rotation.z += dt * 5;
 }
