@@ -1,0 +1,220 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #0d2233;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-user-select: none; user-select: none;
+  touch-action: none;
+}
+
+#wrap { position: fixed; inset: 0; }
+#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+
+#topbar {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  max-width: 96vw;
+}
+.chip {
+  background: rgba(10, 30, 48, 0.82); color: #fff;
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 20px;
+  padding: 4px 12px; font-size: 14px; font-weight: 600; white-space: nowrap;
+}
+#pace.bad { color: #ffb3a0; }
+#btnMusic { pointer-events: auto; cursor: pointer; line-height: 1; }
+
+#inv {
+  position: absolute; top: 52px; right: 8px;
+  background: rgba(10, 30, 48, 0.82); color: #fff;
+  border: 1px solid rgba(255,255,255,0.22); border-radius: 10px;
+  padding: 8px 10px; font-size: 13px; line-height: 1.55; min-width: 132px;
+}
+#inv h3 { font-size: 12px; opacity: 0.8; margin-bottom: 3px; letter-spacing: 0.5px; }
+#inv .low { color: #ffb3a0; font-weight: 700; }
+
+#checklist {
+  position: absolute; top: 52px; left: 8px;
+  background: rgba(10, 30, 48, 0.86); color: #fff;
+  border: 1px solid rgba(255,255,255,0.22); border-radius: 10px;
+  padding: 10px 12px; font-size: 13px; max-width: 250px;
+}
+#checklist h3 { font-size: 14px; margin-bottom: 2px; }
+#checklist .meta { font-size: 12px; opacity: 0.85; margin-bottom: 6px; }
+#checklist ul { list-style: none; }
+#checklist li { padding: 1px 0; }
+#checklist li.done { opacity: 0.55; text-decoration: line-through; }
+#checklist .hint { margin-top: 6px; font-size: 11px; opacity: 0.75; }
+
+#prompt {
+  position: absolute; bottom: 17%; left: 50%; transform: translateX(-50%);
+  text-align: center; pointer-events: none;
+}
+#promptText {
+  background: rgba(10, 30, 48, 0.88); color: #fff; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 16px; font-size: 15px; font-weight: 600;
+}
+#pbar {
+  margin: 6px auto 0; width: 180px; height: 9px; border-radius: 5px;
+  background: rgba(255,255,255,0.25); overflow: hidden; display: none;
+}
+#pbar.on { display: block; }
+#pfill { width: 0%; height: 100%; background: #5ad17a; border-radius: 5px; }
+
+/* banner de objetivo: siempre dice qué hacer ahora */
+#objective {
+  position: absolute; top: 44px; left: 50%; transform: translateX(-50%);
+  background: rgba(13, 42, 65, 0.92); color: #ffe066;
+  border: 1px solid rgba(255, 224, 102, 0.6); border-radius: 20px;
+  padding: 6px 16px; font-size: 14px; font-weight: 700;
+  max-width: 92vw; text-align: center; z-index: 7; pointer-events: none;
+}
+#objective b { color: #fff; }
+
+#toast {
+  position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
+  background: rgba(13, 42, 65, 0.93); color: #fff; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.35);
+  padding: 9px 18px; font-size: 15px; font-weight: 600; text-align: center;
+  max-width: 86vw; z-index: 8;
+}
+
+/* ---------- Táctil ---------- */
+#joy {
+  position: absolute; left: 18px; bottom: 18px; width: 110px; height: 110px;
+  border-radius: 50%; background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.3); z-index: 6;
+}
+#stick {
+  position: absolute; left: 35px; top: 35px; width: 40px; height: 40px;
+  border-radius: 50%; background: rgba(255,255,255,0.55);
+}
+#btnAction {
+  position: absolute; right: 22px; bottom: 30px; width: 84px; height: 84px;
+  border-radius: 50%; border: 2px solid rgba(255,255,255,0.5);
+  background: rgba(90, 209, 122, 0.55); font-size: 34px; z-index: 6;
+}
+#btnAction:active { background: rgba(90, 209, 122, 0.85); }
+
+/* ---------- Overlays ---------- */
+#fade {
+  position: absolute; inset: 0; background: #000; opacity: 0;
+  pointer-events: none; transition: opacity 0.3s; z-index: 20;
+}
+
+#intro, #end, #dialog {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(rgba(8, 28, 46, 0.88), rgba(8, 28, 46, 0.94));
+  overflow-y: auto; padding: 12px;
+}
+.panel {
+  background: #f7f2e8; color: #25313c; border-radius: 16px;
+  padding: 22px 26px; max-width: 660px; width: 100%;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 12px 50px rgba(0,0,0,0.5);
+}
+.panel h1 { color: #1773b0; font-size: 26px; margin-bottom: 2px; }
+
+/* selector de idioma */
+#langRow { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 8px; }
+#langRow .lang {
+  background: #fff; border: 1px solid #c8bda8; color: #25313c;
+  border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+}
+#langRow .lang.active { background: #1773b0; border-color: #1773b0; color: #fff; }
+.panel h2 { font-size: 16px; margin: 12px 0 6px; color: #c96f4a; }
+.panel .sub { font-size: 13px; opacity: 0.7; margin-bottom: 10px; }
+.panel p, .panel li { font-size: 14px; line-height: 1.5; }
+.panel ul { padding-left: 20px; margin: 4px 0; }
+.manual { background: #fff; border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+
+/* Equipo del hotel (intro) */
+.cast-title { text-align: center; }
+#cast {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 6px 0 4px;
+}
+#cast figure {
+  width: 92px; background: #eef3f8; border: 1px solid #d8e2ec;
+  border-radius: 12px; overflow: hidden; text-align: center;
+}
+#cast img { width: 100%; display: block; aspect-ratio: 2 / 3; object-fit: cover; background: #e8edf2; }
+#cast figcaption { padding: 4px 2px 6px; line-height: 1.15; }
+#cast figcaption b { display: block; font-size: 13px; color: #1773b0; }
+#cast figcaption span { font-size: 11px; color: #5a6b78; }
+@media (max-width: 520px) { #cast figure { width: 60px; } #cast figcaption b { font-size: 11px; } #cast figcaption span { font-size: 9px; } }
+details.manual summary {
+  cursor: pointer; font-size: 15px; font-weight: 700; color: #c96f4a;
+}
+details.manual[open] summary { margin-bottom: 6px; }
+
+#parte table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+#parte th, #parte td { border: 1px solid #d8cfc0; padding: 3px 6px; text-align: center; }
+#parte th { background: #1773b0; color: #fff; }
+#parte td.P { background: #ffe3da; } #parte td.F { background: #ddeeff; } #parte td.L { background: #eee; }
+
+button {
+  cursor: pointer; font-family: inherit;
+}
+#btnStart, .bigbtn {
+  display: block; width: 100%; margin-top: 14px;
+  background: #1773b0; color: #fff; border: none; border-radius: 10px;
+  padding: 13px; font-size: 18px; font-weight: 700;
+}
+#btnStart:hover, .bigbtn:hover { background: #1e89d2; }
+
+/* Diálogo de toallas / ascensor */
+.dlg {
+  background: #f7f2e8; color: #25313c; border-radius: 14px;
+  padding: 18px 20px; max-width: 420px; width: 92%;
+  box-shadow: 0 12px 50px rgba(0,0,0,0.5);
+}
+.dlg h2 { color: #1773b0; font-size: 19px; margin-bottom: 4px; }
+.dlg .meta { font-size: 13px; opacity: 0.8; margin-bottom: 10px; }
+.counter {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #fff; border-radius: 8px; padding: 6px 10px; margin: 6px 0;
+  font-size: 15px;
+}
+.counter .num { font-weight: 800; font-size: 18px; min-width: 26px; text-align: center; }
+.counter button {
+  width: 34px; height: 34px; border-radius: 8px; border: none;
+  background: #1773b0; color: #fff; font-size: 20px; font-weight: 700;
+}
+.counter button:disabled { background: #b8c4cc; }
+.counter .stock { font-size: 11px; opacity: 0.6; }
+.dlg .floors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.dlg .floors button {
+  background: #fff; border: 2px solid #1773b0; color: #1773b0;
+  border-radius: 10px; padding: 11px 6px; font-size: 14px; font-weight: 700;
+}
+.dlg .floors button.here { opacity: 0.45; border-color: #999; color: #777; }
+.dlg .cancel {
+  margin-top: 10px; width: 100%; background: none; border: none;
+  color: #888; font-size: 13px; text-decoration: underline;
+}
+
+/* Fin de jornada */
+#end .panel { text-align: center; }
+#end .stars { font-size: 38px; letter-spacing: 6px; margin: 8px 0; }
+#end table { margin: 10px auto; font-size: 14px; border-collapse: collapse; }
+#end td { padding: 3px 12px; text-align: left; }
+#end td:last-child { text-align: right; font-weight: 700; }
+
+@media (max-width: 600px) {
+  .chip { font-size: 11px; padding: 3px 8px; }
+  #objective { font-size: 12px; top: 56px; padding: 5px 12px; }
+  #inv { font-size: 11px; min-width: 110px; top: 92px; }
+  #checklist { font-size: 11px; max-width: 180px; top: 92px; }
+  #promptText { font-size: 13px; }
+  .desktop-help { display: none; }
+}
+@media (min-width: 601px) {
+  .touch-help { display: none; }
+}
