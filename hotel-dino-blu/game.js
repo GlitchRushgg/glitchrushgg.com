@@ -302,11 +302,19 @@ function buildGuestFloor(f) {
   buildCorridorDecor(g, f);
 
   if (!full) {
-    // compañera de piso con su nombre
-    const names = { 1: 'Anna', 3: 'Giulia', 4: 'Martina' };
-    // pelo oscuro mediterráneo, distinto por compañera
-    const hairs = { 1: 0x2a1c12, 3: 0x4a3220, 4: 0x5b3a1e };
-    if (names[f]) spawnMaid(g, names[f], S.maidLabel(names[f], f), 0, -10, 10, 0, f, hairs[f]);
+    if (f === 4) {
+      // Marco — housekeeper del 4º piso (equipo mixto): uniforme masculino
+      const marco = makePerson({ shirt: 0xa8cce8, pants: 0x27344a, trim: 0xffffff, apron: 0xffffff, hair: 0x2a2018 });
+      marco.add(nameSprite(S.marcoLabel));
+      marco.position.set(rand(-10, 10), 0, 0);
+      g.add(marco);
+      NPCS.push({ mesh: marco, x0: -10, x1: 10, z: 0, dir: 1, speed: 1.0, floor: f, name: 'Marco' });
+    } else {
+      // compañera de piso (pelo oscuro mediterráneo, distinto por compañera)
+      const names = { 1: 'Anna', 3: 'Giulia' };
+      const hairs = { 1: 0x2a1c12, 3: 0x4a3220 };
+      if (names[f]) spawnMaid(g, names[f], S.maidLabel(names[f], f), 0, -10, 10, 0, f, hairs[f]);
+    }
   }
   return g;
 }
@@ -751,14 +759,6 @@ function buildLobby() {
   }
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
-
-  // Marco — housekeeper de áreas comunes (equipo mixto): uniforme masculino
-  // (camisa azul celeste, cuello/ribete blancos, pantalón azul marino y delantal blanco)
-  const marco = makePerson({ shirt: 0xa8cce8, pants: 0x27344a, trim: 0xffffff, apron: 0xffffff, hair: 0x2a2018 });
-  marco.add(nameSprite(S.marcoLabel));
-  marco.position.set(0, 0, -2.5);
-  g.add(marco);
-  NPCS.push({ mesh: marco, x0: -7, x1: 7, z: -2.5, dir: 1, speed: 1.0, floor: 0, name: 'Marco' });
 }
 
 // ----------------------------------------------------------------------------
@@ -1169,7 +1169,7 @@ scene.add(doorMark);
 
 function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair = 0x3d2817) {
   // uniforme del Hotel Dino Blu: vestido azul celeste, cuello/ribete blancos y delantal blanco
-  const p = makePerson({ shirt: 0xffffff, skirt: 0xffffff, trim: 0xe8853a, apron: 0xfbfbfb, cap: true, hair });
+  const p = makePerson({ shirt: 0xa8cce8, skirt: 0xa8cce8, trim: 0xffffff, apron: 0xffffff, cap: false, hair });
   p.add(nameSprite(label));
   p.position.set(rand(x0, x1), 0, z);
   g.add(p);
