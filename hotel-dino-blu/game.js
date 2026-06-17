@@ -132,6 +132,7 @@ const MAT = {
   headboard: lamb(0xcbab85),                      // cabecero de madera clara
   warmwall: lamb(0xefe6d2),                       // pared cálida crema
   tileWall: lamb(0xf2f6f7), ceil: lamb(0xffffff), marble: texLamb('marble.jpg', 0xeae6dd, 12, 6),
+  travertine: lamb(0xd7c9af), bathStone: lamb(0xeae1cd),   // beige liso para paredes/encimera del baño
   carpet: texLamb('carpet.jpg', 0xa84f3c, 16, 1),
   wood: lamb(0x8a6240), woodDark: lamb(0x5d4327), white: lamb(0xfafafa),
   steel: lamb(0xb4bcc2), champagne: lamb(0xc9bda6), black: lamb(0x2c2f33),
@@ -578,41 +579,46 @@ function buildRoomInterior(g, f, rc, room) {
   // --- baño estilo hotel: encimera+lavabo+espejo, váter, bidet, ducha de cristal ---
   // revestimiento beige travertino en las paredes del baño (como en las fotos)
   let p = P(0, 1.05);
-  add(g, bx(0.04, 2.4, 2.0), rc.x0 + 0.07, 1.2, p.z).material = MAT.marble;     // pared oeste
+  add(g, bx(0.04, 2.4, 2.0), rc.x0 + 0.07, 1.2, p.z).material = MAT.travertine; // pared oeste
   p = P(0.95, 2.05);
-  add(g, bx(1.86, 2.4, 0.04), p.x, 1.2, p.z).material = MAT.marble;             // pared del fondo
+  add(g, bx(1.86, 2.4, 0.04), p.x, 1.2, p.z).material = MAT.travertine;         // pared del fondo
 
-  // encimera de madera con sobre de mármol, lavabo empotrado y espejo grande (pared oeste)
-  p = P(0.33, 1.7);
-  add(g, bx(0.46, 0.52, 0.86), p.x, 0.46, p.z).material = MAT.wood;             // mueble bajo
-  add(g, bx(0.5, 0.06, 0.9), p.x, 0.75, p.z).material = MAT.marble;             // sobre de mármol
-  add(g, cyl(0.15, 0.12, 0.1, MAT.white), p.x + 0.03, 0.79, p.z);              // pila redonda
-  add(g, bx(0.04, 0.14, 0.04, MAT.steel), p.x - 0.09, 0.88, p.z);             // grifo
-  add(g, bx(0.04, 0.74, 0.56, MAT.steel), rc.x0 + 0.06, 1.52, p.z);           // marco del espejo
-  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.68), MAT.glass), rc.x0 + 0.09, 1.52, p.z, Math.PI / 2); // espejo
-  add(g, bx(0.22, 0.1, 0.3, MAT.towel), p.x + 0.04, 0.84, p.z + rc.dir * 0.3); // toallas blancas dobladas
+  // --- BAÑERA con ducha, contra la pared oeste (eje largo en profundidad) ---
+  p = P(0.42, 1.25);
+  add(g, bx(0.58, 0.5, 1.5, MAT.white), p.x, 0.25, p.z);                        // cuerpo de la bañera
+  add(g, bx(0.42, 0.18, 1.32, lamb(0xdcefff)), p.x, 0.45, p.z);                // agua / interior
+  add(g, bx(0.05, 0.5, 1.55, MAT.travertine), rc.x0 + 0.05, 0.25, p.z);        // faldón contra la pared
+  add(g, bx(0.04, 0.22, 0.04, MAT.steel), rc.x0 + 0.22, 0.62, P(0, 0.65).z);   // grifo de la bañera
+  // ducha de teléfono sobre la bañera + mampara de cristal
+  add(g, bx(0.04, 0.55, 0.04, MAT.steel), rc.x0 + 0.18, 1.9, P(0, 0.7).z);     // barra vertical
+  add(g, bx(0.26, 0.04, 0.04, MAT.steel), rc.x0 + 0.3, 1.95, P(0, 0.7).z);     // brazo
+  add(g, cyl(0.07, 0.07, 0.03, MAT.steel), rc.x0 + 0.42, 1.88, P(0, 0.7).z);   // alcachofa
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.55), MAT.glass), rc.x0 + 0.72, 1.05, p.z, Math.PI / 2); // mampara
+  add(g, bx(0.05, 1.55, 0.05, MAT.steel), rc.x0 + 0.72, 1.05, P(0, 2.0).z);    // montante de la mampara
 
-  // váter con cisterna y tapa (pared oeste, junto a la puerta)
-  p = P(0.3, 0.55);
-  add(g, bx(0.42, 0.42, 0.5, MAT.white), p.x, 0.21, p.z);                      // taza
-  add(g, bx(0.44, 0.52, 0.18, MAT.white), rc.x0 + 0.16, 0.66, p.z);           // cisterna
-  add(g, bx(0.4, 0.06, 0.46, MAT.steel), p.x + 0.02, 0.45, p.z);             // tapa
+  // --- LAVABO con encimera, espejo grande y toallas (pared frontal, junto a la puerta) ---
+  p = P(0.62, 0.3);
+  add(g, bx(0.8, 0.5, 0.42, MAT.wood), p.x, 0.46, p.z);                         // mueble bajo
+  add(g, bx(0.84, 0.06, 0.46, MAT.bathStone), p.x, 0.75, p.z);                 // encimera
+  add(g, cyl(0.15, 0.12, 0.1, MAT.white), p.x, 0.79, p.z);                     // lavabo
+  add(g, bx(0.04, 0.14, 0.04, MAT.steel), p.x, 0.88, P(0.62, 0.45).z);        // grifo
+  add(g, bx(0.5, 0.72, 0.04, MAT.steel), p.x, 1.5, P(0.62, 0.08).z);          // marco del espejo
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.66), MAT.glass), p.x, 1.5, P(0.62, 0.07).z); // espejo
+  add(g, bx(0.22, 0.12, 0.3, MAT.towel), p.x + 0.36, 0.85, p.z);              // toallas blancas dobladas
 
-  // bidet (hotel italiano)
-  p = P(0.3, 1.12);
-  add(g, bx(0.36, 0.38, 0.44, MAT.white), p.x, 0.19, p.z);
+  // --- INODORO con cisterna y tapa (pared del fondo, lado este) ---
+  p = P(1.42, 1.72);
+  add(g, bx(0.44, 0.46, 0.52, MAT.white), p.x, 0.23, p.z);                     // taza
+  add(g, bx(0.46, 0.52, 0.18, MAT.white), p.x, 0.66, P(1.42, 1.93).z);        // cisterna (contra la pared)
+  add(g, bx(0.42, 0.06, 0.48, MAT.steel), p.x, 0.48, p.z);                    // tapa
 
-  // ducha con mampara de cristal y alcachofa (lado este del baño)
-  p = P(1.42, 1.6);
-  add(g, bx(0.9, 0.08, 1.05, MAT.marble), p.x, 0.04, p.z);                     // plato de ducha
-  add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.1), MAT.glass), p.x, 1.05, p.z - rc.dir * 0.52); // mampara frontal
-  add(g, bx(0.05, 2.1, 0.05, MAT.steel), p.x - 0.46, 1.05, p.z - rc.dir * 0.52); // montante
-  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.95, 2.1), MAT.glass), p.x + 0.47, 1.05, p.z, Math.PI / 2); // mampara lateral
-  add(g, bx(0.04, 0.04, 0.4, MAT.steel), p.x, 1.95, p.z + rc.dir * 0.32);      // brazo de la alcachofa (desde el fondo)
-  add(g, cyl(0.08, 0.08, 0.03, MAT.steel), p.x, 1.9, p.z + rc.dir * 0.5);     // alcachofa
-  add(g, bx(0.16, 0.46, 0.06, MAT.steel), p.x, 1.2, p.z + rc.dir * 0.5);     // barra/grifo de la ducha
-  solidL(0, 0.65, 0.25, 2.0);
-  solidL(1.0, 1.9, 1.05, 2.1);
+  // --- BIDET (hotel italiano) junto al inodoro ---
+  p = P(1.02, 1.74);
+  add(g, bx(0.34, 0.4, 0.42, MAT.white), p.x, 0.2, p.z);
+
+  solidL(0, 0.74, 0.45, 2.0);     // bañera + ducha
+  solidL(0.84, 1.66, 1.5, 2.0);   // inodoro + bidet
+  solidL(0.2, 1.04, 0.1, 0.52);   // lavabo
 
   // suciedad del baño
   p = P(0.9, 1.2);
