@@ -233,6 +233,9 @@ function genRooms() {
     G.rooms.push(r);
   }
   G.totalToClean = G.rooms.filter(r => r.status !== 'L').length;
+  // 1-2 habitaciones VIP (propina sorpresa): recompensa variable que engancha
+  const cleanable = shuffle(G.rooms.filter(r => r.status !== 'L'));
+  cleanable.slice(0, G.mode === 'express' ? 1 : 2).forEach(r => { r.vip = true; });
 }
 
 const roomRect = i => {
@@ -1244,6 +1247,98 @@ const doorMark = arrowSprite();
 doorMark.visible = false;
 scene.add(doorMark);
 
+// ----------------------------------------------------------------------------
+// Efectos "oddly satisfying": partículas, limpieza progresiva, confeti, flash.
+// Cada efecto es una función(dt)→bool; el loop la llama hasta que devuelve false.
+// ----------------------------------------------------------------------------
+const FX = [];
+function updateFX(dt) {
+  for (let i = FX.length - 1; i >= 0; i--) if (!FX[i](dt)) FX.splice(i, 1);
+}
+// sprite de partícula: solo el emoji. La textura se cachea por carácter (una sola
+// vez), el material es propio de cada sprite para poder desvanecerlo por separado.
+const PART_TEX = {};
+function partTex(char) {
+  return PART_TEX[char] ||= canvasTex(64, 64, (ctx, w, h) => {
+    ctx.font = '50px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(char, w / 2, h / 2 + 2);
+  });
+}
+function partSprite(char, scale) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: partTex(char), transparent: true }));
+  sp.scale.set(scale, scale, 1);
+  return sp;
+}
+// estallido de partículas que suben y se desvanecen (✨ por defecto)
+function burst(x, y, z, opt = {}) {
+  const { n = 9, chars = ['✨'], spread = 0.5, rise = 1.1, life = 0.8, scale = 0.22, grav = -1.8 } = opt;
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const sp = partSprite(chars[(Math.random() * chars.length) | 0], scale * (0.7 + Math.random() * 0.7));
+    sp.position.set(x + (Math.random() - 0.5) * spread, y + Math.random() * 0.25, z + (Math.random() - 0.5) * spread);
+    const a = Math.random() * Math.PI * 2, r = 0.4 + Math.random() * 0.7;
+    sp.userData.v = new THREE.Vector3(Math.cos(a) * r * spread, rise * (0.6 + Math.random()), Math.sin(a) * r * spread);
+    scene.add(sp); parts.push(sp);
+  }
+  let age = 0;
+  FX.push(dt => {
+    age += dt;
+    for (const sp of parts) { sp.userData.v.y += grav * dt; sp.position.addScaledVector(sp.userData.v, dt); sp.material.opacity = Math.max(0, 1 - age / life); }
+    if (age >= life) { for (const sp of parts) { scene.remove(sp); sp.material.dispose(); } return false; }
+    return true;
+  });
+}
+// "barrido": el objeto sucio se encoge hasta desaparecer (limpieza progresiva)
+function wipeOut(mesh, dur = 0.5) {
+  if (!mesh || !mesh.visible) return;
+  const s0 = mesh.scale.clone(); let age = 0;
+  FX.push(dt => {
+    age += dt; const k = Math.min(1, age / dur), e = 1 - k * k;
+    mesh.scale.set(s0.x * e, s0.y * e, s0.z * e);
+    if (k >= 1) { mesh.visible = false; mesh.scale.copy(s0); return false; }
+    return true;
+  });
+}
+// "pop": el objeto recién limpio aparece con un pequeño rebote satisfactorio
+function popIn(obj, from = 1.08, dur = 0.34) {
+  obj.scale.setScalar(from); let age = 0;
+  FX.push(dt => {
+    age += dt; const k = Math.min(1, age / dur), s = from + (1 - from) * (k * (2 - k));
+    obj.scale.setScalar(s);
+    if (k >= 1) { obj.scale.setScalar(1); return false; }
+    return true;
+  });
+}
+// lluvia de confeti/monedas alrededor del jugador (celebración / VIP)
+function rain(opt = {}) {
+  const { n = 40, chars = ['🎉', '✨', '🎊'], life = 2.6, scale = 0.3, h = 4 } = opt;
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const sp = partSprite(chars[(Math.random() * chars.length) | 0], scale * (0.7 + Math.random() * 0.6));
+    sp.position.set(G.px + (Math.random() - 0.5) * 6, G.floor * FH + 1.6 + Math.random() * h, G.pz + (Math.random() - 0.5) * 5 - 1);
+    sp.userData.v = new THREE.Vector3((Math.random() - 0.5) * 0.6, -(0.8 + Math.random() * 1.2), (Math.random() - 0.5) * 0.6);
+    sp.userData.born = Math.random() * 0.6;
+    scene.add(sp); parts.push(sp);
+  }
+  let age = 0;
+  FX.push(dt => {
+    age += dt;
+    for (const sp of parts) {
+      if (age < sp.userData.born) continue;
+      sp.position.addScaledVector(sp.userData.v, dt);
+      sp.material.opacity = Math.max(0, 1 - (age - sp.userData.born) / (life - sp.userData.born));
+    }
+    if (age >= life) { for (const sp of parts) { scene.remove(sp); sp.material.dispose(); } return false; }
+    return true;
+  });
+}
+// destello suave en pantalla
+function flash(color = 'rgba(255,255,255,0.55)', dur = 350) {
+  const el = $('flash'); if (!el) return;
+  el.style.background = color; el.style.transition = 'none'; el.style.opacity = '1';
+  requestAnimationFrame(() => { el.style.transition = `opacity ${dur}ms ease-out`; el.style.opacity = '0'; });
+}
+
 // Personajes como FIGURAS (billboards) con los avatares generados (idénticos a
 // los de la intro): plano vertical con la imagen recortada que mira a la cámara.
 const AVTEX = new THREE.TextureLoader();
@@ -1449,7 +1544,7 @@ function refreshChecklist() {
   el.classList.remove('hidden');
   const stTxt = room.status === 'P' ? S.partenzaFull
     : S.fermataNight(room.stay) + (room.sheetChange ? S.sheetDue : '');
-  let html = `<h3>${S.roomTitle(room.num)}</h3><div class="meta">${stTxt} · ${S.guests(room.guests)}</div><ul>`;
+  let html = `<h3>${S.roomTitle(room.num)}${room.vip ? ' <span class="vip">' + S.vipBadge + '</span>' : ''}</h3><div class="meta">${stTxt} · ${S.guests(room.guests)}</div><ul>`;
   for (const t of room.tasks) {
     html += `<li class="${t.done ? 'done' : ''}">${t.done ? '✅' : '⬜'} ${TASK_DEFS[t.key].icon} ${TASK_DEFS[t.key].label}</li>`;
   }
@@ -1578,31 +1673,33 @@ function completeTask(h) {
   const t = getTask(room, h.taskKey);
   if (!t || t.done) return;
   const V = room.vis;
+  const fy = h.floor * FH;
   switch (h.taskKey) {
     case 'strip':
       G.dirty += room.guests + 3;
-      V.beds.forEach(b => { b.messy.visible = false; });
+      V.beds.forEach(b => wipeOut(b.messy, 0.45));
       break;
     case 'bedC':
       G.inv.sabanas--;
-      V.beds.forEach(b => { b.neat.visible = true; });
+      V.beds.forEach(b => { b.neat.visible = true; popIn(b.neat); });
       break;
     case 'bed':
-      V.beds.forEach(b => { b.messy.visible = false; b.neat.visible = true; });
+      V.beds.forEach(b => { wipeOut(b.messy, 0.4); b.neat.visible = true; popIn(b.neat); });
       break;
     case 'bath': case 'bathQ':
-      V.bathDirt.visible = false;
+      wipeOut(V.bathDirt, 0.5);
       break;
     case 'trash':
-      V.trashFull.visible = false;
+      wipeOut(V.trashFull, 0.4);
       break;
     case 'floor':
-      V.dirtSpots.forEach(d => { d.visible = false; });
+      V.dirtSpots.forEach((d, i) => wipeOut(d, 0.45 + i * 0.08));   // se van barriendo una a una
       break;
     case 'amen':
       G.inv.cortesia--;
       break;
   }
+  burst(h.x, fy + 0.6, h.z, { chars: ['✨', '✨', '💫'], n: 10 });   // brillos al limpiar
   t.done = true;
   registerProgress();
   addScore(10);
@@ -1613,13 +1710,23 @@ function completeTask(h) {
 function roomComplete(room) {
   room.done = true;
   G.done++;
-  const bonus = room.status === 'P' ? 125 : 100;
-  addScore(bonus);
+  let bonus = room.status === 'P' ? 125 : 100;
   // rating del hotel en vivo: sube con cada habitación (más si está impecable)
   G.rating = Math.min(5, G.rating + (room.mistakes === 0 ? 0.45 : 0.15));
+  flash('rgba(255,255,255,0.4)', 300);                     // destello satisfactorio
   drawRoomCard(room);
-  toast(S.roomDone(room.num, Math.round(bonus * comboMult())));
-  beep(880, 0.1); setTimeout(() => beep(1175, 0.2), 110);
+  if (room.vip) {
+    // habitación VIP: propina sorpresa + lluvia de monedas (recompensa variable)
+    bonus += 150;
+    addScore(bonus);
+    toast(S.vipDone(room.num), 4200);
+    rain({ chars: ['💶', '🪙', '⭐', '✨'], n: 34, life: 2.4 });
+    [784, 988, 1175, 1568].forEach((f, i) => setTimeout(() => beep(f, 0.14), i * 100));
+  } else {
+    addScore(bonus);
+    toast(S.roomDone(room.num, Math.round(bonus * comboMult())));
+    beep(880, 0.1); setTimeout(() => beep(1175, 0.2), 110);
+  }
   // gancho de la 1ª habitación: mini-celebración temprana para enganchar
   if (G.done === 1 && G.totalToClean > 1) {
     setTimeout(() => {
@@ -1631,10 +1738,12 @@ function roomComplete(room) {
   if (G.done >= G.totalToClean) {
     const left = Math.max(0, Math.round(SHIFT_END - G.time));
     G.score += left * 2;
-    // ¡turno completado! tarantella + baile de las compañeras antes del resumen
+    // ¡turno completado! tarantella + confeti + baile de las compañeras antes del resumen
     G.celebrating = true;
     playTarantella();
-    toast('🎉 ¡Turno completado! 💃 ¡Que empiece la tarantella!', 4500);
+    flash('rgba(255,240,200,0.55)', 500);
+    rain({ chars: ['🎉', '🎊', '✨', '💃'], n: 60, life: 3.2, h: 5 });
+    toast(S.tarantella, 4500);
     setTimeout(() => endShift('perfecto', left), 5200);
   }
 }
@@ -1680,8 +1789,10 @@ function openTowelDialog(h) {
     const room2 = G.rooms[h.roomIdx];
     const t = getTask(room2, 'towels');
     t.done = true;
-    room2.vis.towelOld.visible = false;
+    if (room2.vis.towelOld) wipeOut(room2.vis.towelOld, 0.4);
     room2.vis.towelNew.visible = true;
+    popIn(room2.vis.towelNew);
+    burst(h.x, h.floor * FH + 0.7, h.z, { chars: ['✨', '🧖', '✨'], n: 9 });
     if (right) {
       G.towelPerfect++; registerProgress(); addScore(40);
       toast(S.towelPerfect);
@@ -1827,9 +1938,72 @@ function endShift(outcome, minutesLeft = 0) {
       <tr><td>${S.endRows[4]}</td><td>${fmtTime(Math.min(G.time, SHIFT_END))}</td></tr>
       <tr><td>${S.endRows[5]}</td><td>${G.score}</td></tr>
     </table>
-    <button class="bigbtn" onclick="location.reload()">${S.again}</button>
+    <button class="bigbtn" id="btnShare">${S.shareBtn}</button>
+    <button class="bigbtn alt" onclick="location.reload()">${S.again}</button>
   </div>`;
   $('end').classList.remove('hidden');
+  $('btnShare').onclick = () => shareResult(stars);
+}
+
+// genera una tarjeta-resultado (PNG) para compartir: estrellas, puntuación,
+// veredicto de Lucía y la URL → marketing que se propaga solo
+async function shareResult(stars) {
+  const cv = document.createElement('canvas');
+  cv.width = 1080; cv.height = 1350;
+  const ctx = cv.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 1350);
+  grad.addColorStop(0, '#1aa3d6'); grad.addColorStop(0.55, '#1773b0'); grad.addColorStop(1, '#0e4f80');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1350);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 86px sans-serif';
+  ctx.fillText('🌊 HOTEL DINO BLU', 540, 170);
+  ctx.font = '40px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillText(S.shareSub, 540, 235);
+  // estrellas
+  ctx.font = '120px sans-serif';
+  ctx.fillText('⭐'.repeat(stars) + '☆'.repeat(Math.max(0, 5 - stars)), 540, 470);
+  // puntuación
+  ctx.fillStyle = '#ffe27a'; ctx.font = 'bold 150px sans-serif';
+  ctx.fillText(`${G.score}`, 540, 660);
+  ctx.fillStyle = '#fff'; ctx.font = '44px sans-serif';
+  ctx.fillText(S.shareScore(G.done, G.totalToClean), 540, 740);
+  if (G.newRecord) { ctx.fillStyle = '#ffd86b'; ctx.font = 'bold 60px sans-serif'; ctx.fillText(S.shareRecord, 540, 840); }
+  // veredicto de Lucía en una "burbuja"
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  roundRect(ctx, 90, 900, 900, 180, 28); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = '40px sans-serif';
+  wrapText(ctx, S.luciaVerdict(stars).replace('👩‍💼 ', ''), 540, 975, 820, 52);
+  // marca + URL
+  ctx.fillStyle = '#ffe27a'; ctx.font = 'bold 52px sans-serif';
+  ctx.fillText('glitchrushgg.com/hotel-dino-blu', 540, 1230);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = '36px sans-serif';
+  ctx.fillText('@glitchrush.gg', 540, 1290);
+
+  cv.toBlob(async blob => {
+    if (!blob) return;
+    const file = new File([blob], 'hotel-dino-blu.png', { type: 'image/png' });
+    const data = { files: [file], title: 'Hotel Dino Blu', text: S.shareText(G.score, stars) };
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share(data); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'hotel-dino-blu.png'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    toast(S.shareSaved, 3500);
+  }, 'image/png');
+}
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function wrapText(ctx, text, cx, y, maxW, lh) {
+  const words = text.split(' '); let line = '', yy = y;
+  for (const w of words) {
+    if (ctx.measureText(line + w + ' ').width > maxW && line) { ctx.fillText(line.trim(), cx, yy); line = ''; yy += lh; }
+    line += w + ' ';
+  }
+  ctx.fillText(line.trim(), cx, yy);
 }
 
 // ----------------------------------------------------------------------------
@@ -2220,6 +2394,7 @@ function loop() {
     if (hudTimer > 0.4) { hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD(); }
   }
   updateNPCs(dt, t);
+  updateFX(dt);
   updateMarkers(t);
   const fy = G.floor * FH;
   camera.position.set(G.px, fy + EYE, G.pz);

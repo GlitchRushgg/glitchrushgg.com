@@ -235,6 +235,20 @@ button {
 }
 .luciaReview p { font-size: 14px; }
 
+/* destello satisfactorio al limpiar / celebrar */
+#flash {
+  position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  opacity: 0; background: rgba(255,255,255,0.5);
+}
+/* distintivo VIP en la lista de tareas */
+#checklist .vip {
+  background: linear-gradient(135deg, #ffd86b, #f4a52a); color: #5a3a06;
+  border-radius: 8px; padding: 1px 7px; font-size: 11px; font-weight: 800;
+}
+/* botón secundario (reintentar) bajo el de compartir */
+.bigbtn.alt { background: #5d6b78; }
+.bigbtn.alt:hover { background: #6c7c8a; }
+
 /* combo flotante (🔥 xN) — feedback vivo al encadenar tareas */
 #combo {
   position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
