@@ -1,8 +1,8 @@
-import { drawAnimal, drawCoin, drawHeart } from '../utils/Graphics.js';
+import { drawCoin, drawHeart } from '../utils/Graphics.js';
 
-// Animals shipped as pixel-art PNGs in assets/images/ (loaded in preload()).
-// The rest are still drawn procedurally in generateTextures().
-const PIXEL_ART_ANIMALS = ['giraffe', 'zebra', 'monkey', 'rabbit', 'bear'];
+// All animals ship as hand-drawn pixel-art PNGs in assets/images/ (loaded in
+// preload()). Keys match the animal names used in GameScene / WinScene.
+const ANIMALS = ['elephant', 'giraffe', 'lion', 'zebra', 'monkey', 'rabbit', 'penguin', 'bear'];
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -19,9 +19,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('background', 'assets/background.png');
     this.load.image('raindrop', 'assets/raindrop.png');
 
-    // Animals with hand-drawn pixel art (others are generated in create()).
-    // Keys match the animal names used in GameScene / WinScene.
-    PIXEL_ART_ANIMALS.forEach((name) => {
+    ANIMALS.forEach((name) => {
       this.load.image(name, `assets/images/${name}.png`);
     });
   }
@@ -42,15 +40,7 @@ export default class BootScene extends Phaser.Scene {
 
     // 'ark' texture loaded from assets/ark.png in preload()
 
-    const animals = ['elephant', 'giraffe', 'lion', 'zebra', 'monkey', 'rabbit', 'penguin', 'bear'];
-    const colors = [0x888888, 0xf5c542, 0xd4a017, 0xeeeeee, 0xb5651d, 0xffffff, 0x2c3e50, 0x8b4513];
-    animals.forEach((name, i) => {
-      // Skip animals that have a pixel-art PNG loaded in preload().
-      if (PIXEL_ART_ANIMALS.includes(name)) return;
-      g.clear();
-      drawAnimal(g, colors[i], name);
-      g.generateTexture(name, 40, 40);
-    });
+    // Animals loaded as PNGs from assets/images/ in preload()
 
     // 'raindrop' texture loaded from assets/raindrop.png in preload()
 
