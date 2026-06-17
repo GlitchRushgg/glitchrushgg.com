@@ -2026,12 +2026,17 @@ addEventListener('keyup', e => {
 canvas.addEventListener('click', () => {
   if (!G.uiOpen && !G.dialogOpen && !IS_TOUCH) canvas.requestPointerLock?.();
 });
+const LOOK_SENS = 0.0016;   // sensibilidad del ratón (antes 0.0024; demasiado brusca en pantallas con escalado)
 addEventListener('mousemove', e => {
   if (document.pointerLockElement !== canvas) return;
-  G.yaw -= e.movementX * 0.0024;
-  G.pitch = Math.max(-1.35, Math.min(1.35, G.pitch - e.movementY * 0.0024));
+  // En Windows con escalado de pantalla algunos navegadores INFLAN movementX y el giro
+  // se descontrola: recortamos el delta por evento para que un movimiento pequeño no dé la vuelta entera.
+  const mx = Math.max(-70, Math.min(70, e.movementX));
+  const my = Math.max(-70, Math.min(70, e.movementY));
+  G.yaw -= mx * LOOK_SENS;
+  G.pitch = Math.max(-1.35, Math.min(1.35, G.pitch - my * LOOK_SENS));
   if (G.tut === 1) {
-    G.tutLookAcc += Math.abs(e.movementX * 0.0024);
+    G.tutLookAcc += Math.abs(mx * LOOK_SENS);
     if (G.tutLookAcc > 1) { G.tut = 2; localStorage.setItem('hg-tut', '1'); updateObjectiveHUD(); }
   }
 });
