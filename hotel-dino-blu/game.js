@@ -2218,6 +2218,7 @@ function movePlayer(dt) {
 // Interacción con hotspots
 // ----------------------------------------------------------------------------
 function updateInteraction(dt) {
+  G.working = false;   // ¿está la camarera fregando/haciendo una tarea ahora mismo? (para animar las manos)
   let best = null, bestD = 1e9;
   for (const h of HOTSPOTS) {
     if (h.floor !== G.floor) continue;
@@ -2244,6 +2245,7 @@ function updateInteraction(dt) {
   if (best.type === 'hold') {
     pb.classList.add('on');
     if (G.eHeld) {
+      G.working = true;
       G.holdT += dt;
       pf.style.width = `${Math.min(100, G.holdT / best.dur * 100)}%`;
       if (G.holdT >= best.dur) {
@@ -2453,6 +2455,51 @@ $('btnMusic').addEventListener('click', e => { e.stopPropagation(); setMusic(!mu
 // manejador de depuración para pruebas automatizadas
 window.HG = { G, HOTSPOTS };
 
+// ----------------------------------------------------------------------------
+// Manos en primera persona (viewmodel): las manos de la camarera, con el uniforme,
+// que se balancean al andar y hacen el gesto de fregar al realizar tareas.
+// ----------------------------------------------------------------------------
+scene.add(camera);                       // la cámara (y sus hijos) entran en la escena
+const HANDS = new THREE.Group();
+camera.add(HANDS);
+HANDS.visible = false;
+{
+  const skin = lamb(0xe3b48c), sleeve = lamb(0x9fc3e0), cloth = lamb(0xfff2b0);
+  const buildArm = (s) => {                // s = -1 izquierda, +1 derecha
+    const a = new THREE.Group();
+    add(a, bx(0.12, 0.12, 0.34, sleeve), 0, 0, 0.04);        // manga azul (antebrazo)
+    add(a, bx(0.115, 0.115, 0.2, skin), 0, 0, -0.2);         // muñeca/antebrazo (piel)
+    add(a, bx(0.13, 0.075, 0.16, skin), 0, 0, -0.36);        // mano
+    add(a, bx(0.045, 0.06, 0.08, skin), -s * 0.08, 0, -0.33); // pulgar
+    if (s > 0) add(a, bx(0.17, 0.03, 0.17, cloth), 0, -0.06, -0.4); // trapo amarillo en la mano derecha
+    a.position.set(s * 0.27, -0.36, -0.6);
+    a.rotation.set(-0.55, s * 0.16, s * 0.12);
+    a.userData.base = { pos: a.position.clone(), rot: a.rotation.clone() };
+    return a;
+  };
+  HANDS.userData.armR = buildArm(1);
+  HANDS.userData.armL = buildArm(-1);
+  HANDS.add(HANDS.userData.armR, HANDS.userData.armL);
+}
+function updateHands(dt, t) {
+  HANDS.visible = G.started && !G.over && !G.uiOpen && !G.dialogOpen;
+  if (!HANDS.visible) return;
+  // velocidad del jugador (0..1) para el balanceo al andar
+  const dpx = G.px - (G._ppx ?? G.px), dpz = G.pz - (G._ppz ?? G.pz);
+  G._ppx = G.px; G._ppz = G.pz;
+  const spd = Math.min(1, Math.hypot(dpx, dpz) / Math.max(dt, 0.001) / 3.2);
+  G._spd = (G._spd ?? 0) + (spd - (G._spd ?? 0)) * 0.2;
+  const work = (G._work = (G._work ?? 0) + ((G.working ? 1 : 0) - (G._work ?? 0)) * 0.25);
+  HANDS.position.y = Math.sin(t * 8) * 0.012 * G._spd;
+  HANDS.position.x = Math.cos(t * 4) * 0.008 * G._spd;
+  for (const [a, s] of [[HANDS.userData.armR, 1], [HANDS.userData.armL, -1]]) {
+    const b = a.userData.base, ph = t * 13 + (s < 0 ? 0.7 : 0);
+    a.position.z = b.pos.z + Math.sin(ph) * 0.05 * work;
+    a.position.y = b.pos.y + Math.abs(Math.sin(ph)) * 0.035 * work + Math.sin(t * 8 + (s < 0 ? 1 : 0)) * 0.006 * G._spd;
+    a.rotation.x = b.rot.x + Math.sin(ph) * 0.32 * work;
+  }
+}
+
 const clock = new THREE.Clock();
 let hudTimer = 0;
 function loop() {
@@ -2476,6 +2523,7 @@ function loop() {
   const fy = G.floor * FH;
   camera.position.set(G.px, fy + EYE, G.pz);
   camera.rotation.set(G.pitch, G.yaw, 0);
+  updateHands(dt, t);
   faceNPCsToCamera();
   renderer.render(scene, camera);
 }
