@@ -290,8 +290,10 @@ export default class GameScene extends Phaser.Scene {
   _placeAnimalOn(px, py) {
     const type   = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
     const animal = this.animalGroup.create(px, py - 30, type);
-    // Uniform on-screen size regardless of source texture (PNG 50px vs generated 40px).
-    animal.setDisplaySize(31, 31).setDepth(4);
+    // On-screen size, normalized regardless of source texture dimensions.
+    // Monkey reads small in its art, so it gets a bigger multiplier.
+    const size = type === 'monkey' ? 93 : 62;
+    animal.setDisplaySize(size, size).setDepth(4);
     animal.body.allowGravity = false;
     animal.body.immovable = true;
     this.tweens.add({
