@@ -40,17 +40,17 @@
     body { background: var(--bg); color: var(--ink); font-family: var(--font); line-height: 1.6; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
     img { max-width: 100%; display: block; }
 
-    /* ── Nav (barra negra tipo Supercell) ───────────── */
-    .nav-bar { background: var(--ink); position: sticky; top: 0; z-index: 40; }
+    /* ── Nav (barra azul tipo Supercell) ────────────── */
+    .nav-bar { background: var(--blue); position: sticky; top: 0; z-index: 40; }
     nav { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; padding: 16px 24px; }
     .brand { display: inline-flex; align-items: center; }
     .brand img { height: 30px; width: auto; image-rendering: pixelated; }
     @media (max-width: 420px) { .brand img { height: 24px; } }
     .nav-links { display: flex; align-items: center; gap: 26px; }
-    .nav-links a { color: #cdd3df; text-decoration: none; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+    .nav-links a { color: rgba(255,255,255,0.88); text-decoration: none; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
     .nav-links a:hover { color: #fff; }
-    .nav-links .nav-cta { color: #fff; background: var(--blue); padding: 10px 20px; border-radius: 100px; letter-spacing: 1px; }
-    .nav-links .nav-cta:hover { background: var(--blue-d); color: #fff; }
+    .nav-links .nav-cta { color: var(--blue); background: #fff; padding: 10px 20px; border-radius: 100px; letter-spacing: 1px; }
+    .nav-links .nav-cta:hover { background: #eaf0ff; color: var(--blue-d); }
     @media (max-width: 640px) { .nav-links a:not(.nav-cta) { display: none; } }
 
     .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
