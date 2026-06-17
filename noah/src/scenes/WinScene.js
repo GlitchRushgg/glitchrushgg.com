@@ -206,7 +206,8 @@ export default class WinScene extends Phaser.Scene {
         const endY = waterY + 48 + Math.floor(i / 4) * 58;
 
         const spr = this.add.image(arkX, arkY, a).setDepth(7);
-        const H = 48; // same height for all, preserving each sprite's aspect
+        // Same height for all (preserving aspect); monkey a bit bigger, penguin smaller.
+        const H = a === 'monkey' ? 59 : a === 'penguin' ? 42 : 48;
         spr.setDisplaySize(H * (spr.width / spr.height), H);
         spr.setFlipX(!goLeft);
 
