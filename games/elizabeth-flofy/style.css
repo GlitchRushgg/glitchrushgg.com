@@ -1,0 +1,34 @@
+/* Centrado del canvas y fondo a pantalla completa, estilo Noah. */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #2a1840;
+  font-family: "Fredoka", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game canvas {
+  display: block;
+  /* Phaser Scale.FIT ya escala; esto solo evita bordes raros. */
+  max-width: 100%;
+  max-height: 100%;
+}

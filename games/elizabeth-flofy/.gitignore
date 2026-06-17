@@ -1,0 +1,11 @@
+# Fotos reales de referencia (incluyen a un menor) — NUNCA subir al repo público.
+assets/refs/
+
+# Estado de URLs de las imágenes madre de Replicate (efímero, no compartir).
+tools/.state.json
+
+# Artefactos de la prueba de humo headless / dependencias locales.
+tools/node_modules/
+tools/package.json
+tools/package-lock.json
+tools/shot-*.png

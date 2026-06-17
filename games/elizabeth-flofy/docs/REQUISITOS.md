@@ -75,6 +75,10 @@ Según las convenciones de `glitchrushgg.com` (ver `CLAUDE.md` raíz):
 - **HTML5 mobile-first** servido como módulos ES estáticos (sin build step);
   debe servirse por HTTP, no abrirse desde `file://`. Motor de referencia en
   el estudio: Phaser 3 (como `noah/`).
+- **Bilingüe español/inglés (obligatorio):** todo el texto visible (UI, tutorial,
+  diálogos, menús, mensajes) debe estar disponible en **es** e **in**, con un
+  selector de idioma accesible y sin cadenas sin traducir. Idioma por defecto
+  detectado del navegador con respaldo a español.
 - **`CLAUDE.md` propio** documentando arquitectura y cómo ejecutarlo.
 - **`.nojekyll`** dentro de la carpeta del juego (requisito de GitHub Pages).
 - **Entrada en la lista "Games"** del `CLAUDE.md` raíz.

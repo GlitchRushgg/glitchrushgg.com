@@ -58,6 +58,33 @@ const MAMA =
   "warm-toned explorer jacket over a yellow t-shirt, practical dark pants, sturdy " +
   "boots, a tan explorer backpack.";
 
+// Cristian (hermano mayor, 14) y Papá — personajes nuevos pedidos por la fundadora.
+// Se generan usando una FOTO REAL de ambos como referencia de parecido (refFiles).
+// Importante: el resultado sigue siendo el render 3D del juego, NO fotorrealista —
+// se conserva el parecido (cara, pelo, complexión) "caricaturizado" tipo Pixar/Fortnite.
+const CRISTIAN =
+  "Cristian, Elizabeth's friendly 14-year-old big brother, as a stylized 3D video " +
+  "game character. Likeness based on the teen boy shown in the reference photo: " +
+  "very tall and lanky for his age, taller than his dad, long legs, warm light-tan " +
+  "Latino skin, tousled wavy medium-length " +
+  "dark-brown hair falling over his forehead and around his ears, big bright " +
+  "confident smile, bright GREEN eyes, modern eyeglasses. Adventurer outfit matching " +
+  "his family: navy-blue " +
+  "explorer hoodie over a yellow t-shirt, wide knee-length hiking cargo shorts with " +
+  "big side pockets, sturdy sneakers, a small tan explorer backpack. Cool, kind " +
+  "older-brother vibe.";
+
+const PAPA =
+  "Norman, Elizabeth's warm fun dad, as a stylized 3D video game character. Likeness " +
+  "based on the smiling man shown in the reference photo: friendly man around his " +
+  "forties, shaved/bald head under a navy-blue cap, fair light skin, bright GREEN " +
+  "eyes, a short trimmed BLOND beard, light freckles scattered across his cheeks and " +
+  "nose just like his daughter Elizabeth, big warm welcoming smile, medium sturdy " +
+  "build. Adventurer outfit matching his family: warm-toned explorer vest over a " +
+  "yellow t-shirt, a pair of sunglasses hanging from his collar at the chest, " +
+  "practical cargo pants, sturdy boots, a tan explorer backpack. Relaxed cool-dad " +
+  "energy.";
+
 const SAME = "Same exact character as the reference image. ";
 
 const IMAGES = {
@@ -114,6 +141,32 @@ const IMAGES = {
     prompt: `${SAME}${MAMA} Dynamic running pose mid-stride toward the camera at a slight angle, hair flowing, determined caring expression, motion energy.`,
     refs: ["mama-front"],
   },
+  "cristian-front": {
+    prompt: `${CRISTIAN} Standing straight facing the camera in a relaxed A-pose, arms slightly away from his body, friendly smile, character-select-screen framing.`,
+    refs: [],
+    refFiles: ["IMG_8321.jpg"], // primer plano de Cristian solo (assets/refs/)
+  },
+  "cristian-profile": {
+    prompt: `${SAME}${CRISTIAN} Full side profile view facing right, standing straight, glasses, hair and backpack clearly visible from the side.`,
+    refs: ["cristian-front"],
+  },
+  "cristian-running": {
+    prompt: `${SAME}${CRISTIAN} Dynamic running pose mid-stride toward the camera at a slight angle, hair bouncing, determined adventurous expression, motion energy.`,
+    refs: ["cristian-front"],
+  },
+  "papa-front": {
+    prompt: `${PAPA} Standing straight facing the camera in a relaxed A-pose, arms slightly away from his body, friendly smile, character-select-screen framing.`,
+    refs: [],
+    refFiles: ["Norman y Eli.jpg"], // primer plano de Norman (papá) — ojos verdes, barba rubia, pecas
+  },
+  "papa-profile": {
+    prompt: `${SAME}${PAPA} Full side profile view facing right, standing straight, cap, beard and backpack clearly visible from the side.`,
+    refs: ["papa-front"],
+  },
+  "papa-running": {
+    prompt: `${SAME}${PAPA} Dynamic running pose mid-stride toward the camera at a slight angle, determined adventurous expression, motion energy.`,
+    refs: ["papa-front"],
+  },
 };
 
 const name = process.argv[2];
@@ -133,14 +186,28 @@ if (!token) {
   process.exit(1);
 }
 
-const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : {};
-const imageInput = spec.refs.map((r) => {
-  if (!state[r]) {
-    console.error(`Falta la URL de la imagen madre "${r}" en .state.json — genérala primero.`);
+const refsDir = join(here, "..", "assets", "refs");
+function fileToDataUri(rel) {
+  const p = join(refsDir, rel);
+  if (!existsSync(p)) {
+    console.error(`Falta la foto de referencia "${rel}" en ${refsDir} — guárdala ahí primero.`);
     process.exit(1);
   }
-  return state[r];
-});
+  const ext = /\.png$/i.test(rel) ? "png" : /\.webp$/i.test(rel) ? "webp" : "jpeg";
+  return `data:image/${ext};base64,${readFileSync(p).toString("base64")}`;
+}
+
+const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : {};
+const imageInput = [
+  ...spec.refs.map((r) => {
+    if (!state[r]) {
+      console.error(`Falta la URL de la imagen madre "${r}" en .state.json — genérala primero.`);
+      process.exit(1);
+    }
+    return state[r];
+  }),
+  ...(spec.refFiles ?? []).map(fileToDataUri),
+];
 
 const input = {
   prompt: `${spec.prompt} ${STYLE} ${NEGATIVE}`,
