@@ -575,20 +575,44 @@ function buildRoomInterior(g, f, rc, room) {
   r = rrect(rc, 0, 1.9, 2.04, 2.16); wallSeg(g, f, r.x0, r.x1, r.z0, r.z1, 2.5);
   r = rrect(rc, 1.84, 1.96, 1.0, 2.04); wallSeg(g, f, r.x0, r.x1, r.z0, r.z1, 2.5);
 
-  // --- baño: lavabo, espejo, váter, bidet (¡hotel italiano!), ducha ---
-  let p = P(0.35, 1.75);
-  add(g, bx(0.55, 0.12, 0.42), p.x, 0.85, p.z).material = MAT.white;
-  add(g, bx(0.16, 0.8, 0.16), p.x, 0.4, p.z).material = MAT.white;
-  p = P(0.32, 0.55);
-  add(g, bx(0.4, 0.42, 0.5), p.x, 0.21, p.z).material = MAT.white;   // váter
-  add(g, bx(0.4, 0.5, 0.14), p.x, 0.65, p.z - rc.dir * 0.0).material = MAT.white;
-  p = P(0.32, 1.15);
-  add(g, bx(0.36, 0.38, 0.46), p.x, 0.19, p.z).material = MAT.white; // bidet
-  p = P(1.45, 1.7);
-  add(g, bx(0.8, 0.1, 0.75), p.x, 0.05, p.z).material = MAT.white;   // plato ducha
-  add(g, bx(0.05, 2.2, 0.05), p.x + 0.32, 1.1, p.z + rc.dir * 0.3).material = MAT.steel;
+  // --- baño estilo hotel: encimera+lavabo+espejo, váter, bidet, ducha de cristal ---
+  // revestimiento beige travertino en las paredes del baño (como en las fotos)
+  let p = P(0, 1.05);
+  add(g, bx(0.04, 2.4, 2.0), rc.x0 + 0.07, 1.2, p.z).material = MAT.marble;     // pared oeste
+  p = P(0.95, 2.05);
+  add(g, bx(1.86, 2.4, 0.04), p.x, 1.2, p.z).material = MAT.marble;             // pared del fondo
+
+  // encimera de madera con sobre de mármol, lavabo empotrado y espejo grande (pared oeste)
+  p = P(0.33, 1.7);
+  add(g, bx(0.46, 0.52, 0.86), p.x, 0.46, p.z).material = MAT.wood;             // mueble bajo
+  add(g, bx(0.5, 0.06, 0.9), p.x, 0.75, p.z).material = MAT.marble;             // sobre de mármol
+  add(g, cyl(0.15, 0.12, 0.1, MAT.white), p.x + 0.03, 0.79, p.z);              // pila redonda
+  add(g, bx(0.04, 0.14, 0.04, MAT.steel), p.x - 0.09, 0.88, p.z);             // grifo
+  add(g, bx(0.04, 0.74, 0.56, MAT.steel), rc.x0 + 0.06, 1.52, p.z);           // marco del espejo
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.68), MAT.glass), rc.x0 + 0.09, 1.52, p.z, Math.PI / 2); // espejo
+  add(g, bx(0.22, 0.1, 0.3, MAT.towel), p.x + 0.04, 0.84, p.z + rc.dir * 0.3); // toallas blancas dobladas
+
+  // váter con cisterna y tapa (pared oeste, junto a la puerta)
+  p = P(0.3, 0.55);
+  add(g, bx(0.42, 0.42, 0.5, MAT.white), p.x, 0.21, p.z);                      // taza
+  add(g, bx(0.44, 0.52, 0.18, MAT.white), rc.x0 + 0.16, 0.66, p.z);           // cisterna
+  add(g, bx(0.4, 0.06, 0.46, MAT.steel), p.x + 0.02, 0.45, p.z);             // tapa
+
+  // bidet (hotel italiano)
+  p = P(0.3, 1.12);
+  add(g, bx(0.36, 0.38, 0.44, MAT.white), p.x, 0.19, p.z);
+
+  // ducha con mampara de cristal y alcachofa (lado este del baño)
+  p = P(1.42, 1.6);
+  add(g, bx(0.9, 0.08, 1.05, MAT.marble), p.x, 0.04, p.z);                     // plato de ducha
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.0, 2.1), MAT.glass), p.x, 1.05, p.z - rc.dir * 0.52); // mampara frontal
+  add(g, bx(0.05, 2.1, 0.05, MAT.steel), p.x - 0.46, 1.05, p.z - rc.dir * 0.52); // montante
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.95, 2.1), MAT.glass), p.x + 0.47, 1.05, p.z, Math.PI / 2); // mampara lateral
+  add(g, bx(0.04, 0.04, 0.4, MAT.steel), p.x, 1.95, p.z + rc.dir * 0.32);      // brazo de la alcachofa (desde el fondo)
+  add(g, cyl(0.08, 0.08, 0.03, MAT.steel), p.x, 1.9, p.z + rc.dir * 0.5);     // alcachofa
+  add(g, bx(0.16, 0.46, 0.06, MAT.steel), p.x, 1.2, p.z + rc.dir * 0.5);     // barra/grifo de la ducha
   solidL(0, 0.65, 0.25, 2.0);
-  solidL(1.05, 1.9, 1.3, 2.1);
+  solidL(1.0, 1.9, 1.05, 2.1);
 
   // suciedad del baño
   p = P(0.9, 1.2);
@@ -643,8 +667,8 @@ function buildRoomInterior(g, f, rc, room) {
   add(g, bx(0.06, 0.64, 1.08), rc.x0 + 3.86, 1.15, p.z).material = MAT.black;  // TV mirando a la cama
   solidL(3.2, 3.95, 3.35, 4.65);
 
-  // papelera junto a la puerta
-  p = P(2.5, 0.45);
+  // papelera junto al mueble-TV (fuera del paso de la puerta)
+  p = P(3.55, 3.0);
   add(g, cyl(0.14, 0.11, 0.32, MAT.trash), p.x, 0.16, p.z);
   V.trashFull = add(g, cyl(0.11, 0.09, 0.12, lamb(0x8a8474)), p.x, 0.34, p.z);
 
@@ -678,7 +702,7 @@ function buildRoomInterior(g, f, rc, room) {
   const spots = {
     strip: [2.4, 4.0], bedC: [2.4, 4.0], bed: [2.4, 4.0],
     bath: [1.0, 1.0], bathQ: [1.0, 1.0], towels: [1.6, 0.7],
-    trash: [2.5, 0.8], floor: [2.6, 2.6], amen: [2.95, 4.0],
+    trash: [3.15, 3.0], floor: [2.6, 2.6], amen: [2.95, 4.0],
   };
   for (const t of room.tasks) {
     const s = P(spots[t.key][0], spots[t.key][1]);
