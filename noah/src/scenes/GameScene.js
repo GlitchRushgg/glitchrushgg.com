@@ -294,7 +294,7 @@ export default class GameScene extends Phaser.Scene {
     // animals read the same size, preserving each sprite's aspect ratio.
     // A couple get tweaked: monkey a bit bigger (its art is low-detail),
     // penguin a bit smaller.
-    const H = type === 'monkey' ? 74 : type === 'penguin' ? 52 : 60;
+    const H = type === 'monkey' ? 52 : type === 'penguin' ? 36 : 42;
     animal.setDisplaySize(H * (animal.width / animal.height), H).setDepth(4);
     animal.body.allowGravity = false;
     animal.body.immovable = true;

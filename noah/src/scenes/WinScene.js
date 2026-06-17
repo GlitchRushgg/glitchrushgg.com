@@ -207,7 +207,7 @@ export default class WinScene extends Phaser.Scene {
 
         const spr = this.add.image(arkX, arkY, a).setDepth(7);
         // Same height for all (preserving aspect); monkey a bit bigger, penguin smaller.
-        const H = a === 'monkey' ? 59 : a === 'penguin' ? 42 : 48;
+        const H = a === 'monkey' ? 41 : a === 'penguin' ? 29 : 34;
         spr.setDisplaySize(H * (spr.width / spr.height), H);
         spr.setFlipX(!goLeft);
 
