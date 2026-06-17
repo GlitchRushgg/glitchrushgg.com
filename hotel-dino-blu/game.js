@@ -28,7 +28,7 @@ const EYE = 1.62;                // altura de los ojos
 const PLAYER_FLOOR = 2;          // el piso de Sofía
 const SHIFT_START = 6 * 60;     // 06:00
 const SHIFT_END = 14 * 60;       // 14:00
-const TIME_RATE = 0.8;           // minutos de juego por segundo real (~10 min)
+let TIME_RATE = 0.8;             // minutos de juego por segundo real (~10 min); el modo Express lo acelera
 
 const RX0 = -12, ROOM_W = 4, ROOM_D = 6, CORR = 1.3;
 const BX0 = -12.45, BX1 = 16.45, BZ = 7.4;   // huella del edificio
@@ -53,10 +53,23 @@ const TASK_DEFS = {
 // ----------------------------------------------------------------------------
 // Estado global
 // ----------------------------------------------------------------------------
+// modo de juego: 'full' (turno completo, 11 habitaciones) o 'express' (4, contrarreloj)
+const MODE = localStorage.getItem('hg-mode') === 'express' ? 'express' : 'full';
+if (MODE === 'express') TIME_RATE = 3.0;   // turno corto y tenso (~2,5 min reales)
+
+// récords persistentes (localStorage) — la razón para volver a jugar
+const REC = {
+  best:   +localStorage.getItem('hg-best')   || 0,
+  stars:  +localStorage.getItem('hg-stars')  || 0,
+  streak: +localStorage.getItem('hg-streak') || 0,
+  rooms:  +localStorage.getItem('hg-rooms')  || 0,
+};
+
 const G = {
-  started: false, over: false,
+  started: false, over: false, mode: MODE,
   time: SHIFT_START,
   score: 0, warnings: 0, towelPerfect: 0, mistakes: 0, trips: 0,
+  combo: 0, comboBest: 0, lastTaskAt: -99, rating: 3, newRecord: false,
   floor: PLAYER_FLOOR, px: 13.6, pz: 0.3, yaw: Math.PI / 2, pitch: 0,
   inv: { ...CART_START }, dirty: 0,
   rooms: [], totalToClean: 0, done: 0,
@@ -195,7 +208,9 @@ function textPlane(lines, pw, ph, { bg = null, fg = '#fff', size = 90, stroke = 
 // Parte de trabajo: generación de las 12 habitaciones del piso de Sofía
 // ----------------------------------------------------------------------------
 function genRooms() {
-  const statuses = shuffle(['P', 'P', 'P', 'P', 'P', 'F', 'F', 'F', 'F', 'F', 'F', 'L']);
+  const statuses = G.mode === 'express'
+    ? shuffle(['P', 'P', 'F', 'F', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L'])  // Express: 4 habitaciones
+    : shuffle(['P', 'P', 'P', 'P', 'P', 'F', 'F', 'F', 'F', 'F', 'F', 'L']);
   const stays = shuffle([3, 6, 2, 4, 3, 1]); // dos o tres fermate tocan cambio de sábanas
   let si = 0;
   for (let i = 0; i < 12; i++) {
@@ -1378,6 +1393,9 @@ function updateHUD() {
   $('roomsDone').textContent = `🛏 ${G.done}/${G.totalToClean}`;
   $('score').textContent = `⭐ ${G.score}`;
   $('hearts').textContent = '❤'.repeat(3 - G.warnings) + '🖤'.repeat(G.warnings);
+  // rating del hotel en vivo (estrellas que suben con cada habitación)
+  const rs = Math.max(1, Math.round(G.rating));
+  $('rating').textContent = '🏨 ' + '★'.repeat(rs) + '☆'.repeat(5 - rs);
   const frac = (G.time - SHIFT_START) / (SHIFT_END - SHIFT_START);
   const expected = frac * G.totalToClean;
   const ok = G.done + 0.6 >= expected;
@@ -1393,6 +1411,25 @@ function updateHUD() {
   html += `<div${G.dirty > 20 ? ' class="low"' : ''}>${S.dirtyLabel}: <b>${G.dirty}</b>${G.dirty > 20 ? S.heavy : ''}</div>`;
   $('inv').innerHTML = html;
 }
+
+// --- HUD del combo: un "🔥 xN" grande y vivo en el centro-arriba ---
+function updateComboHUD() {
+  const el = $('combo');
+  if (!el) return;
+  if (G.combo >= 2) {
+    el.innerHTML = `🔥 <b>x${comboMult()}</b><span>${S.combo(G.combo)}</span>`;
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+function bumpComboFx(up = true) {
+  const el = $('combo');
+  if (!el) return;
+  el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+  if (!up) el.classList.add('hidden');
+}
+function showCombo() { updateComboHUD(); if (G.combo >= 2) bumpComboFx(true); }
 
 function getCurrentRoom() {
   if (G.floor !== PLAYER_FLOOR) return null;
@@ -1523,6 +1560,19 @@ function taskBlocked(h) {
     return S.blockedTowels;
   return null;
 }
+// --- COMBO: encadenar tareas sin pausas largas multiplica los puntos ---
+const COMBO_WINDOW = 9;                 // s entre tareas para mantener la cadena
+const comboMult = () => 1 + Math.min(4, Math.floor(G.combo / 2));  // x1..x5 (x2 desde la 2ª seguida)
+function registerProgress() {
+  const now = clock.elapsedTime;
+  G.combo = (now - G.lastTaskAt < COMBO_WINDOW) ? G.combo + 1 : 1;
+  G.lastTaskAt = now;
+  if (G.combo > G.comboBest) G.comboBest = G.combo;
+  showCombo();
+}
+function breakCombo() { if (G.combo > 1) bumpComboFx(false); G.combo = 0; updateComboHUD(); }
+function addScore(base) { G.score += Math.round(base * comboMult()); }
+
 function completeTask(h) {
   const room = G.rooms[h.roomIdx];
   const t = getTask(room, h.taskKey);
@@ -1554,7 +1604,8 @@ function completeTask(h) {
       break;
   }
   t.done = true;
-  G.score += 10;
+  registerProgress();
+  addScore(10);
   dingOK();
   updateHUD(); refreshChecklist();
   if (room.tasks.every(x => x.done)) roomComplete(room);
@@ -1563,10 +1614,19 @@ function roomComplete(room) {
   room.done = true;
   G.done++;
   const bonus = room.status === 'P' ? 125 : 100;
-  G.score += bonus;
+  addScore(bonus);
+  // rating del hotel en vivo: sube con cada habitación (más si está impecable)
+  G.rating = Math.min(5, G.rating + (room.mistakes === 0 ? 0.45 : 0.15));
   drawRoomCard(room);
-  toast(S.roomDone(room.num, bonus));
+  toast(S.roomDone(room.num, Math.round(bonus * comboMult())));
   beep(880, 0.1); setTimeout(() => beep(1175, 0.2), 110);
+  // gancho de la 1ª habitación: mini-celebración temprana para enganchar
+  if (G.done === 1 && G.totalToClean > 1) {
+    setTimeout(() => {
+      toast(S.firstRoom, 3200);
+      [660, 880, 990, 1320].forEach((f, i) => setTimeout(() => beep(f, 0.12), i * 90));
+    }, 700);
+  }
   updateHUD();
   if (G.done >= G.totalToClean) {
     const left = Math.max(0, Math.round(SHIFT_END - G.time));
@@ -1623,15 +1683,14 @@ function openTowelDialog(h) {
     room2.vis.towelOld.visible = false;
     room2.vis.towelNew.visible = true;
     if (right) {
-      G.towelPerfect++; G.score += 30;
+      G.towelPerfect++; registerProgress(); addScore(40);
       toast(S.towelPerfect);
       dingOK();
     } else {
-      room2.mistakes++; G.mistakes++; G.score = Math.max(0, G.score - 10);
+      room2.mistakes++; G.mistakes++; breakCombo(); G.score = Math.max(0, G.score - 10);
       toast(S.towelWrong);
       dingBad();
     }
-    G.score += 10;
     closeDialog();
     updateHUD(); refreshChecklist();
     if (room2.tasks.every(x => x.done)) roomComplete(room2);
@@ -1723,6 +1782,7 @@ function endShift(outcome, minutesLeft = 0) {
   G.over = true; G.uiOpen = true;
   document.exitPointerLock?.();
   $('objective').classList.add('hidden');
+  $('combo')?.classList.add('hidden');
   doorMark.visible = false;
   const rate = G.done / G.totalToClean;
   let stars = 1;
@@ -1731,6 +1791,20 @@ function endShift(outcome, minutesLeft = 0) {
   if (rate >= 1 && G.warnings === 0) stars = 4;
   if (rate >= 1 && G.warnings === 0 && G.mistakes === 0) stars = 5;
   if (outcome === 'despido') stars = 0;
+  // --- récords persistentes: la razón para volver a jugar ---
+  G.newRecord = G.score > REC.best;
+  const perfectShift = rate >= 1 && stars >= 4;
+  REC.streak = perfectShift ? REC.streak + 1 : 0;
+  REC.best = Math.max(REC.best, G.score);
+  REC.stars = Math.max(REC.stars, stars);
+  REC.rooms += G.done;
+  localStorage.setItem('hg-best', REC.best);
+  localStorage.setItem('hg-stars', REC.stars);
+  localStorage.setItem('hg-streak', REC.streak);
+  localStorage.setItem('hg-rooms', REC.rooms);
+  const recBadge = G.newRecord
+    ? `<div class="recordBadge">${S.newRecord(G.score)}</div>`
+    : `<div class="recordLine">${S.bestLine(REC.best)}${REC.streak > 1 ? ' · ' + S.streakLine(REC.streak) : ''}</div>`;
   const msgs = {
     perfecto: S.endPerfect(G.totalToClean, minutesLeft),
     fin: S.endTime(G.totalToClean - G.done),
@@ -1739,6 +1813,7 @@ function endShift(outcome, minutesLeft = 0) {
   $('end').innerHTML = `<div class="panel">
     <h1>${S.endTitles[outcome]}</h1>
     <div class="stars">${'⭐'.repeat(stars)}${'☆'.repeat(Math.max(0, 5 - stars))}</div>
+    ${recBadge}
     <p>${msgs[outcome]}</p>
     <div class="luciaReview">
       <img src="assets/housekeper/lucia.png" alt="Lucía" />
@@ -2003,6 +2078,22 @@ function applyIntroTexts() {
   $('langRow').innerHTML = LANGS.map(([code, name]) =>
     `<button class="lang${code === LANG ? ' active' : ''}" data-l="${code}">${name}</button>`).join('');
   $('langRow').querySelectorAll('button').forEach(b => { b.onclick = () => setLang(b.dataset.l); });
+  // récord guardado (la razón para volver a jugar)
+  const rec = $('record');
+  if (REC.best > 0) {
+    rec.innerHTML = S.bestLine(REC.best) + (REC.streak > 1 ? ' · ' + S.streakLine(REC.streak) : '');
+    rec.classList.remove('hidden');
+  } else rec.classList.add('hidden');
+  // selector de modo de juego (turno completo vs express)
+  $('modeRow').innerHTML = [['full', S.modeFull, S.modeFullSub], ['express', S.modeExpress, S.modeExpressSub]]
+    .map(([m, t, sub]) => `<button class="mode${m === G.mode ? ' active' : ''}" data-m="${m}"><b>${t}</b><span>${sub}</span></button>`).join('');
+  $('modeRow').querySelectorAll('button').forEach(b => { b.onclick = () => setMode(b.dataset.m); });
+}
+// cambiar de modo = guardar y recargar (el mundo se construye al cargar, como el idioma)
+function setMode(m) {
+  if (m === G.mode) return;
+  localStorage.setItem('hg-mode', m);
+  location.reload();
 }
 
 // ----------------------------------------------------------------------------
@@ -2120,6 +2211,7 @@ function loop() {
   if (G.started && !G.over) {
     G.time = Math.min(G.time + dt * TIME_RATE, SHIFT_END); // minutos de juego
     if (G.time >= SHIFT_END) endShift('fin');
+    if (G.combo > 0 && t - G.lastTaskAt > COMBO_WINDOW) breakCombo();  // se enfría la cadena
     if (!G.uiOpen && !G.dialogOpen) {
       movePlayer(dt);
       updateInteraction(dt);
