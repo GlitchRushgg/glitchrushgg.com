@@ -189,12 +189,20 @@ function canvasTex(w, h, draw) {
 function textPlane(lines, pw, ph, { bg = null, fg = '#fff', size = 90, stroke = null } = {}) {
   const tex = canvasTex(512, Math.round(512 * ph / pw), (ctx, w, h) => {
     if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h); }
-    ctx.font = `bold ${size}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const arr = Array.isArray(lines) ? lines : [lines];
+    // auto-ajustar el tamaño para que la línea más larga quepa (evita que se recorte el rótulo)
+    let fs = size;
+    ctx.font = `bold ${fs}px sans-serif`;
+    const widest = Math.max(...arr.map(ln => ctx.measureText(ln).width));
+    const maxW = w * 0.9;
+    if (widest > maxW) fs = Math.floor(fs * maxW / widest);
+    const maxLineH = (h / arr.length) * 0.8;
+    if (fs > maxLineH) fs = Math.floor(maxLineH);
+    ctx.font = `bold ${fs}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     arr.forEach((ln, i) => {
       const y = h * (i + 0.5) / arr.length;
-      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 8; ctx.strokeText(ln, w / 2, y); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = Math.max(2, fs * 0.12); ctx.strokeText(ln, w / 2, y); }
       ctx.fillStyle = fg; ctx.fillText(ln, w / 2, y);
     });
   });
@@ -837,6 +845,69 @@ function buildLobby() {
     add(g, new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), MAT.green), x, 1.0, z);
     addSolid(f, x - 0.4, x + 0.4, z - 0.4, z + 0.4);
   }
+  // ── más mobiliario para que el lobby no se vea vacío ──────────────────
+  // alfombra central
+  const rug = add(g, new THREE.Mesh(new THREE.PlaneGeometry(7, 5), lamb(0xb8584a)), 0, 0.02, -0.4);
+  rug.rotation.x = -Math.PI / 2;
+  // salón central: sofá + 2 butacas + mesa de centro
+  add(g, bx(2.6, 0.45, 0.95), 0, 0.22, -2.0).material = lamb(0x4b7d9e);        // sofá (respaldo al norte)
+  add(g, bx(2.6, 0.62, 0.2), 0, 0.66, -2.42).material = lamb(0x4b7d9e);
+  addSolid(f, -1.4, 1.4, -2.6, -1.5);
+  for (const sx of [-2.1, 2.1]) {                                              // butacas mirando al sofá
+    add(g, bx(0.95, 0.42, 0.95), sx, 0.22, 0.5).material = lamb(0x6f95b0);
+    add(g, bx(0.95, 0.6, 0.2), sx, 0.62, 0.88).material = lamb(0x6f95b0);
+    addSolid(f, sx - 0.55, sx + 0.55, 0.0, 1.0);
+  }
+  add(g, bx(1.5, 0.4, 0.85), 0, 0.2, -0.6).material = MAT.woodDark;            // mesa de centro
+  add(g, cyl(0.5, 0.5, 0.04, MAT.glass, 12), 0, 0.42, -0.6);
+  addSolid(f, -0.8, 0.8, -1.05, -0.15);
+  // lámparas colgantes sobre el salón
+  for (const lx of [-1.2, 1.2]) {
+    add(g, cyl(0.02, 0.02, 0.7, MAT.woodDark, 6), lx, FH - 0.35, -0.6);
+    add(g, new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.3, 12), MAT.champagne), lx, FH - 0.75, -0.6);
+    add(g, new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffe6b0 })), lx, FH - 0.85, -0.6);
+  }
+
+  // carrito portaequipajes dorado junto a recepción
+  add(g, bx(1.5, 0.12, 0.8), 6, 0.5, 2.4).material = MAT.woodDark;
+  for (const [dx, dz] of [[-0.65, -0.32], [0.65, -0.32], [-0.65, 0.32], [0.65, 0.32]])
+    add(g, cyl(0.03, 0.03, 1.4, MAT.champagne, 8), 6 + dx, 1.0, 2.4 + dz);
+  add(g, bx(1.5, 0.05, 0.8), 6, 1.7, 2.4).material = MAT.champagne;            // barra superior
+  add(g, bx(0.55, 0.42, 0.66), 5.75, 0.78, 2.4).material = lamb(0x7a4a2a);     // maletas
+  add(g, bx(0.5, 0.34, 0.6), 6.35, 0.73, 2.4).material = lamb(0x3f5d80);
+  for (const [dx, dz] of [[-0.55, 0.25], [0.55, 0.25]]) addSolid(f, 6 + dx - 0.06, 6 + dx + 0.06, 2.4 + dz - 0.06, 2.4 + dz + 0.06);
+
+  // detalles de recepción: silla, campanita, monitor, plantita
+  add(g, bx(0.5, 0.5, 0.5), 9, 0.25, 2.5).material = lamb(0x2c2f33);           // silla (asiento)
+  add(g, bx(0.5, 0.6, 0.12), 9, 0.8, 2.74).material = lamb(0x2c2f33);
+  add(g, bx(0.55, 0.06, 0.34), 8.2, 1.16, 1.5).material = MAT.black;           // monitor
+  add(g, bx(0.5, 0.3, 0.04), 8.2, 1.36, 1.46).material = lamb(0x223047);
+  add(g, cyl(0.07, 0.09, 0.08, MAT.champagne, 10), 10.2, 1.18, 1.5);           // campanita
+  add(g, new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), MAT.champagne), 10.2, 1.24, 1.5);
+  // reloj grande en la pared tras recepción (disco plano mirando al lobby)
+  add(g, cyl(0.46, 0.46, 0.03, MAT.woodDark, 24), 9, 2.05, 3.17).rotation.x = Math.PI / 2;
+  add(g, cyl(0.4, 0.4, 0.04, MAT.white, 24), 9, 2.05, 3.14).rotation.x = Math.PI / 2;
+  add(g, bx(0.04, 0.28, 0.01), 9, 2.12, 3.12).material = MAT.black;            // manecillas
+  add(g, bx(0.2, 0.04, 0.01), 8.93, 2.05, 3.12).material = MAT.black;
+
+  // banco para esperar junto a la entrada
+  add(g, bx(2.2, 0.12, 0.6), 6, 0.45, -5.6).material = MAT.wood;
+  for (const bx2 of [5.1, 6.9]) add(g, cyl(0.05, 0.05, 0.45, MAT.woodDark, 6), bx2, 0.22, -5.6);
+  addSolid(f, 4.9, 7.1, -5.9, -5.3);
+
+  // plantas altas extra para llenar huecos
+  for (const [x, z] of [[2.2, 2.6], [-6.5, -3], [12, -3]]) {
+    add(g, cyl(0.26, 0.32, 0.55, lamb(0xb5651d)), x, 0.27, z);
+    add(g, new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 6), MAT.green), x, 1.05, z);
+    add(g, new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 6), MAT.green), x + 0.2, 1.4, z);
+    addSolid(f, x - 0.35, x + 0.35, z - 0.35, z + 0.35);
+  }
+  // cuadros del mar en las paredes laterales
+  for (const z of [-2, 2]) {
+    add(g, bx(0.05, 0.7, 1.0), BX0 + 0.18, 1.8, z).material = MAT.woodDark;
+    add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.56), (VIEW.sea ||= viewMat(true))), BX0 + 0.22, 1.8, z, Math.PI / 2);
+  }
+
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
 }
@@ -1002,8 +1073,8 @@ function buildExterior() {
   gr(60, 9, texLamb('paving.jpg', 0xd8d2c4, 10, 1.5), 0, 0.0, -BZ - 5); // piazzetta sur
   gr(700, 8, MAT.road, 0, 0.005, -BZ - 13);      // Via Roma
 
-  // tejado y rótulo
-  add(scene, bx(BX1 - BX0 + 0.8, 0.3, BZ * 2 + 0.8), (BX0 + BX1) / 2, 5 * FH + 0.15, 0).material = MAT.terra;
+  // tejado y rótulo (elevado para que NO se solape con el techo del último piso → sin z-fighting)
+  add(scene, bx(BX1 - BX0 + 0.8, 0.3, BZ * 2 + 0.8), (BX0 + BX1) / 2, 5 * FH + 0.42, 0).material = MAT.terra;
   const sign1 = textPlane('HOTEL DINO BLU ★★★', 10, 1.1, { bg: '#c96f4a', fg: '#fff', size: 90 });
   add(scene, sign1, 2, 5 * FH + 0.9, BZ + 0.5, 0);
   const sign2 = sign1.clone();
