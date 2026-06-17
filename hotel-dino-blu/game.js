@@ -2245,6 +2245,7 @@ function applyIntroTexts() {
   $('deskHelp').innerHTML = S.desktopHelp;
   $('touchHelp').innerHTML = S.touchHelp;
   $('btnStart').textContent = S.start;
+  $('disclaimer').textContent = S.disclaimer;
   $('castTitle').textContent = S.castTitle;
   $('cast').innerHTML = S.cast.map(c =>
     `<figure><img src="assets/housekeper/${c.img}.png" alt="${c.name}" loading="lazy">` +

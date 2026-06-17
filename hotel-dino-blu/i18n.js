@@ -145,6 +145,7 @@ const DICTS = {
     shareRecord: '🏆 ¡NUEVO RÉCORD!',
     shareText: (score, stars) => `¡He sacado ${score} puntos y ${stars}⭐ en Hotel Dino Blu! ¿Puedes superarme? 🧹`,
     shareSaved: '📸 Imagen guardada — ¡súbela y etiqueta @glitchrush.gg!',
+    disclaimer: 'Obra de ficción. El Hotel Dino Blu, sus personajes y su personal son inventados; cualquier parecido con establecimientos o personas reales es casual.',
 
     sheetTitle: '🗒 Tu parte de trabajo — Piso 2',
     sheetCols: ['Hab.', 'Estado', 'Huéspedes', 'Noche', 'Sábanas'],
@@ -314,6 +315,7 @@ const DICTS = {
     shareRecord: '🏆 NEW RECORD!',
     shareText: (score, stars) => `I scored ${score} points and ${stars}⭐ in Hotel Dino Blu! Can you beat me? 🧹`,
     shareSaved: '📸 Image saved — post it and tag @glitchrush.gg!',
+    disclaimer: 'A work of fiction. Hotel Dino Blu, its characters and staff are invented; any resemblance to real establishments or people is coincidental.',
 
     sheetTitle: '🗒 Your work sheet — Floor 2',
     sheetCols: ['Room', 'Status', 'Guests', 'Night', 'Sheets'],
@@ -483,6 +485,7 @@ const DICTS = {
     shareRecord: '🏆 NUOVO RECORD!',
     shareText: (score, stars) => `Ho fatto ${score} punti e ${stars}⭐ in Hotel Dino Blu! Riesci a battermi? 🧹`,
     shareSaved: '📸 Immagine salvata — pubblicala e tagga @glitchrush.gg!',
+    disclaimer: 'Opera di finzione. L\'Hotel Dino Blu, i suoi personaggi e il suo personale sono inventati; ogni somiglianza con strutture o persone reali è casuale.',
 
     sheetTitle: '🗒 Il tuo rapporto di lavoro — 2º piano',
     sheetCols: ['Cam.', 'Stato', 'Ospiti', 'Notte', 'Lenzuola'],
