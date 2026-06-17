@@ -129,6 +129,22 @@ html, body {
   border-radius: 100px; padding: 4px 12px; font-size: 12px; font-weight: 600;
 }
 #langRow .lang.active { background: #1773b0; border-color: #1773b0; color: #fff; }
+
+/* récord guardado en la intro */
+#record {
+  background: #fff6e0; border: 1px solid #e8c87a; color: #8a5a12;
+  border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 700;
+  text-align: center; margin-bottom: 10px;
+}
+/* selector de modo de juego */
+#modeRow { display: flex; gap: 8px; margin-bottom: 12px; }
+#modeRow .mode {
+  flex: 1; background: #fff; border: 2px solid #c8bda8; color: #25313c;
+  border-radius: 12px; padding: 8px 6px; cursor: pointer; text-align: center; line-height: 1.25;
+}
+#modeRow .mode b { display: block; font-size: 14px; }
+#modeRow .mode span { font-size: 11px; opacity: 0.7; }
+#modeRow .mode.active { background: #eaf4fb; border-color: #1773b0; color: #1773b0; }
 .panel h2 { font-size: 16px; margin: 12px 0 6px; color: #c96f4a; }
 .panel .sub { font-size: 13px; opacity: 0.7; margin-bottom: 10px; }
 .panel p, .panel li { font-size: 14px; line-height: 1.5; }
@@ -219,9 +235,32 @@ button {
 }
 .luciaReview p { font-size: 14px; }
 
+/* combo flotante (🔥 xN) — feedback vivo al encadenar tareas */
+#combo {
+  position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, #ff8a3c, #e23b3b); color: #fff;
+  border: 2px solid #fff; border-radius: 16px; padding: 5px 16px;
+  font-size: 22px; font-weight: 800; text-align: center; line-height: 1.05;
+  box-shadow: 0 4px 14px rgba(226,59,59,0.5); pointer-events: none; z-index: 7;
+}
+#combo b { font-size: 26px; }
+#combo span { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; opacity: 0.95; }
+#combo.pop { animation: comboPop 0.32s ease-out; }
+@keyframes comboPop {
+  0% { transform: translateX(-50%) scale(0.6); }
+  60% { transform: translateX(-50%) scale(1.25); }
+  100% { transform: translateX(-50%) scale(1); }
+}
+
 /* Fin de jornada */
 #end .panel { text-align: center; }
 #end .stars { font-size: 38px; letter-spacing: 6px; margin: 8px 0; }
+#end .recordBadge {
+  background: linear-gradient(135deg, #ffd86b, #f4a52a); color: #5a3a06;
+  border-radius: 12px; padding: 8px 14px; font-size: 17px; font-weight: 800;
+  margin: 6px auto 4px; display: inline-block; animation: comboPop 0.4s ease-out;
+}
+#end .recordLine { font-size: 13px; font-weight: 700; color: #8a5a12; margin: 4px 0; }
 #end table { margin: 10px auto; font-size: 14px; border-collapse: collapse; }
 #end td { padding: 3px 12px; text-align: left; }
 #end td:last-child { text-align: right; font-weight: 700; }
