@@ -128,11 +128,14 @@ function texLamb(file, color, rx = 1, ry = 1) {
 const MAT = {
   wall: lamb(0xf3ead9), wallIn: lamb(0xf8f3e9), accent: lamb(0xc96f4a),
   corr: lamb(0xcdbb9c), parquet: texLamb('parquet.jpg', 0xd9c194, 2, 3), tile: texLamb('tile.jpg', 0xe9eef0, 2, 2),
+  cotto: texLamb('cotto.jpg', 0xc88a5a, 4, 6),   // suelo de terracota de las habitaciones
+  headboard: lamb(0xcbab85),                      // cabecero de madera clara
+  warmwall: lamb(0xefe6d2),                       // pared cálida crema
   tileWall: lamb(0xf2f6f7), ceil: lamb(0xffffff), marble: texLamb('marble.jpg', 0xeae6dd, 12, 6),
   carpet: texLamb('carpet.jpg', 0xa84f3c, 16, 1),
   wood: lamb(0x8a6240), woodDark: lamb(0x5d4327), white: lamb(0xfafafa),
   steel: lamb(0xb4bcc2), champagne: lamb(0xc9bda6), black: lamb(0x2c2f33),
-  cover: texLamb('bedspread.jpg', 0x3f7fb5), coverMessy: lamb(0xa7b2ba), mattress: lamb(0xf3f1e8),
+  cover: texLamb('bedspread.jpg', 0xd9cdb8), coverMessy: lamb(0xc9bca6), mattress: lamb(0xf3f1e8),
   towel: lamb(0xffffff), towelOld: lamb(0xcfd4cd), trash: lamb(0x49555f),
   glass: new THREE.MeshBasicMaterial({ color: 0xcdeaf8, transparent: true, opacity: 0.16, side: THREE.DoubleSide }),
   dirt: new THREE.MeshBasicMaterial({ color: 0x57493b, transparent: true, opacity: 0.66 }),
@@ -560,7 +563,7 @@ function buildRoomInterior(g, f, rc, room) {
 
   // suelos
   let r = rrect(rc, 0.05, 3.95, 0.06, ROOM_D - 0.12);
-  const fl = add(g, new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0, r.z1 - r.z0), MAT.parquet),
+  const fl = add(g, new THREE.Mesh(new THREE.PlaneGeometry(r.x1 - r.x0, r.z1 - r.z0), MAT.cotto),
     (r.x0 + r.x1) / 2, 0.013, (r.z0 + r.z1) / 2);
   fl.rotation.x = -Math.PI / 2;
   r = rrect(rc, 0.05, 1.9, 0.06, 2.1);
@@ -603,48 +606,60 @@ function buildRoomInterior(g, f, rc, room) {
   V.towelNew.visible = false;
   g.add(V.towelNew);
 
-  // --- camas según huéspedes ---
+  // --- una sola cama doble, pegada a la pared oeste, con gran cabecero ---
   V.beds = [];
-  makeBed(g, rc, room, 0.3, 2.0, true);                    // matrimonio
-  if (room.guests >= 3) makeBed(g, rc, room, 3.0, 3.9, false, room.guests === 4); // individual / litera
-  solidL(0.3, 2.0, 2.7, 4.7);
-  if (room.guests >= 3) solidL(3.0, 3.9, 2.7, 4.7);
+  makeBed(g, rc, room);
+  solidL(0.05, 2.05, 3.2, 4.8);
+
+  // aplique de luz cálida sobre el cabecero (pared oeste), como en las fotos
+  p = P(0.12, 4.0);
+  add(g, bx(0.18, 0.18, 0.1), p.x, 2.05, p.z).material = MAT.champagne;
+  add(g, new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffe6b0 })), p.x + 0.05, 2.0, p.z);
+
+  // mesilla con lamparita junto a la cabecera
+  p = P(0.45, 3.05);
+  add(g, bx(0.42, 0.5, 0.42), p.x, 0.25, p.z).material = MAT.wood;
+  add(g, cyl(0.09, 0.12, 0.3, lamb(0xf2e3b8)), p.x, 0.65, p.z);
 
   // alfombra cálida a los pies de la cama
-  p = P(2.0, 2.3);
-  const rug = add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.1), lamb(0xb8584a)), p.x, 0.022, p.z);
+  p = P(2.55, 4.0);
+  const rug = add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.5), lamb(0xb8584a)), p.x, 0.022, p.z);
   rug.rotation.x = -Math.PI / 2;
 
-  // cuadro del mar en la pared oeste (calidez, reusa la postal)
+  // cuadro del mar en la pared oeste (esquina junto a la ventana)
   const rart = (VIEW.sea ||= viewMat(true));
-  p = P(0.09, 4.2);
-  add(g, bx(0.05, 0.52, 0.68), p.x, 1.65, p.z).material = MAT.woodDark;
-  const rpic = add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.4), rart), p.x + 0.04, 1.65, p.z);
-  rpic.rotation.y = Math.PI / 2;
+  p = P(0.09, 5.45);
+  add(g, bx(0.05, 0.52, 0.68), p.x, 1.6, p.z).material = MAT.woodDark;
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.4), rart), p.x + 0.04, 1.6, p.z).rotation.y = Math.PI / 2;
 
-  // mesilla
-  p = P(2.2, 2.95);
-  add(g, bx(0.4, 0.5, 0.4), p.x, 0.25, p.z).material = MAT.wood;
-  add(g, cyl(0.09, 0.12, 0.3, lamb(0xf2e3b8)), p.x, 0.65, p.z); // lamparita
-
-  // armario, escritorio, TV, papelera
+  // armario junto a la puerta (pared este)
   p = P(3.6, 0.75);
   add(g, bx(0.7, 2.2, 1.2), p.x, 1.1, p.z).material = MAT.woodDark;
   solidL(3.25, 3.95, 0.15, 1.35);
-  // escritorio + TV contra la pared lateral (este), FUERA del hueco de la puerta
-  p = P(3.45, 1.95);
-  add(g, bx(0.7, 0.08, 0.5), p.x, 0.72, p.z).material = MAT.wood;        // tablero
-  add(g, bx(0.6, 0.62, 0.06), p.x, 0.4, p.z + rc.dir * 0.2).material = MAT.wood; // frente
-  add(g, bx(0.05, 0.44, 0.7), rc.x0 + 3.92, 1.5, p.z).material = MAT.black;       // TV en la pared
-  solidL(3.05, 3.8, 1.55, 2.35);
-  p = P(2.15, 0.4);
+
+  // mueble-TV de madera oscura ENFRENTE de la cama (pared este), mirando al oeste
+  p = P(3.5, 4.0);
+  add(g, bx(0.5, 0.68, 1.3), p.x, 0.34, p.z).material = MAT.woodDark;          // cómoda
+  add(g, bx(0.06, 0.64, 1.08), rc.x0 + 3.86, 1.15, p.z).material = MAT.black;  // TV mirando a la cama
+  solidL(3.2, 3.95, 3.35, 4.65);
+
+  // papelera junto a la puerta
+  p = P(2.5, 0.45);
   add(g, cyl(0.14, 0.11, 0.32, MAT.trash), p.x, 0.16, p.z);
   V.trashFull = add(g, cyl(0.11, 0.09, 0.12, lamb(0x8a8474)), p.x, 0.34, p.z);
 
-  // cortinas
+  // butaca gris en la esquina de la ventana
+  p = P(3.25, 5.35);
+  add(g, bx(0.62, 0.4, 0.62), p.x, 0.2, p.z).material = lamb(0xb9bcc0);
+  add(g, bx(0.62, 0.5, 0.14), p.x, 0.6, p.z + rc.dir * 0.24).material = lamb(0xb9bcc0);
+  add(g, bx(0.13, 0.42, 0.62), p.x - 0.37, 0.46, p.z).material = lamb(0xacafb4);
+  add(g, bx(0.13, 0.42, 0.62), p.x + 0.37, 0.46, p.z).material = lamb(0xacafb4);
+  solidL(2.9, 3.6, 5.0, 5.7);
+
+  // cortinas claras junto a la ventana
   const wz2 = rc.zIn + rc.dir * (ROOM_D - 0.2);
-  add(g, bx(0.3, 2.2, 0.1), rc.x0 + 1.25, 1.35, wz2).material = lamb(0xd8b08c);
-  add(g, bx(0.3, 2.2, 0.1), rc.x0 + 2.95, 1.35, wz2).material = lamb(0xd8b08c);
+  add(g, bx(0.28, 2.3, 0.1), rc.x0 + 1.25, 1.4, wz2).material = lamb(0xe8e2d2);
+  add(g, bx(0.28, 2.3, 0.1), rc.x0 + 2.95, 1.4, wz2).material = lamb(0xe8e2d2);
 
   // manchas del suelo
   V.dirtSpots = [];
@@ -661,9 +676,9 @@ function buildRoomInterior(g, f, rc, room) {
 
   // --- puntos de interacción de las tareas ---
   const spots = {
-    strip: [2.35, 3.7], bedC: [2.35, 3.7], bed: [2.35, 3.7],
-    bath: [1.0, 1.0], bathQ: [1.0, 1.0], towels: [1.55, 0.6],
-    trash: [2.15, 0.7], floor: [2.8, 3.2], amen: [3.4, 1.95],
+    strip: [2.4, 4.0], bedC: [2.4, 4.0], bed: [2.4, 4.0],
+    bath: [1.0, 1.0], bathQ: [1.0, 1.0], towels: [1.6, 0.7],
+    trash: [2.5, 0.8], floor: [2.6, 2.6], amen: [2.95, 4.0],
   };
   for (const t of room.tasks) {
     const s = P(spots[t.key][0], spots[t.key][1]);
@@ -682,35 +697,31 @@ function buildRoomInterior(g, f, rc, room) {
   }
 }
 
-function makeBed(g, rc, room, lx0, lx1, double, bunk = false) {
+// Una sola cama doble pegada a la pared OESTE: largo en X (cabeza en -x), ancho en Z
+function makeBed(g, rc, room) {
   const V = room.vis;
-  const w = lx1 - lx0, cx = (lx0 + lx1) / 2;
-  const p = lpos(rc, cx, 3.7);
+  const len = 2.0, w = 1.6;
+  const p = lpos(rc, 1.05, 4.0);
   const grp = new THREE.Group();
   grp.position.set(p.x, 0, p.z);
-  add(grp, bx(w, 0.25, 2.0), 0, 0.125, 0).material = MAT.wood;
-  add(grp, bx(w, 0.16, 2.0), 0, 0.33, 0).material = MAT.mattress;
-  const hb = add(grp, bx(w, 0.85, 0.08), 0, 0.55, -rc.dir * 1.02);
-  hb.material = MAT.woodDark;
-  // versión deshecha
+  add(grp, bx(len, 0.25, w), 0, 0.13, 0).material = MAT.wood;       // somier
+  add(grp, bx(len, 0.16, w), 0, 0.33, 0).material = MAT.mattress;   // colchón
+  add(grp, bx(0.1, 1.0, w + 0.24), -len / 2 - 0.03, 0.7, 0).material = MAT.headboard; // gran cabecero
+  // versión deshecha (manta arrugada)
   const messy = new THREE.Group();
-  add(messy, bx(w - 0.1, 0.12, 1.45), 0.06, 0.46, rc.dir * 0.18, 0.14).material = MAT.coverMessy;
-  add(messy, bx(0.5, 0.12, 0.32), -w / 4, 0.47, -rc.dir * 0.6, 0.5).material = lamb(0xe8e4d8);
+  add(messy, bx(len - 0.12, 0.12, w - 0.08), 0.05, 0.46, 0.05, 0.1).material = MAT.coverMessy;
+  add(messy, bx(0.5, 0.12, 0.34), len / 5, 0.47, -w / 5).material = lamb(0xe8e4d8);
   grp.add(messy);
-  // versión hecha
+  // versión hecha (colcha de rayas + sábana vuelta + almohadas + cojín + toallas dobladas)
   const neat = new THREE.Group();
-  add(neat, bx(w - 0.04, 0.1, 1.5), 0, 0.46, rc.dir * 0.18).material = MAT.cover;
-  add(neat, bx(w - 0.04, 0.04, 0.3), 0, 0.5, rc.dir * 0.55).material = MAT.towel;
-  const np = double ? [-w / 4, w / 4] : [0];
-  for (const dx of np) add(neat, bx(0.45, 0.12, 0.3), dx, 0.47, -rc.dir * 0.72).material = MAT.towel;
+  add(neat, bx(len - 0.04, 0.1, w - 0.02), 0, 0.46, 0).material = MAT.cover;
+  add(neat, bx(0.55, 0.05, w - 0.06), -len / 2 + 0.35, 0.5, 0).material = MAT.towel;        // sábana vuelta
+  for (const dz of [-w / 4, w / 4]) add(neat, bx(0.5, 0.14, 0.42), -len / 2 + 0.42, 0.49, dz).material = MAT.towel; // almohadas
+  add(neat, bx(0.42, 0.13, 0.32), -len / 2 + 0.52, 0.52, 0).material = lamb(0xe6b85c);      // cojín ámbar
+  add(neat, bx(0.32, 0.1, 0.26), len / 4, 0.53, 0).material = MAT.towel;                     // toallas dobladas
+  add(neat, bx(0.28, 0.08, 0.22), len / 4, 0.62, 0).material = MAT.towel;
   neat.visible = false;
   grp.add(neat);
-  if (bunk) { // litera para 4 huéspedes
-    add(grp, bx(w, 0.14, 2.0), 0, 1.25, 0).material = MAT.mattress;
-    add(grp, bx(w - 0.04, 0.09, 1.5), 0, 1.36, rc.dir * 0.18).material = MAT.cover;
-    for (const [dx, dz] of [[-w / 2 + 0.04, -0.95], [w / 2 - 0.04, -0.95], [-w / 2 + 0.04, 0.95], [w / 2 - 0.04, 0.95]])
-      add(grp, bx(0.07, 1.3, 0.07), dx, 0.65, dz).material = MAT.wood;
-  }
   g.add(grp);
   V.beds.push({ messy, neat });
 }
@@ -2021,7 +2032,7 @@ async function loadDecorModels() {
     // planta 3D en el rincón de la ventana de cada habitación abierta (tu piso)
     const fy2 = PLAYER_FLOOR * FH;
     const roomSpots = G.rooms.filter(r => r.status !== 'L').map(r => {
-      const wp = lpos(roomRect(r.idx), 3.6, 5.3);
+      const wp = lpos(roomRect(r.idx), 0.45, 5.5);  // esquina oeste junto a la ventana (la butaca va en la este)
       return { x: wp.x, y: fy2, z: wp.z };
     });
     place(fit(plant, 1.15), roomSpots);
