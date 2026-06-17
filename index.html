@@ -57,11 +57,13 @@
 
     /* ── Hero: characters left, name + intro right ──── */
     .hero { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 40px; padding: 60px 0 50px; }
-    .hero-art-cluster { position: relative; height: clamp(300px, 38vw, 480px); }
-    .hero-art { position: absolute; width: clamp(190px, 27vw, 340px); border-radius: 22px;
-      box-shadow: 0 24px 54px rgba(12,14,20,0.24); border: 5px solid #fff; }
-    .hero-art.a { left: 0;  top: 4%;    rotate: -5deg; z-index: 2; }
-    .hero-art.b { right: 0; bottom: 2%; rotate: 5deg;  z-index: 1; }
+    /* cluster of the actual game characters (cut-outs), standing together */
+    .hero-art-cluster { position: relative; height: clamp(320px, 40vw, 470px); }
+    .ch { position: absolute; bottom: 0; filter: drop-shadow(0 14px 16px rgba(12,14,20,0.18)); }
+    .ch.px { image-rendering: pixelated; filter: drop-shadow(2px 5px 0 rgba(12,14,20,0.18)); }
+    .ch.maid { height: 94%; left: 4%;  z-index: 3; }
+    .ch.noah { height: 40%; left: 58%; z-index: 4; }
+    .ch.peng { height: 26%; left: 47%; z-index: 5; }
     .hero-text { text-align: left; }
     .hero-text h1 { font-weight: 900; font-size: clamp(46px, 6.4vw, 88px); line-height: 0.95; letter-spacing: -2px; }
     .hero-text h1 .gg { color: var(--blue); }
@@ -149,8 +151,9 @@
   <!-- ── Hero: characters left, name + intro right ──── -->
   <header class="hero wrap" id="top">
     <div class="hero-art-cluster">
-      <img class="hero-art a" src="hotel-dino-blu/assets/cover.jpg" alt="Hotel Dino Blu" loading="lazy" />
-      <img class="hero-art b" src="noah/assets/cover.jpg" alt="Noah" loading="lazy" />
+      <img class="ch maid" src="hotel-dino-blu/assets/housekeper/sofia-cut.png" alt="Hotel Dino Blu maid" loading="lazy" />
+      <img class="ch noah px" src="noah/assets/noah.png" alt="Noah" loading="lazy" />
+      <img class="ch peng px" src="noah/assets/images/penguin.png" alt="" loading="lazy" />
     </div>
     <div class="hero-text">
       <h1>GLITCHRUSH<span class="gg">GG</span></h1>
