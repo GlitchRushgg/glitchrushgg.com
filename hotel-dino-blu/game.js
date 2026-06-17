@@ -631,11 +631,12 @@ function buildRoomInterior(g, f, rc, room) {
   p = P(3.6, 0.75);
   add(g, bx(0.7, 2.2, 1.2), p.x, 1.1, p.z).material = MAT.woodDark;
   solidL(3.25, 3.95, 0.15, 1.35);
-  p = P(2.7, 0.45);
-  add(g, bx(0.75, 0.08, 0.5), p.x, 0.72, p.z).material = MAT.wood;
-  add(g, bx(0.65, 0.62, 0.06), p.x, 0.4, p.z).material = MAT.wood;
-  add(g, bx(0.6, 0.38, 0.05), p.x, 1.45, rc.zIn + rc.dir * 0.12).material = MAT.black; // TV
-  solidL(2.35, 3.05, 0.18, 0.72);
+  // escritorio + TV contra la pared lateral (este), FUERA del hueco de la puerta
+  p = P(3.45, 1.95);
+  add(g, bx(0.7, 0.08, 0.5), p.x, 0.72, p.z).material = MAT.wood;        // tablero
+  add(g, bx(0.6, 0.62, 0.06), p.x, 0.4, p.z + rc.dir * 0.2).material = MAT.wood; // frente
+  add(g, bx(0.05, 0.44, 0.7), rc.x0 + 3.92, 1.5, p.z).material = MAT.black;       // TV en la pared
+  solidL(3.05, 3.8, 1.55, 2.35);
   p = P(2.15, 0.4);
   add(g, cyl(0.14, 0.11, 0.32, MAT.trash), p.x, 0.16, p.z);
   V.trashFull = add(g, cyl(0.11, 0.09, 0.12, lamb(0x8a8474)), p.x, 0.34, p.z);
@@ -662,7 +663,7 @@ function buildRoomInterior(g, f, rc, room) {
   const spots = {
     strip: [2.35, 3.7], bedC: [2.35, 3.7], bed: [2.35, 3.7],
     bath: [1.0, 1.0], bathQ: [1.0, 1.0], towels: [1.55, 0.6],
-    trash: [2.15, 0.7], floor: [2.8, 3.2], amen: [2.75, 1.0],
+    trash: [2.15, 0.7], floor: [2.8, 3.2], amen: [3.4, 1.95],
   };
   for (const t of room.tasks) {
     const s = P(spots[t.key][0], spots[t.key][1]);
