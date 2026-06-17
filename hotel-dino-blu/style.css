@@ -249,6 +249,9 @@ button {
 .bigbtn.alt { background: #5d6b78; }
 .bigbtn.alt:hover { background: #6c7c8a; }
 
+/* aviso de ficción (legal) en la pantalla de inicio */
+#disclaimer { font-size: 11px; opacity: 0.55; margin-top: 12px; line-height: 1.4; text-align: center; }
+
 /* combo flotante (🔥 xN) — feedback vivo al encadenar tareas */
 #combo {
   position: absolute; top: 86px; left: 50%; transform: translateX(-50%);
