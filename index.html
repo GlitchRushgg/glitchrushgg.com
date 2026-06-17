@@ -14,6 +14,10 @@
   <meta property="og:image" content="https://glitchrushgg.com/hotel-dino-blu/assets/cover.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
 
+  <!-- Favicon: el rayo pixel de la marca -->
+  <link rel="icon" type="image/png" href="brand/avatar-pixel-800.png" />
+  <link rel="apple-touch-icon" href="brand/avatar-pixel-800.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet" />
@@ -57,13 +61,10 @@
       padding: 18px 22px; max-width: 1140px; margin: 0 auto;
       position: relative; z-index: 3;
     }
-    .brand {
-      display: flex; align-items: center; gap: 10px;
-      font-family: var(--display); font-weight: 900; font-size: 20px;
-      letter-spacing: 1px; color: #fff; text-decoration: none;
-    }
-    .brand img { width: 34px; height: 34px; border-radius: 8px; }
-    .brand .gg { color: var(--cyan); }
+    .brand { display: inline-flex; align-items: center; text-decoration: none; }
+    /* logo pixel a su proporción real, con píxeles nítidos */
+    .brand img { height: 30px; width: auto; display: block; image-rendering: pixelated; }
+    @media (max-width: 420px) { .brand img { height: 24px; } }
     .nav-links { display: flex; gap: 20px; align-items: center; }
     .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; }
     .nav-links a:hover { color: var(--cyan); }
@@ -72,7 +73,15 @@
     @media (max-width: 680px) { .nav-links a:not(.nav-cta) { display: none; } }
 
     /* ── Hero (estudio) ──────────────────────────────── */
-    .hero { text-align: center; padding: 54px 0 26px; }
+    .hero { text-align: center; padding: 40px 0 26px; }
+    .hero-bolt {
+      width: clamp(84px, 14vw, 120px); height: auto; display: block; margin: 0 auto 20px;
+      image-rendering: pixelated;
+      border-radius: 24px; border: 1px solid rgba(255,224,102,0.35);
+      box-shadow: 0 12px 36px rgba(0,0,0,0.45), 0 0 30px rgba(255,224,102,0.25);
+      animation: boltFloat 3.6s ease-in-out infinite;
+    }
+    @keyframes boltFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
     .eyebrow {
       display: inline-block; font-family: var(--display); font-weight: 600;
       font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
@@ -171,7 +180,7 @@
 <body>
 
   <nav>
-    <a href="#top" class="brand"><img src="brand/logo-pixel-blanco.png" alt="GlitchRushGG" />GLITCHRUSH<span class="gg">GG</span></a>
+    <a href="#top" class="brand"><img src="brand/logo-pixel-blanco.png" alt="GlitchRushGG" /></a>
     <div class="nav-links">
       <a href="#games">Juegos</a>
       <a href="#studio">Estudio</a>
@@ -180,6 +189,7 @@
   </nav>
 
   <header class="hero wrap" id="top">
+    <img class="hero-bolt" src="brand/avatar-pixel-800.png" alt="" aria-hidden="true" />
     <span class="eyebrow">Estudio indie de juegos de navegador</span>
     <h1>Abre y <span class="c">juega</span>.<br>Sin <span class="glitch">descargas</span>.</h1>
     <p class="subtitle">
