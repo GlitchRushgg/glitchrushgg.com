@@ -200,6 +200,25 @@ button {
   color: #888; font-size: 13px; text-decoration: underline;
 }
 
+/* Lucía: retrato en el saludo inicial y veredicto final */
+.dlg.lucia { text-align: center; }
+.luciaPortrait {
+  width: 128px; height: 128px; object-fit: cover; object-position: top center;
+  border-radius: 50%; border: 3px solid #1773b0; background: #eef3f8;
+  margin: 0 auto 6px; display: block;
+}
+.dlg.lucia h2 { text-align: center; }
+.luciaReview {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: #eef3f8; border: 1px solid #d8e2ec; border-radius: 12px;
+  padding: 10px 12px; margin: 12px auto; max-width: 420px;
+}
+.luciaReview img {
+  width: 64px; height: 64px; flex: 0 0 64px; object-fit: cover; object-position: top center;
+  border-radius: 50%; border: 2px solid #1773b0; background: #fff;
+}
+.luciaReview p { font-size: 14px; }
+
 /* Fin de jornada */
 #end .panel { text-align: center; }
 #end .stars { font-size: 38px; letter-spacing: 6px; margin: 8px 0; }

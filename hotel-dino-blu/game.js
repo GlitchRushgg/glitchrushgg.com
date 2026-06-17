@@ -1698,6 +1698,10 @@ function endShift(outcome, minutesLeft = 0) {
     <h1>${S.endTitles[outcome]}</h1>
     <div class="stars">${'⭐'.repeat(stars)}${'☆'.repeat(Math.max(0, 5 - stars))}</div>
     <p>${msgs[outcome]}</p>
+    <div class="luciaReview">
+      <img src="assets/housekeper/lucia.png" alt="Lucía" />
+      <p>${S.luciaVerdict(stars)}</p>
+    </div>
     <table>
       <tr><td>${S.endRows[0]}</td><td>${G.done} / ${G.totalToClean}</td></tr>
       <tr><td>${S.endRows[1]}</td><td>${G.towelPerfect}</td></tr>
@@ -1973,7 +1977,7 @@ for (let f = 1; f <= 4; f++) {
   const g = buildGuestFloor(f);
   if (f === PLAYER_FLOOR) floor2Group = g;
 }
-spawnLucia(floor2Group);
+// Lucía ya no ronda el pasillo: aparece solo en el saludo inicial y el veredicto final
 updateHUD();
 
 // ----------------------------------------------------------------------------
@@ -2030,12 +2034,30 @@ $('btnStart').addEventListener('click', () => {
   $('hud').classList.remove('hidden');
   G.uiOpen = false;
   G.started = true;
-  if (!IS_TOUCH) canvas.requestPointerLock?.();
-  toast(S.toastStart, 4500);
-  updateObjectiveHUD();
-  beep(660, 0.15);
-  if (musicOn) startAmbient(); // música suave de hotel (sintetizada, libre)
+  luciaHandover();   // Lucía te recibe y te entrega el carro antes de la ronda
 });
+
+// Lucía te saluda y te entrega el carro; al cerrar, empieza la ronda (ella se va)
+function luciaHandover() {
+  G.dialogOpen = true;
+  document.exitPointerLock?.();
+  const dlg = $('dialog');
+  dlg.innerHTML = `<div class="dlg lucia">
+    <img class="luciaPortrait" src="assets/housekeper/lucia.png" alt="Lucía" />
+    <h2>${S.luciaLabel}</h2>
+    ${S.luciaWelcome.map(l => `<p>${l}</p>`).join('')}
+    <button class="bigbtn" id="luciaGo">${S.startRound}</button>
+  </div>`;
+  dlg.classList.remove('hidden');
+  $('luciaGo').onclick = () => {
+    closeDialog();
+    if (!IS_TOUCH) canvas.requestPointerLock?.();
+    toast(S.toastStart, 4500);
+    updateObjectiveHUD();
+    beep(660, 0.15);
+    if (musicOn) startAmbient();
+  };
+}
 
 // botón de música del HUD
 $('btnMusic').textContent = musicOn ? '🔊' : '🔇';
@@ -2060,7 +2082,6 @@ function loop() {
       movePlayer(dt);
       updateInteraction(dt);
     }
-    checkInspection();
     hudTimer += dt;
     if (hudTimer > 0.4) { hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD(); }
   }

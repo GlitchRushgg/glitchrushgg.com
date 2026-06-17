@@ -31,6 +31,16 @@ const DICTS = {
     touchHelp: `Joystick izquierdo para moverte · arrastra la pantalla para mirar ·
         mantén pulsado el botón ✋ para realizar tareas`,
     start: '🧹 Empezar el turno',
+    luciaWelcome: [
+      'Buenos días, Sofía. Aquí tienes tu carro: sábanas, toallas, alfombrines y cortesías.',
+      'Empieza por las habitaciones de SALIDA. Vuelvo a las 14:00 a revisar cómo quedó todo. ¡Mucho ánimo! 🧹',
+    ],
+    startRound: '🛒 Recoger el carro y empezar',
+    luciaVerdict: stars => stars >= 4
+      ? '👩‍💼 Lucía: «Brava, Sofía. Trabajo impecable.»'
+      : stars >= 2
+        ? '👩‍💼 Lucía: «Buen turno, pero repasa algún detalle la próxima.»'
+        : '👩‍💼 Lucía: «Hoy ha faltado bastante. Mañana lo harás mejor.»',
     castTitle: '👭 El equipo del Hotel Dino Blu',
     cast: [
       { img: 'sofia', name: 'Sofía', role: 'Tú · 2º piso' },
@@ -171,6 +181,16 @@ const DICTS = {
     touchHelp: `Left joystick to move · drag the screen to look ·
         press and hold the ✋ button to do tasks`,
     start: '🧹 Start the shift',
+    luciaWelcome: [
+      "Good morning, Sofía. Here's your cart: sheets, towels, bath mats and amenities.",
+      "Start with the CHECK-OUT rooms. I'll be back at 14:00 to see how it all turned out. Good luck! 🧹",
+    ],
+    startRound: '🛒 Take the cart and start',
+    luciaVerdict: stars => stars >= 4
+      ? '👩‍💼 Lucía: "Brava, Sofía. Impeccable work."'
+      : stars >= 2
+        ? '👩‍💼 Lucía: "Good shift, but polish a few details next time."'
+        : '👩‍💼 Lucía: "Quite a lot was missing today. You\'ll do better tomorrow."',
     castTitle: '👭 The Hotel Dino Blu team',
     cast: [
       { img: 'sofia', name: 'Sofía', role: 'You · Floor 2' },
@@ -311,6 +331,16 @@ const DICTS = {
     touchHelp: `Joystick sinistro per muoverti · trascina lo schermo per guardare ·
         tieni premuto il pulsante ✋ per le attività`,
     start: '🧹 Inizia il turno',
+    luciaWelcome: [
+      'Buongiorno, Sofia. Ecco il tuo carrello: lenzuola, asciugamani, tappetini e cortesie.',
+      "Comincia dalle camere in PARTENZA. Torno alle 14:00 a controllare com'è andata. In bocca al lupo! 🧹",
+    ],
+    startRound: '🛒 Prendi il carrello e via',
+    luciaVerdict: stars => stars >= 4
+      ? '👩‍💼 Lucia: «Brava, Sofia. Lavoro impeccabile.»'
+      : stars >= 2
+        ? '👩‍💼 Lucia: «Buon turno, ma cura qualche dettaglio la prossima volta.»'
+        : '👩‍💼 Lucia: «Oggi è mancato parecchio. Domani andrà meglio.»',
     castTitle: '👭 La squadra dell\'Hotel Dino Blu',
     cast: [
       { img: 'sofia', name: 'Sofia', role: 'Tu · 2º piano' },
