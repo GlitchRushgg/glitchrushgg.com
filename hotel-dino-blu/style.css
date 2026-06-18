@@ -139,8 +139,8 @@ html, body {
   background: linear-gradient(160deg, #eaf4fb, #d9e9f3); border: 1px solid #d4e0ea; border-radius: 14px;
 }
 #custRows { flex: 1; display: flex; flex-direction: column; gap: 9px; }
-.custRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.custRow > span { font-size: 12px; font-weight: 700; color: #6b7280; min-width: 64px; }
+.custRow { display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
+.custRow > span { font-size: 12px; font-weight: 700; color: #6b7280; min-width: 58px; }
 .custRow .sw { display: flex; gap: 7px; flex-wrap: wrap; }
 .swatch {
   width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff;
