@@ -345,10 +345,7 @@ function buildGuestFloor(f) {
   if (!full) {
     if (f === 4) {
       // Marco — housekeeper del 4º piso (equipo mixto)
-      const marco = billboard('marco', S.marcoLabel);
-      marco.position.set(rand(-10, 10), 0, 0);
-      g.add(marco);
-      NPCS.push({ mesh: marco, x0: -10, x1: 10, z: 0, dir: 1, speed: 1.0, floor: f, name: 'Marco' });
+      spawnMaid(g, 'Marco', S.marcoLabel, 0, -10, 10, 0, f, 0x241a12);
     } else {
       // compañera de piso (pelo oscuro mediterráneo, distinto por compañera)
       const names = { 1: 'Anna', 3: 'Giulia' };
@@ -1065,7 +1062,7 @@ function buildLaundry() {
   }
 
   // Carmela, la encargada de lavandería (camiseta blanca, como en las fotos)
-  spawnMaid(g, 'Carmela', S.carmelaLabel, 0, 6.5, 11.5, 2.6, f, 0x3a2418);
+  spawnMaid(g, 'Carmela', S.carmelaLabel, 0, 6.5, 11.5, 2.6, f, 0xb8b3ad);
 }
 
 // ----------------------------------------------------------------------------
@@ -1085,10 +1082,20 @@ function buildZone(z) {
 
   // suelo + zócalo
   add(g, bx(X1 - X0 + 1, 0.2, Z * 2 + 1), CX, -0.1, 0).material = lamb(z.floorCol);
-  // postal de mar (sin niebla) en los tres lados abiertos → vista nítida
-  const sea = (VIEW.sea ||= viewMat(true));
-  for (const [px, pz, ry] of [[CX, Z + 13, 0], [X0 - 13, 0, Math.PI / 2], [X1 - 1 + 13, 0, -Math.PI / 2]])
-    add(g, new THREE.Mesh(new THREE.PlaneGeometry(48, 22), sea), px, 8, pz, ry);
+  // VISTA ABIERTA A LA PLAYA: mar hasta el horizonte + arena + Isola di Dino + palmeras
+  const seaG = add(g, new THREE.Mesh(new THREE.PlaneGeometry(260, 220), MAT.sea), CX, -0.7, 0); seaG.rotation.x = -Math.PI / 2;
+  const beach = add(g, new THREE.Mesh(new THREE.PlaneGeometry(260, 12), MAT.sand), CX, -0.62, Z + 7.5); beach.rotation.x = -Math.PI / 2;
+  const isla = new THREE.Group();                                   // Isola di Dino a lo lejos
+  add(isla, cyl(9, 11, 5, MAT.cliff, 10), 0, 2.0, 0);
+  const itop = add(isla, new THREE.Mesh(new THREE.SphereGeometry(11, 10, 6), MAT.green), 0, 4.5, 0); itop.scale.y = 0.3;
+  isla.position.set(CX - 16, 0, Z + 62); g.add(isla);
+  for (const [px, pz] of [[X0 + 1.3, Z - 1.4], [X1 - 3.2, Z - 1.4]]) {  // palmeras en el borde al mar
+    add(g, cyl(0.08, 0.12, 2.2, lamb(0x8a6240), 7), px, 1.1, pz);
+    for (let k = 0; k < 6; k++) {
+      const lf = add(g, bx(1.4, 0.04, 0.28, MAT.green), px + Math.cos(k * 1.05) * 0.6, 2.3, pz + Math.sin(k * 1.05) * 0.6);
+      lf.rotation.y = k * 1.05; lf.rotation.z = 0.35;
+    }
+  }
   // baranda blanca perimetral (N, S, O); el lado E es el ascensor/pared
   const rail = (x0, x1, zc) => {
     add(g, bx(x1 - x0, 0.1, 0.08), (x0 + x1) / 2, 1.05, zc).material = MAT.white;
@@ -1385,6 +1392,14 @@ function makePerson({ shirt = 0xffffff, skirt = null, pants = 0x3a4a58, skin = 0
   p.userData.limbs = limbs;
   return p;
 }
+// camarera low-poly: polo azul + delantal blanco + cofia (estilo del juego, no "AI")
+function makeMaid(hair = 0x2a1c12) {
+  return makePerson({ shirt: 0x9fc3e0, skirt: 0x7fb0d8, apron: 0xf2f6f7, skin: 0xd2a074, hair, trim: 0xffffff, cap: true });
+}
+// Marco low-poly (housekeeper del 4º): polo azul + pantalón + delantal, sin cofia
+function makeMarco() {
+  return makePerson({ shirt: 0x9fc3e0, pants: 0x3a4a58, apron: 0xeef2f4, skin: 0xc89a68, hair: 0x241a12, trim: 0xffffff });
+}
 function nameSprite(text) {
   const tex = canvasTex(384, 80, (ctx, w, h) => {
     ctx.font = 'bold 42px sans-serif';
@@ -1558,10 +1573,12 @@ function billboard(imgKey, label, h = 1.8) {
 }
 
 function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair) {
-  const m = billboard(name.toLowerCase(), label);
+  const m = name === 'Marco' ? makeMarco() : makeMaid(hair);
+  const nm = nameSprite(label); nm.position.y = 1.95; m.add(nm);
   m.position.set(rand(x0, x1), 0, z);
   g.add(m);
-  NPCS.push({ mesh: m, x0, x1, z, dir: 1, speed: rand(0.8, 1.2), floor, name });
+  // patrullan los pasillos; en la lavandería (P-1) se quedan trabajando de pie
+  NPCS.push({ mesh: m, x0, x1, z, dir: pick([-1, 1]), speed: rand(0.55, 0.95), floor, name, walk: floor !== -1, phase: rand(0, 6) });
   return m;
 }
 
@@ -2404,27 +2421,49 @@ function updateInteraction(dt) {
 function updateNPCs(dt, t) {
   for (const n of NPCS) {
     const m = n.mesh;
+    const limbs = m.userData.limbs;
     if (n.isBoss && luciaState.mode === 'inspect') {
       luciaState.t -= dt;
       if (luciaState.t <= 0) luciaState.mode = 'patrol';
     }
-    if (G.celebrating) {                                  // tarantela: saltan y se balancean
-      m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.2;
-      m.userData.tilt = Math.sin(t * 7 + n.x0) * 0.18;
+    if (G.celebrating) {                                  // tarantela: saltos + giros + brazos arriba
+      m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.22;
+      m.rotation.z = Math.sin(t * 7 + n.x0) * 0.15;
+      m.rotation.y = Math.sin(t * 3 + n.x0) * 0.7;
+      if (limbs) {
+        limbs.arms.forEach((a, i) => { a.rotation.x = -2.1 + Math.sin(t * 8 + i * 2) * 0.35; });
+        limbs.legs.forEach((l, i) => { l.rotation.x = Math.sin(t * 8 + i * Math.PI) * 0.4; });
+      }
+      continue;
+    }
+    m.rotation.z = 0;
+    if (n.walk && n.floor === G.floor) {                  // patrulla el pasillo
+      n.phase += dt * n.speed * 5;
+      m.position.x += n.dir * n.speed * dt;
+      if (m.position.x > n.x1) { m.position.x = n.x1; n.dir = -1; }
+      if (m.position.x < n.x0) { m.position.x = n.x0; n.dir = 1; }
+      m.rotation.y = n.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      m.position.y = Math.abs(Math.sin(n.phase)) * 0.03;
+      if (limbs) {
+        const sw = Math.sin(n.phase) * 0.5;
+        limbs.legs[0].rotation.x = sw; limbs.legs[1].rotation.x = -sw;
+        limbs.arms[0].rotation.x = -sw; limbs.arms[1].rotation.x = sw;
+      }
     } else {                                              // de pie, respiración suave
       m.position.y = Math.abs(Math.sin(t * 1.6 + n.x0)) * 0.02;
-      m.userData.tilt = 0;
+      m.rotation.y = Math.PI;
+      if (limbs) { limbs.legs.forEach(l => l.rotation.x = 0); limbs.arms.forEach(a => a.rotation.x = 0); }
     }
   }
   for (const d of DRUMS) d.rotation.z += dt * 5;
 }
-// las figuras siempre miran a la cámara (billboard en eje Y) + balanceo festivo
+// los billboards (si quedara alguno) miran a la cámara; los modelos 3D los anima updateNPCs
 function faceNPCsToCamera() {
   for (const n of NPCS) {
-    if (n.floor !== G.floor) continue;
     const m = n.mesh;
+    if (!m.userData.billboard || n.floor !== G.floor) continue;
     m.rotation.y = Math.atan2(camera.position.x - m.position.x, camera.position.z - m.position.z);
-    m.rotation.z = n.mesh.userData.tilt || 0;
+    m.rotation.z = m.userData.tilt || 0;
   }
 }
 
