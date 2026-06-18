@@ -2507,9 +2507,47 @@ function fillWorkSheet() {
 // Personalización de la camarera: vista previa 3D en vivo + selectores de color
 // ----------------------------------------------------------------------------
 let pvRenderer = null, pvScene = null, pvCamera = null, pvModel = null, pvRAF = 0;
+let pvMixer = null, pvCharRoot = null, pvClock = null, pvLoader = null;
+
+// recolorea el modelo 3D (Quaternius "Woman", CC0): materiales por nombre, sin texturas
+function recolorChar(obj) {
+  const uni = new THREE.Color(hex(CUSTOM.uniform));
+  const sk = new THREE.Color(hex(CUSTOM.skin));
+  const ha = new THREE.Color(hex(CUSTOM.hair));
+  obj.traverse(o => {
+    if (!o.isMesh) return;
+    (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+      const n = (m.name || '').toLowerCase();
+      if (n.includes('skin')) m.color.copy(sk);
+      else if (n.includes('hair') || n.includes('eyebrow')) m.color.copy(ha);
+      else if (['shirt', 'jacket', 'pants'].some(k => n.includes(k))) m.color.copy(uni);
+    });
+  });
+}
+async function loadPreviewChar() {
+  try {
+    if (!pvLoader) { const mod = await import('./lib/jsm/loaders/GLTFLoader.js'); pvLoader = new mod.GLTFLoader(); }
+    pvLoader.load('assets/models/char-woman.glb', gltf => {
+      const obj = gltf.scene;
+      let b = new THREE.Box3().setFromObject(obj); const sz = new THREE.Vector3(); b.getSize(sz);
+      obj.scale.setScalar(1.62 / (sz.y || 1));
+      b = new THREE.Box3().setFromObject(obj); const c = new THREE.Vector3(); b.getCenter(c);
+      obj.position.set(-c.x, -b.min.y, -c.z);
+      const wrap = new THREE.Group(); wrap.add(obj);
+      pvCharRoot = obj;
+      recolorChar(obj);
+      pvMixer = new THREE.AnimationMixer(obj);
+      const idle = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
+      if (idle) pvMixer.clipAction(idle).play();
+      if (pvModel) pvScene.remove(pvModel);
+      pvModel = wrap; pvScene.add(wrap);
+    }, undefined, e => console.warn('[preview glb]', e));
+  } catch (e) { console.warn('[preview glb]', e); }
+}
 function updatePreviewModel() {
   if (!pvScene) return;
-  if (pvModel) pvScene.remove(pvModel);
+  if (pvCharRoot) { recolorChar(pvCharRoot); return; }      // GLB cargado → recolorear en vivo
+  if (pvModel) pvScene.remove(pvModel);                       // low-poly de respaldo mientras carga
   pvModel = makePerson({
     shirt: hex(CUSTOM.uniform), skirt: hex(CUSTOM.uniform), apron: 0xf2f6f7,
     skin: hex(CUSTOM.skin), hair: hex(CUSTOM.hair), trim: 0xffffff, cap: true,
@@ -2539,12 +2577,21 @@ function buildCustomizer() {
       pvRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       pvRenderer.setSize(170, 250, false);
       pvScene = new THREE.Scene();
-      pvScene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.5));
-      const dl = new THREE.DirectionalLight(0xffffff, 0.85); dl.position.set(1.5, 3, 2.5); pvScene.add(dl);
+      pvScene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      pvScene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.4));
+      const dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(1.5, 3, 2.5); pvScene.add(dl);
       pvCamera = new THREE.PerspectiveCamera(38, 170 / 250, 0.1, 30);
       pvCamera.position.set(0, 0.95, 3.1); pvCamera.lookAt(0, 0.82, 0);
-      const tick = () => { pvRAF = requestAnimationFrame(tick); if (pvModel) pvModel.rotation.y += 0.012; pvRenderer.render(pvScene, pvCamera); };
+      pvClock = new THREE.Clock();
+      const tick = () => {
+        pvRAF = requestAnimationFrame(tick);
+        const d = pvClock.getDelta();
+        if (pvMixer) pvMixer.update(d);
+        if (pvModel) pvModel.rotation.y += 0.5 * d;
+        pvRenderer.render(pvScene, pvCamera);
+      };
       tick();
+      loadPreviewChar();                 // carga el modelo 3D bonito (reemplaza al low-poly)
     } catch (e) { console.warn('[preview]', e); $('charPreview').style.display = 'none'; }
   }
   updatePreviewModel();
