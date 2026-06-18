@@ -76,6 +76,17 @@ const ZONES = [
 const zoneUnlocked = z => DAY >= z.unlockDay;
 const zoneByFloor = {};   // f -> zona construida
 
+// personalización de la camarera (persistente) — se ve en la vista previa 3D y en las manos
+const hex = c => parseInt(c.slice(1), 16);
+const SKINS    = ['#f1c9a5', '#d2a074', '#a9744a', '#7a4e2e'];
+const HAIRS    = ['#2a1c12', '#7a4a2a', '#caa15a', '#b8b3ad', '#3d2817'];
+const UNIFORMS = ['#9fc3e0', '#7ec4b8', '#e3a3b5', '#a8d8a0', '#c9a24a'];
+const CUSTOM = {
+  skin:    localStorage.getItem('hg-skin')    || SKINS[1],
+  hair:    localStorage.getItem('hg-hair')    || HAIRS[0],
+  uniform: localStorage.getItem('hg-uniform') || UNIFORMS[0],
+};
+
 const G = {
   started: false, over: false, mode: MODE,
   time: SHIFT_START,
@@ -169,6 +180,9 @@ const MAT = {
   road: lamb(0x9b9b98), paving: texLamb('paving.jpg', 0xd8d2c4, 110, 2.2), green: lamb(0x4e8c46),
   cliff: lamb(0x9a948a), terra: lamb(0xc96f4a), navy: lamb(0x27374f),
 };
+// materiales recolorables de las manos en primera persona (personalización del jugador)
+const handSkinMat = lamb(hex(CUSTOM.skin));
+const handSleeveMat = lamb(hex(CUSTOM.uniform));
 
 function bx(w, h, d, m) { return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); }
 function add(parent, mesh, x, y, z, ry = 0) {
@@ -2483,6 +2497,53 @@ function fillWorkSheet() {
 }
 
 // ----------------------------------------------------------------------------
+// Personalización de la camarera: vista previa 3D en vivo + selectores de color
+// ----------------------------------------------------------------------------
+let pvRenderer = null, pvScene = null, pvCamera = null, pvModel = null, pvRAF = 0;
+function updatePreviewModel() {
+  if (!pvScene) return;
+  if (pvModel) pvScene.remove(pvModel);
+  pvModel = makePerson({
+    shirt: hex(CUSTOM.uniform), skirt: hex(CUSTOM.uniform), apron: 0xf2f6f7,
+    skin: hex(CUSTOM.skin), hair: hex(CUSTOM.hair), trim: 0xffffff, cap: true,
+  });
+  pvScene.add(pvModel);
+}
+function buildCustomizer() {
+  $('custTitle').textContent = S.customizeTitle;
+  const rows = [['skin', SKINS, S.skinLabel], ['hair', HAIRS, S.hairLabel], ['uniform', UNIFORMS, S.uniformLabel]];
+  $('custRows').innerHTML = rows.map(([key, pal, label]) =>
+    `<div class="custRow"><span>${label}</span><div class="sw">` +
+    pal.map(c => `<button class="swatch${c === CUSTOM[key] ? ' on' : ''}" data-key="${key}" data-c="${c}" style="background:${c}"></button>`).join('') +
+    `</div></div>`).join('');
+  $('custRows').querySelectorAll('.swatch').forEach(b => b.onclick = () => {
+    const key = b.dataset.key, c = b.dataset.c;
+    CUSTOM[key] = c; localStorage.setItem('hg-' + key, c);
+    $('custRows').querySelectorAll(`.swatch[data-key="${key}"]`).forEach(x => x.classList.toggle('on', x === b));
+    handSkinMat.color.set(hex(CUSTOM.skin));
+    handSleeveMat.color.set(hex(CUSTOM.uniform));
+    updatePreviewModel();
+  });
+  // renderer de la vista previa (una vez); si WebGL falla, el juego sigue sin preview
+  if (!pvRenderer) {
+    try {
+      const cv = $('charPreview');
+      pvRenderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true });
+      pvRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      pvRenderer.setSize(170, 250, false);
+      pvScene = new THREE.Scene();
+      pvScene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.5));
+      const dl = new THREE.DirectionalLight(0xffffff, 0.85); dl.position.set(1.5, 3, 2.5); pvScene.add(dl);
+      pvCamera = new THREE.PerspectiveCamera(38, 170 / 250, 0.1, 30);
+      pvCamera.position.set(0, 0.95, 3.1); pvCamera.lookAt(0, 0.82, 0);
+      const tick = () => { pvRAF = requestAnimationFrame(tick); if (pvModel) pvModel.rotation.y += 0.012; pvRenderer.render(pvScene, pvCamera); };
+      tick();
+    } catch (e) { console.warn('[preview]', e); $('charPreview').style.display = 'none'; }
+  }
+  updatePreviewModel();
+}
+
+// ----------------------------------------------------------------------------
 // Textos de la pantalla de inicio + selector de idioma
 // ----------------------------------------------------------------------------
 function applyIntroTexts() {
@@ -2498,6 +2559,7 @@ function applyIntroTexts() {
   $('touchHelp').innerHTML = S.touchHelp;
   $('btnStart').textContent = S.start;
   $('disclaimer').textContent = S.disclaimer;
+  buildCustomizer();   // personalización: vista previa 3D + selectores
   // día actual + mapa de zonas del hotel (progresión)
   $('dayBadge').textContent = S.day(DAY);
   $('zones').innerHTML = `<h3>${S.mapTitle}</h3><p class="zsub">${S.mapSub}</p>` +
@@ -2603,6 +2665,7 @@ loadDecorModels();
 $('btnStart').addEventListener('click', () => {
   $('intro').classList.add('hidden');
   $('hud').classList.remove('hidden');
+  if (pvRAF) cancelAnimationFrame(pvRAF);   // detener la vista previa 3D
   G.uiOpen = false;
   G.started = true;
   luciaHandover();   // Lucía te recibe y te entrega el carro antes de la ronda
@@ -2649,10 +2712,10 @@ const HANDS = new THREE.Group();
 camera.add(HANDS);
 HANDS.visible = false;
 {
-  const skin = lamb(0xe3b48c), sleeve = lamb(0x9fc3e0), cloth = lamb(0xfff2b0);
+  const skin = handSkinMat, sleeve = handSleeveMat, cloth = lamb(0xfff2b0);
   const buildArm = (s) => {                // s = -1 izquierda, +1 derecha
     const a = new THREE.Group();
-    add(a, bx(0.12, 0.12, 0.34, sleeve), 0, 0, 0.04);        // manga azul (antebrazo)
+    add(a, bx(0.12, 0.12, 0.34, sleeve), 0, 0, 0.04);        // manga del uniforme (antebrazo)
     add(a, bx(0.115, 0.115, 0.2, skin), 0, 0, -0.2);         // muñeca/antebrazo (piel)
     add(a, bx(0.13, 0.075, 0.16, skin), 0, 0, -0.36);        // mano
     add(a, bx(0.045, 0.06, 0.08, skin), -s * 0.08, 0, -0.33); // pulgar
