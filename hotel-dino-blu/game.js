@@ -1353,54 +1353,61 @@ function makePerson({ shirt = 0xffffff, skirt = null, pants = 0x3a4a58, skin = 0
   const p = new THREE.Group();
   const limbs = { legs: [], arms: [] };
   const dress = !!skirt;
-  const sph = (r, c, seg = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), lamb(c));
+  const sph = (r, c, seg = 14) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), lamb(c));
+  const box = (w, h, d, c) => bx(w, h, d, lamb(c));
 
-  // piernas: si lleva vestido se ven las pantorrillas (medias claras) + zapato
-  const legLen = dress ? 0.36 : 0.5;
+  // piernas (con vestido se ven las pantorrillas + zapato)
+  const legLen = dress ? 0.34 : 0.5;
   for (const s of [-1, 1]) {
-    const leg = bx(0.12, legLen, 0.14, lamb(dress ? 0xf0e2d4 : pants));
-    leg.position.set(s * 0.1, dress ? 0.42 : 0.55, 0);
+    const leg = box(0.1, legLen, 0.11, dress ? 0xefe1d2 : pants);
+    leg.position.set(s * 0.085, dress ? 0.4 : 0.55, 0);
     leg.geometry.translate(0, -legLen / 2, 0);
-    add(leg, bx(0.15, 0.08, 0.22), 0, -legLen + 0.02, 0.04).material = lamb(0x3a2f28); // zapato
+    add(leg, box(0.13, 0.08, 0.19, 0x4a3a30), 0, -legLen + 0.02, 0.035);   // zapato
     p.add(leg); limbs.legs.push(leg);
   }
 
-  // torso ligeramente afilado
-  const torso = add(p, new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.21, 0.5, 12), lamb(shirt)), 0, 1.06, 0);
-  torso.scale.z = 0.62;
-  // falda acampanada del uniforme
+  // falda acampanada DESDE una cintura estrecha (silueta, no barril) / o caderas
   if (dress) {
-    add(p, new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.36, 0.44, 16), lamb(skirt)), 0, 0.62, 0).scale.z = 0.85;
-    if (trim) add(p, new THREE.Mesh(new THREE.CylinderGeometry(0.365, 0.365, 0.06, 16), lamb(trim)), 0, 0.43, 0).scale.z = 0.85; // ribete del bajo
+    add(p, new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.34, 0.5, 18), lamb(skirt)), 0, 0.6, 0).scale.z = 0.9;
+    if (trim) add(p, new THREE.Mesh(new THREE.CylinderGeometry(0.345, 0.345, 0.05, 18), lamb(trim)), 0, 0.37, 0).scale.z = 0.9; // bajo
+  } else {
+    add(p, box(0.28, 0.22, 0.19, pants), 0, 0.66, 0);
   }
-  // ribetes naranjas: cuello, botonadura y bajo de la camisa
-  if (trim) {
-    add(p, bx(0.42, 0.05, 0.27), 0, 1.3, 0).material = lamb(trim);      // cuello
-    add(p, bx(0.05, 0.5, 0.28), 0, 1.06, 0).material = lamb(trim);      // botonadura
-    if (!dress) add(p, bx(0.43, 0.05, 0.27), 0, 0.83, 0).material = lamb(trim); // bajo camisa larga
-  }
-  // delantal
-  if (apron) add(p, bx(0.3, 0.4, 0.04), 0, 0.95, 0.15).material = lamb(apron);
+  const waistY = dress ? 0.86 : 0.9;
 
-  // brazos con manga, puño y mano
+  // torso esbelto + hombros (cintura marcada)
+  add(p, box(0.29, 0.44, 0.18, shirt), 0, waistY + 0.18, 0);
+  add(p, box(0.36, 0.11, 0.19, shirt), 0, waistY + 0.36, 0);
+  if (trim) {
+    add(p, box(0.3, 0.05, 0.2, trim), 0, waistY + 0.38, 0);            // cuello
+    add(p, box(0.035, 0.4, 0.19, trim), 0, waistY + 0.16, 0.092);      // botonadura
+  }
+  if (apron) add(p, box(0.26, 0.5, 0.04, apron), 0, waistY + 0.02, dress ? 0.17 : 0.105); // delantal (peto+falda)
+
+  // brazos afilados con manga, puño y mano
   for (const s of [-1, 1]) {
-    const arm = bx(0.1, 0.46, 0.12, lamb(shirt));
-    arm.position.set(s * 0.27, 1.3, 0);
-    arm.geometry.translate(0, -0.2, 0);
-    if (trim) add(arm, bx(0.12, 0.06, 0.14), 0, -0.4, 0).material = lamb(trim); // puño
-    add(arm, sph(0.07, skin, 8), 0, -0.47, 0); // mano
+    const arm = box(0.085, 0.46, 0.1, shirt);
+    arm.position.set(s * 0.21, waistY + 0.36, 0);
+    arm.geometry.translate(0, -0.22, 0);
+    arm.rotation.z = s * 0.07;
+    if (trim) add(arm, box(0.1, 0.05, 0.12, trim), 0, -0.34, 0);       // puño
+    add(arm, sph(0.06, skin, 8), 0, -0.45, 0);                         // mano
     p.add(arm); limbs.arms.push(arm);
   }
 
-  add(p, bx(0.11, 0.1, 0.11), 0, 1.37, 0).material = lamb(skin); // cuello
-  add(p, sph(0.15, skin), 0, 1.5, 0);                            // cabeza
-  add(p, new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.24), faceMat()), 0, 1.5, 0.143); // rostro
-  const h = add(p, sph(0.16, hair), 0, 1.53, -0.02); h.scale.set(1, 0.92, 1);
-  add(p, sph(0.08, hair, 8), 0, 1.49, -0.15);                    // moño
-  // diadema/cofia naranja del uniforme
-  if (cap && trim) {
-    const band = add(p, new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.022, 6, 16), lamb(trim)), 0, 1.55, 0.02);
-    band.rotation.x = 1.2;
+  // cuello + cabeza + rostro + pelo
+  add(p, box(0.1, 0.08, 0.1, skin), 0, waistY + 0.42, 0);
+  const hy = waistY + 0.62;
+  add(p, sph(0.155, skin), 0, hy, 0);
+  add(p, new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), faceMat()), 0, hy, 0.148);
+  const hcap = add(p, sph(0.17, hair), 0, hy + 0.03, -0.015); hcap.scale.set(1, 0.95, 1);
+  add(p, sph(0.11, hair, 12), 0, hy - 0.03, -0.13);                    // pelo trasero
+  if (cap) {                                                            // camarera: trenzas + cofia
+    for (const s of [-1, 1]) {
+      add(p, box(0.045, 0.3, 0.045, hair), s * 0.165, hy - 0.13, 0.02);          // trenza
+      add(p, sph(0.03, trim || 0xffffff, 8), s * 0.165, hy - 0.29, 0.02);        // lazo
+    }
+    if (trim) { const band = add(p, new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.02, 6, 16), lamb(trim)), 0, hy + 0.05, 0.02); band.rotation.x = 1.2; }
   }
 
   p.userData.limbs = limbs;
