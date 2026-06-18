@@ -115,13 +115,34 @@ export default class MenuScene extends Phaser.Scene {
     btn.setInteractive(new Phaser.Geom.Rectangle(-124, -37, 248, 74), Phaser.Geom.Rectangle.Contains);
     this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 720, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    const start = () => this.scene.start('Game', { level: 1, score: 0 });
-    btn.on('pointerover', () => this.input.setDefaultCursor('pointer'));
-    btn.on('pointerout', () => this.input.setDefaultCursor('default'));
-    btn.on('pointerdown', () => {
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      this.scene.start('Game', { level: 1, score: 0 });
+    };
+    const press = () => {
       this.tweens.killTweensOf(btn);
       this.tweens.add({ targets: btn, scaleX: 0.92, scaleY: 0.92, duration: 90, yoyo: true, onComplete: start });
-    });
+    };
+    btn.on('pointerover', () => this.input.setDefaultCursor('pointer'));
+    btn.on('pointerout', () => this.input.setDefaultCursor('default'));
+    btn.on('pointerdown', press);
+
+    // iOS Safari: Phaser's touch input is unreliable here (same reason GameScene
+    // uses raw DOM touch listeners), so the PLAY button can silently fail to
+    // respond to taps. Add a raw DOM touch fallback mapped to the button rect.
+    const canvas = this.game.canvas;
+    const onTouchEnd = (e) => {
+      const t = e.changedTouches[0];
+      if (!t) return;
+      const r = canvas.getBoundingClientRect();
+      const gx = (t.clientX - r.left) * (390 / r.width);
+      const gy = (t.clientY - r.top)  * (844 / r.height);
+      if (Math.abs(gx - W / 2) <= 124 && Math.abs(gy - btnY) <= 37) press();
+    };
+    canvas.addEventListener('touchend', onTouchEnd, { passive: true });
+    this.events.once('shutdown', () => canvas.removeEventListener('touchend', onTouchEnd));
 
     this.add.text(W / 2, btnY + 56, 'Free · No download · Tap and play', {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#e9f4ff', stroke: '#0d3a5c', strokeThickness: 3,
