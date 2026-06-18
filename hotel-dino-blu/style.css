@@ -130,6 +130,22 @@ html, body {
 }
 #langRow .lang.active { background: #1773b0; border-color: #1773b0; color: #fff; }
 
+/* día actual + mapa de zonas del hotel (progresión) */
+#dayBadge {
+  display: inline-block; background: linear-gradient(135deg, #1aa3d6, #1773b0); color: #fff;
+  font-weight: 800; font-size: 15px; padding: 5px 16px; border-radius: 100px; margin: 4px auto 10px;
+}
+#zones { margin: 4px 0 12px; }
+#zones h3 { font-size: 14px; color: #25313c; margin-bottom: 2px; }
+#zones .zsub { font-size: 11px; opacity: 0.65; margin-bottom: 8px; }
+#zones .zrow {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #f4efe4; border: 1px solid #e3d8c4; border-radius: 9px;
+  padding: 7px 12px; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #8a7a5c;
+}
+#zones .zrow.on { background: #e7f5ec; border-color: #b6e0c4; color: #1f7a45; }
+#zones .zrow.on span:last-child { font-weight: 800; }
+
 /* récord guardado en la intro */
 #record {
   background: #fff6e0; border: 1px solid #e8c87a; color: #8a5a12;
@@ -211,6 +227,7 @@ button {
   border-radius: 10px; padding: 11px 6px; font-size: 14px; font-weight: 700;
 }
 .dlg .floors button.here { opacity: 0.45; border-color: #999; color: #777; }
+.dlg .floors button.zone { border-color: #3fa15c; color: #2c7a45; background: #f0faf3; }
 .dlg .cancel {
   margin-top: 10px; width: 100%; background: none; border: none;
   color: #888; font-size: 13px; text-decoration: underline;
@@ -278,6 +295,11 @@ button {
   margin: 6px auto 4px; display: inline-block; animation: comboPop 0.4s ease-out;
 }
 #end .recordLine { font-size: 13px; font-weight: 700; color: #8a5a12; margin: 4px 0; }
+#end .dayLine {
+  background: linear-gradient(135deg, #1aa3d6, #1773b0); color: #fff;
+  border-radius: 12px; padding: 8px 14px; font-size: 14px; font-weight: 800;
+  margin: 6px auto; display: inline-block;
+}
 #end table { margin: 10px auto; font-size: 14px; border-collapse: collapse; }
 #end td { padding: 3px 12px; text-align: left; }
 #end td:last-child { text-align: right; font-weight: 700; }
