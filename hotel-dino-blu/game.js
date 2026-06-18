@@ -2529,8 +2529,11 @@ async function loadPreviewChar() {
     if (!pvLoader) { const mod = await import('./lib/jsm/loaders/GLTFLoader.js'); pvLoader = new mod.GLTFLoader(); }
     pvLoader.load('assets/models/char-woman.glb', gltf => {
       const obj = gltf.scene;
+      obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; });  // evita que el skinned mesh se auto-oculte
+      obj.updateMatrixWorld(true);
       let b = new THREE.Box3().setFromObject(obj); const sz = new THREE.Vector3(); b.getSize(sz);
       obj.scale.setScalar(1.62 / (sz.y || 1));
+      obj.updateMatrixWorld(true);
       b = new THREE.Box3().setFromObject(obj); const c = new THREE.Vector3(); b.getCenter(c);
       obj.position.set(-c.x, -b.min.y, -c.z);
       const wrap = new THREE.Group(); wrap.add(obj);
@@ -2539,6 +2542,7 @@ async function loadPreviewChar() {
       pvMixer = new THREE.AnimationMixer(obj);
       const idle = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
       if (idle) pvMixer.clipAction(idle).play();
+      pvMixer.update(0);
       if (pvModel) pvScene.remove(pvModel);
       pvModel = wrap; pvScene.add(wrap);
     }, undefined, e => console.warn('[preview glb]', e));
