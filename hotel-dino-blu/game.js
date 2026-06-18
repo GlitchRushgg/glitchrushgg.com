@@ -65,6 +65,17 @@ const REC = {
   rooms:  +localStorage.getItem('hg-rooms')  || 0,
 };
 
+// progresión por DÍAS: cada turno completado avanza un día y abre zonas nuevas
+const DAY = Math.max(1, parseInt(localStorage.getItem('hg-day'), 10) || 1);
+const ZONES = [
+  { id: 'terrace',    f: 11, unlockDay: 2, floorCol: 0xd8c08a, icons: ['🧹', '🧽', '⛱'] },
+  { id: 'restaurant', f: 12, unlockDay: 3, floorCol: 0xb0875a, icons: ['🍽', '🧹', '🍴'] },
+  { id: 'pool',       f: 13, unlockDay: 4, floorCol: 0xbfd6dd, icons: ['🪣', '🧖', '🧹'] },
+  { id: 'garden',     f: 14, unlockDay: 5, floorCol: 0x9ccb7a, icons: ['💧', '🧹', '🪑'] },
+];
+const zoneUnlocked = z => DAY >= z.unlockDay;
+const zoneByFloor = {};   // f -> zona construida
+
 const G = {
   started: false, over: false, mode: MODE,
   time: SHIFT_START,
@@ -1060,6 +1071,108 @@ function buildLaundry() {
 // ----------------------------------------------------------------------------
 // Exterior: Praia a Mare — paseo, playa, mar e Isola di Dino
 // ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ZONAS desbloqueables (terraza, restaurante, piscina, jardín) — cubiertas
+// abiertas con vista al mar, accesibles por el ascensor cuando el día las abre.
+// ----------------------------------------------------------------------------
+function buildZone(z) {
+  const f = z.f;
+  zoneByFloor[f] = z;
+  z.done = [false, false, false];
+  const g = new THREE.Group(); g.position.y = f * FH; scene.add(g);
+  const X0 = -8, X1 = BX1, Z = 6.5, CX = (X0 + X1) / 2;
+  BOUNDS[f] = { x0: X0 + 0.5, x1: X1 - 0.6, z0: -Z + 0.5, z1: Z - 0.5 };
+
+  // suelo + zócalo
+  add(g, bx(X1 - X0 + 1, 0.2, Z * 2 + 1), CX, -0.1, 0).material = lamb(z.floorCol);
+  // postal de mar (sin niebla) en los tres lados abiertos → vista nítida
+  const sea = (VIEW.sea ||= viewMat(true));
+  for (const [px, pz, ry] of [[CX, Z + 13, 0], [X0 - 13, 0, Math.PI / 2], [X1 - 1 + 13, 0, -Math.PI / 2]])
+    add(g, new THREE.Mesh(new THREE.PlaneGeometry(48, 22), sea), px, 8, pz, ry);
+  // baranda blanca perimetral (N, S, O); el lado E es el ascensor/pared
+  const rail = (x0, x1, zc) => {
+    add(g, bx(x1 - x0, 0.1, 0.08), (x0 + x1) / 2, 1.05, zc).material = MAT.white;
+    for (let x = x0 + 0.3; x <= x1; x += 1.3) add(g, cyl(0.03, 0.03, 1.05, MAT.steel, 6), x, 0.52, zc);
+    addSolid(f, x0, x1, zc - 0.12, zc + 0.12);
+  };
+  rail(X0, X1 - 1.6, Z - 0.2);
+  rail(X0, X1 - 1.6, -Z + 0.2);
+  add(g, bx(0.08, 0.1, Z * 2 - 0.4), X0 + 0.1, 1.05, 0).material = MAT.white;        // baranda oeste
+  for (let zz = -Z + 0.6; zz <= Z - 0.6; zz += 1.3) add(g, cyl(0.03, 0.03, 1.05, MAT.steel, 6), X0 + 0.1, 0.52, zz);
+  addSolid(f, X0 - 0.05, X0 + 0.15, -Z, Z);
+  add(g, bx(0.12, 2.7, Z * 2), X1 - 0.06, 1.35, 0).material = MAT.wall;               // pared este (ascensor)
+
+  buildZoneProps(z, g, Z, CX);
+  buildElevator(g, f);
+  add(g, textPlane(S.zones[z.id].name, 3, 0.6, { bg: '#1773b0', fg: '#fff', size: 70 }), X1 - 0.2, 2.55, 0, -Math.PI / 2);
+
+  // 3 tareas (mantener pulsado) repartidas por la cubierta
+  z.spots = [[-4.5, -3], [4, 3], [10, -3.2]];
+  S.zones[z.id].tasks.forEach((label, i) => {
+    const [x, zc] = z.spots[i];
+    const h = {
+      floor: f, x, z: zc, r: 1.6, type: 'hold', dur: 2.6,
+      label: `${z.icons[i]} ${label}`,
+      avail: () => (z.done[i] ? S.zoneDoneMsg : true),
+      action: () => zoneTaskDone(z, i, x, f * FH + 0.6, zc),
+    };
+    const mk = emojiSprite(z.icons[i], 0.42);
+    mk.position.set(x, 1.4, zc); mk.visible = false; g.add(mk);
+    h.marker = mk; h.markerY = 1.4;
+    HOTSPOTS.push(h);
+  });
+}
+
+function buildZoneProps(z, g, Z, CX) {
+  const sun = lamb(0xf2e3b8), tableM = MAT.white;
+  if (z.id === 'terrace') {
+    for (const x of [-5, 1, 7]) {                                   // tumbonas
+      add(g, bx(0.7, 0.16, 1.7, sun), x, 0.22, Z - 1.6);
+      add(g, bx(0.7, 0.5, 0.12, sun), x, 0.42, Z - 2.3).rotation.x = -0.5;
+    }
+    for (const x of [-3, 6]) {                                      // mesas + sombrilla
+      add(g, cyl(0.5, 0.5, 0.06, tableM, 12), x, 0.74, -2.5);
+      add(g, cyl(0.05, 0.06, 0.72, MAT.steel, 6), x, 0.37, -2.5);
+      add(g, new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.5, 12), MAT.terra), x, 2.0, -2.5);
+      add(g, cyl(0.04, 0.04, 1.5, MAT.steel, 6), x, 1.1, -2.5);
+    }
+  } else if (z.id === 'restaurant') {
+    for (const x of [-4, 1, 6, 11]) for (const zc of [-2.5, 2.5]) {  // mesas con mantel + sillas
+      add(g, cyl(0.5, 0.5, 0.06, tableM, 12), x, 0.74, zc);
+      add(g, cyl(0.07, 0.09, 0.72, MAT.woodDark), x, 0.37, zc);
+      for (const dx of [-0.7, 0.7]) { add(g, bx(0.4, 0.4, 0.4, MAT.wood), x + dx, 0.2, zc); add(g, bx(0.4, 0.5, 0.1, MAT.wood), x + dx, 0.6, zc + (dx > 0 ? 0.18 : -0.18)); }
+    }
+  } else if (z.id === 'pool') {
+    add(g, bx(11, 0.3, 5, lamb(0x1f86c8)), CX - 1, 0.06, 0);         // agua de la piscina
+    add(g, bx(11.4, 0.34, 5.4, MAT.white), CX - 1, 0.02, 0);        // borde
+    add(g, bx(11, 0.26, 5, new THREE.MeshBasicMaterial({ color: 0x36a6d8, transparent: true, opacity: 0.85 })), CX - 1, 0.1, 0);
+    for (const x of [-5, 8]) { add(g, bx(0.7, 0.16, 1.7, sun), x, 0.22, -Z + 1.7); add(g, bx(0.7, 0.5, 0.12, sun), x, 0.42, -Z + 1.0).rotation.x = 0.5; }
+  } else { // garden
+    for (const [x, zc] of [[-5, 3], [0, -3.5], [8, 3.5], [11, -3]]) { // jardineras con arbustos
+      add(g, cyl(0.4, 0.46, 0.5, lamb(0xb5651d)), x, 0.25, zc);
+      add(g, new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), MAT.green), x, 0.95, zc);
+      addSolid(z.f, x - 0.45, x + 0.45, zc - 0.45, zc + 0.45);
+    }
+    add(g, bx(2.4, 0.12, 0.6, MAT.wood), 3, 0.45, 1.5);             // banco
+    for (const bx2 of [2, 4]) add(g, cyl(0.05, 0.05, 0.45, MAT.woodDark, 6), bx2, 0.22, 1.5);
+    const path = add(g, new THREE.Mesh(new THREE.PlaneGeometry(3, 9), MAT.paving), CX, 0.02, 0); path.rotation.x = -Math.PI / 2;
+  }
+}
+
+function zoneTaskDone(z, i, x, y, zc) {
+  if (z.done[i]) return;
+  z.done[i] = true;
+  registerProgress(); addScore(20);
+  burst(x, y, zc, { chars: ['✨', '✨', '💫'], n: 9 });
+  dingOK();
+  if (z.done.every(Boolean)) {
+    addScore(60); flash('rgba(255,255,255,0.35)', 320);
+    rain({ chars: ['✨', '🎉', '⭐'], n: 26, life: 2.2 });
+    toast(S.zoneClean(S.zones[z.id].name, 60), 3500);
+  }
+  updateHUD(); refreshChecklist();
+}
+
 function buildExterior() {
   const gr = (w, d, m, x, y, z) => {
     const p = add(scene, new THREE.Mesh(new THREE.PlaneGeometry(w, d), m), x, y, z);
@@ -1643,6 +1756,17 @@ function computeObjective() {
     }
     G.objective = { type: 'lift', x: ELEV.x, z: ELEV.z, text: S.objBackUp }; return;
   }
+  const zHere = zoneByFloor[G.floor];
+  if (zHere) {   // en una zona: guía a la tarea pendiente más cercana, o de vuelta al ascensor
+    let best = null, bd = 1e9;
+    zHere.spots.forEach(([x, z], i) => {
+      if (zHere.done[i]) return;
+      const d = Math.hypot(G.px - x, G.pz - z);
+      if (d < bd) { bd = d; best = { x, z, i }; }
+    });
+    if (best) { G.objective = { type: 'spot', x: best.x, z: best.z, text: `${zHere.icons[best.i]} ${S.zones[zHere.id].tasks[best.i]}` }; return; }
+    G.objective = { type: 'lift', x: ELEV.x, z: ELEV.z, text: S.objBackUp }; return;
+  }
   if (G.floor !== PLAYER_FLOOR) {
     G.objective = { type: 'lift', x: ELEV.x, z: ELEV.z, text: S.objGoFloor }; return;
   }
@@ -1899,6 +2023,8 @@ function openElevator() {
     <div class="floors">
       ${[4, 3, 2, 1, 0, -1].map(f =>
         `<button data-f="${f}" class="${f === G.floor ? 'here' : ''}">${FLOOR_NAMES[f]}</button>`).join('')}
+      ${ZONES.filter(zoneUnlocked).map(z =>
+        `<button data-f="${z.f}" class="zone ${z.f === G.floor ? 'here' : ''}">${z.icons[0]} ${S.zones[z.id].name}</button>`).join('')}
     </div>
     <button class="cancel" id="liftCancel">${S.close}</button>
   </div>`;
@@ -1925,6 +2051,7 @@ function travelTo(f) {
     if (f === -1) toast(S.toastLaundry);
     if (f === 0) toast(S.toastLobby);
     if (f === PLAYER_FLOOR) toast(S.toastMyFloor);
+    if (zoneByFloor[f]) toast(S.zoneWelcome(S.zones[zoneByFloor[f].id].name));
   }, 380);
 }
 
@@ -1984,9 +2111,17 @@ function endShift(outcome, minutesLeft = 0) {
   localStorage.setItem('hg-stars', REC.stars);
   localStorage.setItem('hg-streak', REC.streak);
   localStorage.setItem('hg-rooms', REC.rooms);
-  const recBadge = G.newRecord
+  // avance de DÍA: hacer la mayor parte del turno (≥80%) pasa al día siguiente y abre zonas
+  const dayComplete = rate >= 0.8 && outcome !== 'despido';
+  const nextDay = dayComplete ? DAY + 1 : DAY;
+  if (dayComplete) localStorage.setItem('hg-day', nextDay);
+  const unlocking = dayComplete ? ZONES.find(z => z.unlockDay === nextDay) : null;
+  const dayLine = dayComplete
+    ? `<div class="dayLine">${S.dayComplete(DAY)} ${S.nextDayMsg(nextDay)}${unlocking ? '<br>' + S.zoneUnlockSoon(S.zones[unlocking.id].name) : ''}</div>`
+    : `<div class="recordLine">${S.day(DAY)}</div>`;
+  const recBadge = (G.newRecord
     ? `<div class="recordBadge">${S.newRecord(G.score)}</div>`
-    : `<div class="recordLine">${S.bestLine(REC.best)}${REC.streak > 1 ? ' · ' + S.streakLine(REC.streak) : ''}</div>`;
+    : `<div class="recordLine">${S.bestLine(REC.best)}${REC.streak > 1 ? ' · ' + S.streakLine(REC.streak) : ''}</div>`) + dayLine;
   const msgs = {
     perfecto: S.endPerfect(G.totalToClean, minutesLeft),
     fin: S.endTime(G.totalToClean - G.done),
@@ -2324,6 +2459,14 @@ function applyIntroTexts() {
   $('touchHelp').innerHTML = S.touchHelp;
   $('btnStart').textContent = S.start;
   $('disclaimer').textContent = S.disclaimer;
+  // día actual + mapa de zonas del hotel (progresión)
+  $('dayBadge').textContent = S.day(DAY);
+  $('zones').innerHTML = `<h3>${S.mapTitle}</h3><p class="zsub">${S.mapSub}</p>` +
+    ZONES.map(z => {
+      const u = zoneUnlocked(z);
+      return `<div class="zrow${u ? ' on' : ''}"><span>${z.icons[0]} ${S.zones[z.id].name}</span>` +
+        `<span>${u ? S.mapOpen : S.mapLocked(z.unlockDay)}</span></div>`;
+    }).join('');
   $('castTitle').textContent = S.castTitle;
   $('cast').innerHTML = S.cast.map(c =>
     `<figure><img src="assets/housekeper/${c.img}.png" alt="${c.name}" loading="lazy">` +
@@ -2363,6 +2506,9 @@ for (let f = 1; f <= 4; f++) {
   const g = buildGuestFloor(f);
   if (f === PLAYER_FLOOR) floor2Group = g;
 }
+// zonas ya abiertas según el día actual (terraza, restaurante, piscina, jardín);
+// con try/catch para que un fallo en una zona nunca rompa el juego entero
+ZONES.forEach(z => { if (zoneUnlocked(z)) { try { buildZone(z); } catch (e) { console.warn('[zona]', z.id, e); } } });
 // Lucía ya no ronda el pasillo: aparece solo en el saludo inicial y el veredicto final
 updateHUD();
 
