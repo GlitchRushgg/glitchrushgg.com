@@ -157,6 +157,8 @@ const DICTS = {
     mapSub: 'Completa días para abrir zonas nuevas',
     mapLocked: d => `🔒 Día ${d}`,
     mapOpen: '✅ Abierta',
+    customizeTitle: '👤 Personaliza tu camarera',
+    skinLabel: 'Piel', hairLabel: 'Pelo', uniformLabel: 'Uniforme',
     zones: {
       terrace:    { name: 'Terraza',     tasks: ['Barrer la terraza', 'Limpiar las mesas', 'Ordenar las tumbonas'] },
       restaurant: { name: 'Restaurante', tasks: ['Recoger las mesas', 'Barrer el suelo', 'Poner las mesas'] },
@@ -344,6 +346,8 @@ const DICTS = {
     mapSub: 'Complete days to open new areas',
     mapLocked: d => `🔒 Day ${d}`,
     mapOpen: '✅ Open',
+    customizeTitle: '👤 Customize your maid',
+    skinLabel: 'Skin', hairLabel: 'Hair', uniformLabel: 'Uniform',
     zones: {
       terrace:    { name: 'Terrace',    tasks: ['Sweep the terrace', 'Wipe the tables', 'Tidy the loungers'] },
       restaurant: { name: 'Restaurant', tasks: ['Clear the tables', 'Sweep the floor', 'Set the tables'] },
@@ -531,6 +535,8 @@ const DICTS = {
     mapSub: 'Completa i giorni per aprire nuove zone',
     mapLocked: d => `🔒 Giorno ${d}`,
     mapOpen: '✅ Aperta',
+    customizeTitle: '👤 Personalizza la cameriera',
+    skinLabel: 'Pelle', hairLabel: 'Capelli', uniformLabel: 'Divisa',
     zones: {
       terrace:    { name: 'Terrazza',    tasks: ['Spazza la terrazza', 'Pulisci i tavoli', 'Sistema i lettini'] },
       restaurant: { name: 'Ristorante',  tasks: ['Sparecchia i tavoli', 'Spazza il pavimento', 'Apparecchia i tavoli'] },
