@@ -1335,14 +1335,32 @@ function faceMat() {
   if (FACE_MAT) return FACE_MAT;
   const tex = canvasTex(128, 128, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#2a2018'; // ojos
-    for (const ex of [w * 0.37, w * 0.63]) { ctx.beginPath(); ctx.ellipse(ex, h * 0.45, 7, 11, 0, 0, 7); ctx.fill(); }
-    ctx.fillStyle = '#fff';    // brillo
-    for (const ex of [w * 0.37, w * 0.63]) { ctx.beginPath(); ctx.arc(ex + 2.5, h * 0.41, 3, 0, 7); ctx.fill(); }
-    ctx.fillStyle = 'rgba(240,128,118,0.5)'; // mejillas
-    for (const ex of [w * 0.25, w * 0.75]) { ctx.beginPath(); ctx.ellipse(ex, h * 0.58, 10, 6, 0, 0, 7); ctx.fill(); }
-    ctx.strokeStyle = '#7a4030'; ctx.lineWidth = 4; ctx.lineCap = 'round'; // sonrisa
-    ctx.beginPath(); ctx.arc(w * 0.5, h * 0.54, 15, 0.12 * Math.PI, 0.88 * Math.PI); ctx.stroke();
+    const eyeY = h * 0.45, ex = [w * 0.36, w * 0.64];
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // cejas
+    ctx.strokeStyle = '#5a4030'; ctx.lineWidth = 2.6;
+    for (const x of ex) { ctx.beginPath(); ctx.arc(x, eyeY - 13, 7, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); }
+    // ojos grandes (blanco + iris + brillo)
+    ctx.fillStyle = '#fff';
+    for (const x of ex) { ctx.beginPath(); ctx.ellipse(x, eyeY, 9, 12, 0, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#3a2a1e';
+    for (const x of ex) { ctx.beginPath(); ctx.ellipse(x, eyeY + 1.5, 6, 8.5, 0, 0, 7); ctx.fill(); }
+    ctx.fillStyle = '#fff';
+    for (const x of ex) { ctx.beginPath(); ctx.arc(x + 2.5, eyeY - 3, 2.6, 0, 7); ctx.fill(); }
+    // pestañas (líneas en la esquina externa)
+    ctx.strokeStyle = '#2a2018'; ctx.lineWidth = 2.2;
+    for (const [x, dir] of [[ex[0], -1], [ex[1], 1]]) {
+      for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x + dir * (5 + k * 2), eyeY - 10); ctx.lineTo(x + dir * (9 + k * 3), eyeY - 15); ctx.stroke(); }
+    }
+    // naricita
+    ctx.strokeStyle = 'rgba(150,95,75,0.65)'; ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(w * 0.5, h * 0.52); ctx.lineTo(w * 0.5 - 3.5, h * 0.585); ctx.lineTo(w * 0.5 + 2.5, h * 0.59); ctx.stroke();
+    // mejillas
+    ctx.fillStyle = 'rgba(240,128,118,0.45)';
+    for (const x of [w * 0.23, w * 0.77]) { ctx.beginPath(); ctx.ellipse(x, h * 0.62, 9, 6, 0, 0, 7); ctx.fill(); }
+    // boca sonriente
+    ctx.strokeStyle = '#9c4b3b'; ctx.lineWidth = 3.4;
+    ctx.beginPath(); ctx.arc(w * 0.5, h * 0.66, 11, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
   });
   FACE_MAT = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
   return FACE_MAT;
@@ -1399,7 +1417,7 @@ function makePerson({ shirt = 0xffffff, skirt = null, pants = 0x3a4a58, skin = 0
   add(p, box(0.1, 0.08, 0.1, skin), 0, waistY + 0.42, 0);
   const hy = waistY + 0.62;
   add(p, sph(0.155, skin), 0, hy, 0);
-  add(p, new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.22), faceMat()), 0, hy, 0.148);
+  add(p, new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), faceMat()), 0, hy + 0.012, 0.16);   // rostro delante de la cabeza
   const hcap = add(p, sph(0.17, hair), 0, hy + 0.03, -0.015); hcap.scale.set(1, 0.95, 1);
   add(p, sph(0.11, hair, 12), 0, hy - 0.03, -0.13);                    // pelo trasero
   if (cap) {                                                            // camarera: trenzas + cofia
