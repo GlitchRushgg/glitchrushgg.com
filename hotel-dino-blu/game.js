@@ -2171,7 +2171,6 @@ function endShift(outcome, minutesLeft = 0) {
     ${recBadge}
     <p>${msgs[outcome]}</p>
     <div class="luciaReview">
-      <img src="assets/housekeper/lucia.png" alt="Lucía" />
       <p>${S.luciaVerdict(stars)}</p>
     </div>
     <table>
@@ -2606,7 +2605,8 @@ function buildCustomizer() {
         pvRenderer.render(pvScene, pvCamera);
       };
       tick();
-      loadPreviewChar();                 // carga el modelo 3D bonito (reemplaza al low-poly)
+      // (Opción C / modelo 3D CC0 desactivada: la fundadora prefiere la camarera low-poly femenina;
+      //  el modelo "Woman" recoloreado se leía masculino. Se conserva loadPreviewChar por si se retoma.)
     } catch (e) { console.warn('[preview]', e); $('charPreview').style.display = 'none'; }
   }
   updatePreviewModel();
@@ -2637,10 +2637,7 @@ function applyIntroTexts() {
       return `<div class="zrow${u ? ' on' : ''}"><span>${z.icons[0]} ${S.zones[z.id].name}</span>` +
         `<span>${u ? S.mapOpen : S.mapLocked(z.unlockDay)}</span></div>`;
     }).join('');
-  $('castTitle').textContent = S.castTitle;
-  $('cast').innerHTML = S.cast.map(c =>
-    `<figure><img src="assets/housekeper/${c.img}.png" alt="${c.name}" loading="lazy">` +
-    `<figcaption><b>${c.name}</b><span>${c.role}</span></figcaption></figure>`).join('');
+  // (cast IA retirado: los avatares realistas se reservan para un juego futuro)
   $('langRow').innerHTML = LANGS.map(([code, name]) =>
     `<button class="lang${code === LANG ? ' active' : ''}" data-l="${code}">${name}</button>`).join('');
   $('langRow').querySelectorAll('button').forEach(b => { b.onclick = () => setLang(b.dataset.l); });
@@ -2746,7 +2743,6 @@ function luciaHandover() {
   document.exitPointerLock?.();
   const dlg = $('dialog');
   dlg.innerHTML = `<div class="dlg lucia">
-    <img class="luciaPortrait" src="assets/housekeper/lucia.png" alt="Lucía" />
     <h2>${S.luciaLabel}</h2>
     ${S.luciaWelcome.map(l => `<p>${l}</p>`).join('')}
     <button class="bigbtn" id="luciaGo">${S.startRound}</button>
