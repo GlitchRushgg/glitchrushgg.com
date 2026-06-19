@@ -2529,22 +2529,32 @@ async function loadPreviewChar() {
     if (!pvLoader) { const mod = await import('./lib/jsm/loaders/GLTFLoader.js'); pvLoader = new mod.GLTFLoader(); }
     pvLoader.load('assets/models/char-woman.glb', gltf => {
       const obj = gltf.scene;
-      obj.traverse(o => { if (o.isMesh) o.frustumCulled = false; });  // evita que el skinned mesh se auto-oculte
-      obj.updateMatrixWorld(true);
-      let b = new THREE.Box3().setFromObject(obj); const sz = new THREE.Vector3(); b.getSize(sz);
-      obj.scale.setScalar(1.62 / (sz.y || 1));
-      obj.updateMatrixWorld(true);
-      b = new THREE.Box3().setFromObject(obj); const c = new THREE.Vector3(); b.getCenter(c);
-      obj.position.set(-c.x, -b.min.y, -c.z);
-      const wrap = new THREE.Group(); wrap.add(obj);
+      obj.traverse(o => {                                  // no auto-ocultar + doble cara (por si mira atrás)
+        if (!o.isMesh) return;
+        o.frustumCulled = false;
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { m.side = THREE.DoubleSide; });
+      });
       pvCharRoot = obj;
       recolorChar(obj);
       pvMixer = new THREE.AnimationMixer(obj);
       const idle = gltf.animations.find(a => /idle/i.test(a.name)) || gltf.animations[0];
       if (idle) pvMixer.clipAction(idle).play();
-      pvMixer.update(0);
+      const wrap = new THREE.Group(); wrap.add(obj);
       if (pvModel) pvScene.remove(pvModel);
       pvModel = wrap; pvScene.add(wrap);
+      // La malla tiene escala 100 en la armadura → Box3 del mesh es poco fiable.
+      // Calculamos la caja a partir de los HUESOS (sí tienen la transformación real),
+      // centramos y NORMALIZAMOS a ~2 de alto para que la cámara a distancia fija lo encuadre.
+      pvMixer.update(0); wrap.updateMatrixWorld(true);
+      const box = new THREE.Box3(), v = new THREE.Vector3(); let nb = 0;
+      obj.traverse(o => { if (o.isBone) { o.getWorldPosition(v); box.expandByPoint(v); nb++; } });
+      if (nb < 2 || box.isEmpty()) box.setFromObject(obj);
+      const ctr = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+      const h = (isFinite(size.y) && size.y > 0.001) ? size.y : 1;
+      if (isFinite(ctr.x)) obj.position.sub(ctr);          // centrar el modelo en el origen del wrap
+      wrap.scale.setScalar(2.0 / h);                        // normalizar a ~2 unidades de alto
+      pvCamera.position.set(0, 0, 3.6);
+      pvCamera.lookAt(0, 0, 0);
     }, undefined, e => console.warn('[preview glb]', e));
   } catch (e) { console.warn('[preview glb]', e); }
 }
@@ -2556,6 +2566,7 @@ function updatePreviewModel() {
     shirt: hex(CUSTOM.uniform), skirt: hex(CUSTOM.uniform), apron: 0xf2f6f7,
     skin: hex(CUSTOM.skin), hair: hex(CUSTOM.hair), trim: 0xffffff, cap: true,
   });
+  pvModel.position.y = -0.82;   // centrar verticalmente (la cámara mira al origen)
   pvScene.add(pvModel);
 }
 function buildCustomizer() {
@@ -2584,8 +2595,8 @@ function buildCustomizer() {
       pvScene.add(new THREE.AmbientLight(0xffffff, 0.7));
       pvScene.add(new THREE.HemisphereLight(0xffffff, 0x8090a0, 1.4));
       const dl = new THREE.DirectionalLight(0xffffff, 1.1); dl.position.set(1.5, 3, 2.5); pvScene.add(dl);
-      pvCamera = new THREE.PerspectiveCamera(38, 170 / 250, 0.1, 30);
-      pvCamera.position.set(0, 0.95, 3.1); pvCamera.lookAt(0, 0.82, 0);
+      pvCamera = new THREE.PerspectiveCamera(38, 170 / 250, 0.05, 200);
+      pvCamera.position.set(0, 0, 3.6); pvCamera.lookAt(0, 0, 0);
       pvClock = new THREE.Clock();
       const tick = () => {
         pvRAF = requestAnimationFrame(tick);
