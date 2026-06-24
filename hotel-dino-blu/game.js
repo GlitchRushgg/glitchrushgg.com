@@ -825,7 +825,16 @@ function buildLobby() {
   wallSeg(g, f, BX0, BX1, -BZ, -BZ + 0.15, FH, 0, MAT.wall);
   for (let x = -11; x < 15; x += 3.6)
     add(g, new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.1), MAT.glass), x + 1.1, 1.3, -BZ + 0.16);
-  add(g, bx(1.8, 2.2, 0.1), 2, 1.1, -BZ + 0.2).material = MAT.glass;
+  // ── puerta de entrada/salida del hotel (decorativa, da realismo) ───────
+  const dX = 2, dZ = -BZ + 0.2;
+  add(g, bx(2.5, 0.2, 0.34), dX, 2.4, dZ).material = MAT.woodDark;             // dintel
+  for (const sx of [-1.15, 1.15]) add(g, bx(0.2, 2.5, 0.34), dX + sx, 1.25, dZ).material = MAT.woodDark; // jambas
+  for (const sx of [-0.52, 0.52]) {                                            // dos hojas acristaladas
+    add(g, bx(0.96, 2.2, 0.07), dX + sx, 1.2, dZ).material = MAT.glass;
+    add(g, cyl(0.025, 0.025, 0.6, MAT.champagne, 6), dX + sx - Math.sign(sx) * 0.34, 1.15, dZ - 0.07).rotation.x = Math.PI / 2; // tirador
+  }
+  add(g, bx(3.1, 0.14, 1.1), dX, 2.65, dZ - 0.55).material = MAT.terra;        // marquesina exterior
+  add(g, textPlane('ENTRATA', 1.7, 0.34, { bg: '#c96f4a', fg: '#fff', size: 72 }), dX, 2.18, dZ + 0.2, 0); // rótulo hacia el lobby
   HOTSPOTS.push({
     floor: f, x: 2, z: -BZ + 1.1, r: 1.6, type: 'press',
     label: S.exitDoor, action: () => toast(S.exitMsg),
@@ -837,12 +846,17 @@ function buildLobby() {
     addSolid(f, x - 0.35, x + 0.35, z - 0.35, z + 0.35);
   }
 
-  // mostrador de recepción
-  add(g, bx(3.4, 1.08, 0.7), 9, 0.54, 1.6).material = MAT.wood;
-  add(g, bx(3.6, 0.06, 0.85), 9, 1.1, 1.6).material = MAT.woodDark;
-  addSolid(f, 7.2, 10.8, 1.2, 2.0);
-  add(g, bx(3.4, 1.6, 0.3), 9, 1.6, 3.2).material = MAT.woodDark;
-  add(g, textPlane(['HOTEL DINO BLU ★★★', 'Reception'], 2.8, 0.8, { bg: '#c96f4a', fg: '#fff', size: 64 }), 9, 2.0, 3.05, Math.PI);
+  // ── mostrador de recepción ────────────────────────────────────────────
+  add(g, bx(4.2, 1.06, 0.8), 9, 0.53, 1.7).material = MAT.wood;          // cuerpo del mostrador
+  add(g, bx(4.4, 0.08, 0.96), 9, 1.12, 1.7).material = MAT.marble;       // encimera de mármol
+  add(g, bx(4.2, 0.5, 0.05), 9, 0.55, 1.31).material = MAT.woodDark;     // panel frontal
+  addSolid(f, 6.8, 11.2, 1.2, 2.1);
+  // pared/trasera con el logotipo retroiluminado del hotel
+  add(g, bx(5.4, 2.4, 0.16), 9, 1.6, 3.5).material = MAT.woodDark;
+  add(g, bx(4.9, 1.95, 0.05), 9, 1.78, 3.41).material = lamb(0xc96f4a);
+  add(g, textPlane(['HOTEL DINO BLU', '★★★'], 4.5, 1.05, { bg: '#c96f4a', fg: '#fff', size: 96 }), 9, 2.0, 3.38, Math.PI);
+  // placa "Reception" en el frente del mostrador
+  add(g, textPlane('Reception', 1.4, 0.26, { bg: '#1773b0', fg: '#fff', size: 64 }), 9, 0.72, 1.30, Math.PI);
 
   // zona de sofás
   for (const [x, z] of [[-9, 1.5], [-9, -1.5]]) {
@@ -853,13 +867,31 @@ function buildLobby() {
   add(g, bx(1.1, 0.4, 1.1), -9, 0.2, 0).material = MAT.wood;
   addSolid(f, -9.6, -8.4, -0.6, 0.6);
 
-  // rincón restaurante "Blu" (decorativo)
-  for (const [x, z] of [[-4, 5], [-1, 5], [-4, -5], [-1, -5]]) {
-    add(g, cyl(0.55, 0.55, 0.06, MAT.white, 12), x, 0.74, z);
-    add(g, cyl(0.06, 0.08, 0.72, MAT.woodDark), x, 0.37, z);
+  // ── rincón "Ristorante Blu": mesas vestidas, buffet y camarero ─────────
+  for (const [x, z] of [[-5, 4.6], [-2, 5.2], [1, 4.6]]) {
+    add(g, cyl(0.07, 0.09, 0.72, MAT.woodDark), x, 0.37, z);                              // pie
+    add(g, new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.52, 0.36, 16), MAT.white), x, 0.55, z); // faldón del mantel
+    add(g, cyl(0.6, 0.6, 0.05, MAT.white, 16), x, 0.75, z);                               // tablero/mantel
+    add(g, cyl(0.13, 0.13, 0.015, lamb(0xeeeeee), 12), x, 0.78, z + 0.16);                // plato
+    add(g, cyl(0.035, 0.05, 0.12, MAT.glass, 8), x + 0.18, 0.84, z - 0.06);               // copa
+    for (const dx of [-0.8, 0.8]) {                                                       // sillas
+      add(g, bx(0.42, 0.42, 0.42, MAT.wood), x + dx, 0.21, z);
+      add(g, bx(0.42, 0.52, 0.1, MAT.wood), x + dx, 0.6, z + (dx > 0 ? 0.18 : -0.18));
+      addSolid(f, x + dx - 0.25, x + dx + 0.25, z - 0.25, z + 0.25);
+    }
     addSolid(f, x - 0.6, x + 0.6, z - 0.6, z + 0.6);
   }
-  add(g, textPlane('🌿 Ristorante Blu 🌿', 3, 0.5, { bg: '#3fa15c', fg: '#fff', size: 60 }), -2.5, 2.4, BZ - 0.2, Math.PI);
+  // barra/buffet contra la pared oeste del rincón, con cafetera y vino
+  add(g, bx(0.9, 1.0, 3.8), -7.4, 0.5, 4.7).material = MAT.wood;
+  add(g, bx(1.02, 0.08, 3.95), -7.4, 1.05, 4.7).material = MAT.marble;
+  add(g, bx(0.5, 0.45, 0.32), -7.4, 1.32, 3.7).material = MAT.steel;                      // cafetera
+  add(g, cyl(0.05, 0.05, 0.3, MAT.steel, 8), -7.55, 1.45, 3.5);
+  for (const z of [4.7, 5.5]) add(g, cyl(0.16, 0.16, 0.26, lamb(0x8a1f1f), 10), -7.4, 1.22, z); // garrafas de vino
+  addSolid(f, -7.9, -6.9, 2.8, 6.6);
+  // alfombra del rincón + rótulos
+  const rrug = add(g, new THREE.Mesh(new THREE.PlaneGeometry(8, 4.6), lamb(0x6f4030)), -2.3, 0.015, 4.8); rrug.rotation.x = -Math.PI / 2;
+  add(g, textPlane('🌿 Ristorante Blu 🌿', 3.2, 0.5, { bg: '#3fa15c', fg: '#fff', size: 60 }), -2.5, 2.45, BZ - 0.2, Math.PI);
+  add(g, textPlane('🍴 Menù del giorno', 1.3, 0.5, { bg: '#2e6b4a', fg: '#fff', size: 54 }), -6.92, 1.75, 5.6, -Math.PI / 2); // pizarra del menú
 
   // plantas
   for (const [x, z] of [[-11.5, 6], [-11.5, -6], [11.5, 6], [6, -6]]) {
@@ -906,11 +938,11 @@ function buildLobby() {
   add(g, bx(0.5, 0.3, 0.04), 8.2, 1.36, 1.46).material = lamb(0x223047);
   add(g, cyl(0.07, 0.09, 0.08, MAT.champagne, 10), 10.2, 1.18, 1.5);           // campanita
   add(g, new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), MAT.champagne), 10.2, 1.24, 1.5);
-  // reloj grande en la pared tras recepción (disco plano mirando al lobby)
-  add(g, cyl(0.46, 0.46, 0.03, MAT.woodDark, 24), 9, 2.05, 3.17).rotation.x = Math.PI / 2;
-  add(g, cyl(0.4, 0.4, 0.04, MAT.white, 24), 9, 2.05, 3.14).rotation.x = Math.PI / 2;
-  add(g, bx(0.04, 0.28, 0.01), 9, 2.12, 3.12).material = MAT.black;            // manecillas
-  add(g, bx(0.2, 0.04, 0.01), 8.93, 2.05, 3.12).material = MAT.black;
+  // reloj de pared centrado sobre el rótulo (franja gris, no tapa el nombre)
+  add(g, cyl(0.18, 0.18, 0.03, MAT.woodDark, 20), 9, 3.0, 3.30).rotation.x = Math.PI / 2;
+  add(g, cyl(0.15, 0.15, 0.04, MAT.white, 20), 9, 3.0, 3.28).rotation.x = Math.PI / 2;
+  add(g, bx(0.025, 0.11, 0.01), 9, 3.04, 3.26).material = MAT.black;           // manecillas
+  add(g, bx(0.08, 0.025, 0.01), 8.97, 3.0, 3.26).material = MAT.black;
 
   // banco para esperar junto a la entrada
   add(g, bx(2.2, 0.12, 0.6), 6, 0.45, -5.6).material = MAT.wood;
@@ -929,6 +961,18 @@ function buildLobby() {
     add(g, bx(0.05, 0.7, 1.0), BX0 + 0.18, 1.8, z).material = MAT.woodDark;
     add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.56), (VIEW.sea ||= viewMat(true))), BX0 + 0.22, 1.8, z, Math.PI / 2);
   }
+
+  // ── personas que dan vida al lobby ────────────────────────────────────
+  // recepcionista tras el mostrador (blazer azul marino, mira al lobby)
+  spawnStatic(g, makePerson({ shirt: 0x24344a, pants: 0x1a2330, skin: 0xc89a68, hair: 0x241a12, trim: 0xcdd6e0 }), 9, 2.75, Math.PI);
+  // camarero del Ristorante Blu (camisa blanca + delantal negro)
+  spawnStatic(g, makePerson({ shirt: 0xffffff, pants: 0x20242b, apron: 0x1b1b1b, skin: 0xd2a074, hair: 0x2a1c12, trim: 0x111111 }), -3.4, 4.0, Math.PI);
+  // huésped haciendo el check-in (mira al mostrador) + su maleta
+  spawnStatic(g, makePerson({ shirt: 0xe07a98, skirt: 0xe07a98, skin: 0xe0b48a, hair: 0x6b3b1f }), 8.0, 0.7, 0);
+  add(g, bx(0.5, 0.62, 0.34), 7.3, 0.31, 0.7).material = lamb(0x7a4a2a);   // maleta
+  add(g, cyl(0.02, 0.02, 0.4, MAT.steel, 6), 7.3, 0.72, 0.7).rotation.z = Math.PI / 2;
+  // huésped de pie junto a los sofás
+  spawnStatic(g, makePerson({ shirt: 0x4caf7d, pants: 0x55607a, skin: 0xb07a50, hair: 0x33240f }), -9, -0.1, 0);
 
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
@@ -1161,8 +1205,19 @@ function buildZoneProps(z, g, Z, CX) {
     for (const x of [-4, 1, 6, 11]) for (const zc of [-2.5, 2.5]) {  // mesas con mantel + sillas
       add(g, cyl(0.5, 0.5, 0.06, tableM, 12), x, 0.74, zc);
       add(g, cyl(0.07, 0.09, 0.72, MAT.woodDark), x, 0.37, zc);
+      add(g, cyl(0.11, 0.11, 0.015, lamb(0xeeeeee), 12), x, 0.775, zc + 0.16);   // plato
+      add(g, cyl(0.03, 0.045, 0.11, MAT.glass, 8), x + 0.16, 0.83, zc - 0.05);   // copa
       for (const dx of [-0.7, 0.7]) { add(g, bx(0.4, 0.4, 0.4, MAT.wood), x + dx, 0.2, zc); add(g, bx(0.4, 0.5, 0.1, MAT.wood), x + dx, 0.6, zc + (dx > 0 ? 0.18 : -0.18)); }
     }
+    // buffet con chef y camarero (dan vida al restaurante)
+    add(g, bx(5, 1.0, 0.9), CX - 1, 0.5, -Z + 1.3).material = MAT.wood;
+    add(g, bx(5.1, 0.08, 1.0), CX - 1, 1.05, -Z + 1.3).material = MAT.marble;
+    for (const dx of [-1.6, 0, 1.6]) add(g, cyl(0.28, 0.3, 0.16, MAT.steel, 12), CX - 1 + dx, 1.17, -Z + 1.3); // bandejas
+    addSolid(z.f, CX - 3.6, CX + 1.6, -Z + 0.8, -Z + 1.8);
+    const chef = spawnStatic(g, makePerson({ shirt: 0xffffff, pants: 0xe8e8e8, apron: 0xffffff, skin: 0xd2a074, hair: 0x2a1c12, trim: 0xe0e0e0 }), CX - 1, -Z + 2.0, 0, z.f);
+    add(chef, cyl(0.155, 0.155, 0.3, MAT.white, 12), 0, 1.8, 0);                 // gorro de chef (toque)
+    add(chef, new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), MAT.white), 0, 1.97, 0);
+    spawnStatic(g, makePerson({ shirt: 0xffffff, pants: 0x20242b, apron: 0x1b1b1b, skin: 0xc89a68, hair: 0x241a12, trim: 0x111111 }), CX + 3.5, 0.5, Math.PI, z.f);
   } else if (z.id === 'pool') {
     add(g, bx(11, 0.3, 5, lamb(0x1f86c8)), CX - 1, 0.06, 0);         // agua de la piscina
     add(g, bx(11.4, 0.34, 5.4, MAT.white), CX - 1, 0.02, 0);        // borde
@@ -1619,6 +1674,15 @@ function spawnMaid(g, name, label, apron, x0, x1, z, floor, hair) {
   // patrullan los pasillos; en la lavandería (P-1) se quedan trabajando de pie
   NPCS.push({ mesh: m, x0, x1, z, dir: pick([-1, 1]), speed: rand(0.55, 0.95), floor, name, walk: floor !== -1, phase: rand(0, 6) });
   return m;
+}
+
+// persona quieta (recepcionista, camarero, huésped) que mira en una dirección fija
+function spawnStatic(g, person, x, z, face = Math.PI, floor = 0, label = null) {
+  person.position.set(x, 0, z);
+  if (label) { const nm = nameSprite(label); nm.position.y = 1.95; person.add(nm); }
+  g.add(person);
+  NPCS.push({ mesh: person, x0: x + Math.random(), x1: x, z, dir: 1, speed: 0, floor, name: label || 'static', walk: false, face, phase: 0 });
+  return person;
 }
 
 let lucia = null, luciaState = { mode: 'patrol', t: 0 };
@@ -2489,7 +2553,7 @@ function updateNPCs(dt, t) {
       }
     } else {                                              // de pie, respiración suave
       m.position.y = Math.abs(Math.sin(t * 1.6 + n.x0)) * 0.02;
-      m.rotation.y = Math.PI;
+      m.rotation.y = (n.face !== undefined) ? n.face : Math.PI;
       if (limbs) { limbs.legs.forEach(l => l.rotation.x = 0); limbs.arms.forEach(a => a.rotation.x = 0); }
     }
   }
