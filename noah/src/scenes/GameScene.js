@@ -23,6 +23,17 @@ const LEVELS = [
 
 const ANIMALS = ['elephant', 'giraffe', 'lion', 'zebra', 'monkey', 'rabbit', 'penguin', 'bear'];
 
+// Biomas por nivel: cada nivel se ve distinto (cielo + agua) para que no canse
+const THEMES = [
+  { name: 'Sunny',  sky: '#87CEEB', bg: 0xffffff, water: 0x0d47a1 },
+  { name: 'Sunset', sky: '#ffb27a', bg: 0xffd9b0, water: 0x8a3b6b },
+  { name: 'Dusk',   sky: '#7a78c0', bg: 0xcfc8f2, water: 0x2a2a7a },
+  { name: 'Night',  sky: '#1b2a4a', bg: 0x8aa0d8, water: 0x07173a },
+  { name: 'Storm',  sky: '#5a6470', bg: 0xb9c2cc, water: 0x274050 },
+  { name: 'Aurora', sky: '#123a3a', bg: 0x9af0d0, water: 0x0a3550 },
+  { name: 'Dawn',   sky: '#ffd0d8', bg: 0xffe0e6, water: 0x6a4a8a },
+];
+
 function getLevelData(level) {
   if (level <= 8) return LEVELS[level - 1];
   const base = Object.assign({}, LEVELS[7]);
@@ -70,9 +81,10 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, 390, WORLD_H);
     // Extend camera bounds 142px below world so Noah clears the control buttons
     this.cameras.main.setBounds(0, 0, 390, WORLD_H + 142);
-    this.cameras.main.setBackgroundColor('#87CEEB');
+    const theme = THEMES[(this.level - 1) % THEMES.length];
+    this.cameras.main.setBackgroundColor(theme.sky);
     for (let i = 0; i < 4; i++) {
-      this.add.image(195, 422 + i * 844, 'background').setDepth(0);
+      this.add.image(195, 422 + i * 844, 'background').setDepth(0).setTint(theme.bg);
     }
 
     this._animalsCollected = 0;
@@ -98,8 +110,15 @@ export default class GameScene extends Phaser.Scene {
     this._waterPaused = false;
     this._waterSpeed  = 22 + this.level * 5; // px/s; lvl1=27, lvl5=47, lvl8=62
     const waterBlockH = 2400;
-    this._waterGfx    = this.add.rectangle(195, this._waterLevel + waterBlockH / 2, 390, waterBlockH, 0x0d47a1, 0.82).setDepth(6);
-    this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7);
+    this._waterGfx    = this.add.rectangle(195, this._waterLevel + waterBlockH / 2, 390, waterBlockH, theme.water, 0.82).setDepth(6);
+    this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7).setTint(theme.water);
+
+    // Cartel de nivel + bioma (que cada nivel se sienta distinto)
+    const banner = this.add.text(195, 250, `LEVEL ${this.level}\n${theme.name}`, {
+      fontSize: '26px', fontFamily: 'Arial', fontStyle: 'bold', color: '#ffffff',
+      stroke: '#0d3a5c', strokeThickness: 6, align: 'center', lineSpacing: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
+    this.tweens.add({ targets: banner, alpha: 0, y: 220, delay: 1300, duration: 700, onComplete: () => banner.destroy() });
 
     // Noah
     this.noah = this.physics.add.sprite(195, WORLD_H - 120, 'noah').setDepth(5);
