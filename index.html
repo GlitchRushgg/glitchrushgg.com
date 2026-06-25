@@ -125,6 +125,23 @@
     .game p { color: #d7dce6; font-weight: 500; font-size: 15.5px; margin-bottom: 20px; max-width: 42ch; }
     .game .play { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #fff; font-weight: 800; font-size: 15px; padding: 13px 26px; border-radius: 100px; box-shadow: 0 8px 22px rgba(46,107,255,0.4); }
 
+    /* ── Categories (CrazyGames-style) ──────────────── */
+    .cat { margin-top: 46px; }
+    .cat:first-of-type { margin-top: 0; }
+    .cat-title { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: clamp(20px, 3vw, 28px); letter-spacing: -0.5px; margin-bottom: 18px; }
+    .cat-title .count { font-size: 12px; font-weight: 800; color: var(--muted); background: var(--soft); padding: 5px 11px; border-radius: 100px; letter-spacing: 0.5px; }
+    .cat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 18px; }
+    .cat-row .game { min-height: 300px; }
+    .cat-row .game-body { padding: 22px; }
+    .cat-row .game h3 { font-size: clamp(20px, 2.6vw, 26px); }
+    .cat-row .game p { font-size: 14px; }
+    /* "coming soon" card */
+    .game.soon { cursor: default; background: linear-gradient(160deg, #1d2a44, #0c0e14); }
+    .game.soon::after { display: none; }
+    .game.soon .ph { position: absolute; top: 16%; left: 0; right: 0; text-align: center; font-size: 78px; opacity: 0.22; z-index: -1; }
+    .badge-soon { background: #5b6675; color: #fff; }
+    .game.soon .play { background: rgba(255,255,255,0.16); box-shadow: none; cursor: default; }
+
     /* ── Studio (light gray) ────────────────────────── */
     .soft { background: var(--soft); }
     .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
@@ -208,30 +225,142 @@
   <section class="wrap" id="games">
     <div class="section-head">
       <h2>Our games</h2>
-      <p>Tap a card and play instantly. Free, in your browser.</p>
+      <p>Two to play right now — and a category for every kind of fun, growing fast.</p>
     </div>
-    <div class="games">
-      <a class="game" href="./hotel-dino-blu/">
-        <div class="art" style="background-image:url('hotel-dino-blu/assets/cover-game.jpg')"></div>
-        <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
-        <div class="game-body">
-          <div class="kicker">3D simulator · Mobile-first</div>
-          <h3>Hotel Dino Blu</h3>
-          <p>You're a housekeeper at an Italian beach hotel. Leave the rooms spotless against the clock, chain combos and beat your record.</p>
-          <span class="play">▶ Play free</span>
-        </div>
-      </a>
 
-      <a class="game" href="./noah/">
-        <div class="art" style="background-image:url('noah/assets/cover-game.jpg')"></div>
-        <div class="badges"><span class="badge badge-free">FREE</span></div>
-        <div class="game-body">
-          <div class="kicker">Platform arcade</div>
-          <h3>Don't Drown, Noah! 🌊</h3>
-          <p>Jump up the platforms, rescue the animals and escape the flood before it swallows you. How many can you save?</p>
-          <span class="play">▶ Play free</span>
+    <!-- Arcade & Skill -->
+    <div class="cat">
+      <h3 class="cat-title">🕹️ Arcade &amp; Skill <span class="count">1 LIVE</span></h3>
+      <div class="cat-row">
+        <a class="game" href="./noah/">
+          <div class="art" style="background-image:url('noah/assets/cover.jpg')"></div>
+          <div class="badges"><span class="badge badge-free">FREE</span></div>
+          <div class="game-body">
+            <div class="kicker">Platform arcade</div>
+            <h3>Don't Drown, Noah! 🌊</h3>
+            <p>Jump up the platforms, rescue the animals and escape the rising flood.</p>
+            <span class="play">▶ Play free</span>
+          </div>
+        </a>
+        <div class="game soon">
+          <div class="ph">🏃</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">One-button runner</div>
+            <h3>Rooftop Rush</h3>
+            <p>Leap from roof to roof as the tide rises. One tap, one more try.</p>
+            <span class="play">Coming soon</span>
+          </div>
         </div>
-      </a>
+      </div>
+    </div>
+
+    <!-- Sim & Care -->
+    <div class="cat">
+      <h3 class="cat-title">🧹 Sim &amp; Care <span class="count">1 LIVE</span></h3>
+      <div class="cat-row">
+        <a class="game" href="./hotel-dino-blu/">
+          <div class="art" style="background-image:url('hotel-dino-blu/assets/cover.jpg')"></div>
+          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+          <div class="game-body">
+            <div class="kicker">3D simulator · Mobile-first</div>
+            <h3>Hotel Dino Blu</h3>
+            <p>Housekeeper at an Italian beach hotel. Leave the rooms spotless against the clock.</p>
+            <span class="play">▶ Play free</span>
+          </div>
+        </a>
+        <div class="game soon">
+          <div class="ph">✨</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Satisfying clean</div>
+            <h3>Sparkle Dash</h3>
+            <p>Wipe away the grime with your finger. Oddly satisfying, endless levels.</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Puzzle & Merge -->
+    <div class="cat">
+      <h3 class="cat-title">🧩 Puzzle &amp; Merge <span class="count">SOON</span></h3>
+      <div class="cat-row">
+        <div class="game soon">
+          <div class="ph">🦕</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Merge physics</div>
+            <h3>Dino Merge</h3>
+            <p>Drop and merge dinos until they pop. Just one more drop…</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+        <div class="game soon">
+          <div class="ph">🌊</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Match-3</div>
+            <h3>Tide Match</h3>
+            <p>Line up shells and sea creatures before the wave breaks.</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drive & Dodge -->
+    <div class="cat">
+      <h3 class="cat-title">🚤 Drive &amp; Dodge <span class="count">SOON</span></h3>
+      <div class="cat-row">
+        <div class="game soon">
+          <div class="ph">🚤</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Endless dodge</div>
+            <h3>Flood Boat</h3>
+            <p>Steer Noah's boat through the flood, dodging debris. How far can you go?</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+        <div class="game soon">
+          <div class="ph">🚗</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Traffic runner</div>
+            <h3>Lane Dash</h3>
+            <p>Weave through endless traffic. One crash and it's over.</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Idle & Clicker -->
+    <div class="cat">
+      <h3 class="cat-title">⏳ Idle &amp; Clicker <span class="count">SOON</span></h3>
+      <div class="cat-row">
+        <div class="game soon">
+          <div class="ph">⛵</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Idle builder</div>
+            <h3>Build the Ark</h3>
+            <p>Tap to gather wood, then watch the Ark grow even while you're away.</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+        <div class="game soon">
+          <div class="ph">🏨</div>
+          <div class="badges"><span class="badge badge-soon">SOON</span></div>
+          <div class="game-body">
+            <div class="kicker">Idle tycoon</div>
+            <h3>Hotel Empire</h3>
+            <p>Grow your beach hotel from one room to a resort. Upgrades all the way up.</p>
+            <span class="play">Coming soon</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
