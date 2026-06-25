@@ -1,10 +1,15 @@
 # Créditos y procedencia de los assets — Hotel Dino Blu
 
-Todos los recursos visuales y sonoros de este juego son **propios, generados por IA por
-el estudio, de dominio público (CC0) o sintetizados por código**. No se incluye material
-con copyright de terceros.
+Todos los recursos visuales y sonoros de este juego son **generados por IA por el estudio,
+de dominio público (CC0) o sintetizados por código**. No se incluye material con copyright
+de terceros.
 
-## Imágenes generadas por IA (propiedad de GlitchRushGG)
+> Nota sobre titularidad: las imágenes generadas íntegramente por IA probablemente **no son
+> protegibles por copyright** en la UE/Italia (falta de autoría humana). El estudio tiene
+> **derecho a usarlas comercialmente** conforme a los términos de los modelos, pero no
+> reclama un copyright exclusivo sobre ellas.
+
+## Imágenes generadas por IA (uso comercial conforme a los términos de los modelos)
 
 Generadas por el estudio con **Replicate** (cuenta `glitchrushgg`), uso comercial permitido
 por los términos de los modelos:
@@ -21,8 +26,23 @@ por los términos de los modelos:
 
 ## Modelos 3D (dominio público — CC0)
 
-- `assets/models/*.glb` (plant, lamp, floorlamp, armchair, sofa, painting): de
-  **Poly Pizza** (https://poly.pizza), licencia **CC0 / dominio público**.
+- `assets/models/char-woman.glb`: modelo **"Woman"** de **Quaternius**
+  (https://quaternius.com, vía Poly Pizza), licencia **CC0 / dominio público**.
+  Quaternius publica todos sus packs como CC0.
+- Muebles del **Furniture Kit** de **Kenney** (https://kenney.nl/assets/furniture-kit,
+  también en Poly Pizza https://poly.pizza/bundle/Furniture-Kit-NoG1sEUD1z), todos
+  **CC0 / dominio público** (sin atribución obligatoria). Cada `.glb` del juego es una
+  copia renombrada del modelo correspondiente del kit:
+  - `assets/models/sofa.glb` → `loungeSofa.glb` (sofá) — Kenney, CC0.
+  - `assets/models/armchair.glb` → `loungeChair.glb` (sillón) — Kenney, CC0.
+  - `assets/models/floorlamp.glb` → `lampRoundFloor.glb` (lámpara de pie) — Kenney, CC0.
+  - `assets/models/lamp.glb` → `lampRoundTable.glb` (lámpara de mesa) — Kenney, CC0.
+  - `assets/models/plant.glb` → `pottedPlant.glb` (planta en maceta) — Kenney, CC0.
+
+  Origen: Furniture Kit de Kenney (kenney.nl), licencia **CC0** verificada (todo el
+  catálogo de Kenney es de dominio público). El juego normaliza escala/orientación de
+  cada modelo en tiempo de carga (`loadDecorModels`), por lo que no se modificaron los
+  `.glb` salvo el renombrado.
 
 ## Audio
 

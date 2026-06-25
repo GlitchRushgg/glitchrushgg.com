@@ -51,7 +51,26 @@
     .nav-links a:hover { color: #fff; }
     .nav-links .nav-cta { color: var(--blue); background: #fff; padding: 10px 20px; border-radius: 100px; letter-spacing: 1px; }
     .nav-links .nav-cta:hover { background: #eaf0ff; color: var(--blue-d); }
-    @media (max-width: 600px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+    /* hamburger — hidden on desktop, drives the mobile menu */
+    .nav-toggle { display: none; background: none; border: 0; cursor: pointer; padding: 8px; }
+    .nav-toggle span { display: block; width: 26px; height: 3px; margin: 5px 0; background: #fff; border-radius: 3px; transition: transform .2s, opacity .2s; }
+    #nav-check { display: none; }
+    @media (max-width: 600px) {
+      .nav-toggle { display: block; }
+      .nav-links { position: absolute; top: 100%; left: 0; right: 0; background: var(--blue);
+        flex-direction: column; align-items: stretch; gap: 0; padding: 8px 0 16px;
+        box-shadow: 0 16px 28px rgba(12,14,20,0.22);
+        max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; transition: max-height .25s ease; }
+      .nav-links a { padding: 14px 24px; font-size: 15px; }
+      .nav-links a:not(.nav-cta) { display: block; }
+      .nav-links .nav-cta { background: none; color: #fff; border-radius: 0; }
+      #nav-check:checked ~ .nav-links { max-height: 280px; padding-top: 8px; padding-bottom: 16px; }
+      #nav-check:checked ~ .nav-toggle span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+      #nav-check:checked ~ .nav-toggle span:nth-child(2) { opacity: 0; }
+      #nav-check:checked ~ .nav-toggle span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+    }
+    nav { position: relative; }
 
     .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
@@ -125,6 +144,25 @@
     .privacy { font-size: 12px; color: #8b93a3; margin-top: 16px; }
     .privacy a { color: #8fd6ff; }
 
+    /* ── Feedback / buzón de jugadores ──────────────── */
+    .feedback-card { background: var(--soft); border: 1px solid var(--line); border-radius: 28px; padding: 48px 30px; text-align: center; }
+    .feedback-card h2 { font-weight: 900; font-size: clamp(26px,4vw,40px); letter-spacing: -1px; }
+    .feedback-card .sub { color: var(--muted); font-weight: 500; max-width: 520px; margin: 12px auto 28px; }
+    .fb-form { max-width: 540px; margin: 0 auto; display: grid; gap: 14px; text-align: left; }
+    .fb-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .fb-row > * { flex: 1; min-width: 160px; }
+    .fb-form label { font-size: 13px; font-weight: 700; color: var(--muted); display: block; margin-bottom: 6px; }
+    .fb-form select, .fb-form input, .fb-form textarea {
+      width: 100%; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line);
+      background: #fff; color: var(--ink); font-size: 15px; font-family: var(--font); }
+    .fb-form textarea { min-height: 120px; resize: vertical; border-radius: 18px; }
+    .fb-form select:focus, .fb-form input:focus, .fb-form textarea:focus { outline: 2px solid var(--blue); border-color: transparent; }
+    .fb-hp { position: absolute; left: -9999px; }   /* honeypot anti-spam */
+    .fb-form .btn-blue { justify-self: center; margin-top: 6px; }
+    .fb-msg { font-weight: 700; margin: 6px 0 0; min-height: 22px; text-align: center; }
+    .fb-msg.ok { color: #138a4a; }
+    .fb-msg.err { color: #c0392b; }
+
     /* ── Footer ─────────────────────────────────────── */
     footer { background: var(--ink); color: #fff; padding: 46px 0 40px; text-align: center; }
     footer .brand img { height: 30px; margin: 0 auto 18px; image-rendering: pixelated; }
@@ -140,6 +178,10 @@
   <div class="nav-bar">
     <nav>
       <a href="#top" class="brand"><img src="brand/logo-pixel-blanco.png" alt="GlitchRushGG" /></a>
+      <input type="checkbox" id="nav-check" aria-hidden="true" />
+      <label class="nav-toggle" for="nav-check" role="button" aria-label="Open menu" aria-controls="nav-check">
+        <span></span><span></span><span></span>
+      </label>
       <div class="nav-links">
         <a href="#games">Games</a>
         <a href="#studio">Studio</a>
@@ -151,9 +193,9 @@
   <!-- ── Hero: characters left, name + intro right ──── -->
   <header class="hero wrap" id="top">
     <div class="hero-art-cluster">
-      <img class="ch maid" src="hotel-dino-blu/assets/housekeper/sofia-cut.png" alt="Hotel Dino Blu maid" loading="lazy" />
-      <img class="ch noah px" src="noah/assets/noah.png" alt="Noah" loading="lazy" />
-      <img class="ch peng px" src="noah/assets/images/penguin.png" alt="" loading="lazy" />
+      <img class="ch maid" src="hotel-dino-blu/assets/housekeper/sofia-cut.png" alt="Hotel Dino Blu maid" fetchpriority="high" decoding="async" />
+      <img class="ch noah px" src="noah/assets/noah.png" alt="Noah" decoding="async" />
+      <img class="ch peng px" src="noah/assets/images/penguin.png" alt="" decoding="async" />
     </div>
     <div class="hero-text">
       <h1>GLITCHRUSH<span class="gg">GG</span></h1>
@@ -170,7 +212,7 @@
     </div>
     <div class="games">
       <a class="game" href="./hotel-dino-blu/">
-        <div class="art" style="background-image:url('hotel-dino-blu/assets/cover.jpg')"></div>
+        <div class="art" style="background-image:url('hotel-dino-blu/assets/cover-game.jpg')"></div>
         <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
         <div class="game-body">
           <div class="kicker">3D simulator · Mobile-first</div>
@@ -181,7 +223,7 @@
       </a>
 
       <a class="game" href="./noah/">
-        <div class="art" style="background-image:url('noah/assets/cover.jpg')"></div>
+        <div class="art" style="background-image:url('noah/assets/cover-game.jpg')"></div>
         <div class="badges"><span class="badge badge-free">FREE</span></div>
         <div class="game-body">
           <div class="kicker">Platform arcade</div>
@@ -229,15 +271,109 @@
     </div>
   </section>
 
+  <!-- ── Feedback / buzón de jugadores ──────────────── -->
+  <section class="wrap" id="feedback">
+    <div class="feedback-card">
+      <h2>Help us make the games better</h2>
+      <p class="sub">Found a bug or have an idea? Drop it here — it goes straight to the studio. No account, no email needed.</p>
+      <form class="fb-form" id="fbForm">
+        <!-- Web3Forms: submissions go to the studio inbox; the address is never shown publicly. -->
+        <input type="hidden" name="access_key" value="YOUR_WEB3FORMS_ACCESS_KEY" />
+        <input type="hidden" name="subject" value="New player feedback — glitchrushgg.com" />
+        <input type="hidden" name="from_name" value="GlitchRushGG feedback" />
+        <input type="checkbox" name="botcheck" class="fb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="fb-row">
+          <div>
+            <label for="fbGame">Game</label>
+            <select id="fbGame" name="Game">
+              <option>Hotel Dino Blu</option>
+              <option>Don't Drown, Noah!</option>
+              <option>General / the website</option>
+            </select>
+          </div>
+          <div>
+            <label for="fbType">What is it?</label>
+            <select id="fbType" name="Type">
+              <option>💡 Suggestion / improvement</option>
+              <option>🐞 Bug / something broke</option>
+              <option>💬 Other</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="fbMessage">Your message</label>
+          <textarea id="fbMessage" name="Message" placeholder="What would make the game better, or what went wrong?" required></textarea>
+        </div>
+        <div>
+          <label for="fbEmail">Email <span style="font-weight:500">(optional — only if you want a reply)</span></label>
+          <input type="email" id="fbEmail" name="email" placeholder="you@email.com" autocomplete="email" />
+        </div>
+        <button type="submit" class="btn-blue">Send feedback</button>
+        <p class="fb-msg" id="fbStatus" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
   <footer>
     <a href="#top" class="brand"><img src="brand/logo-pixel-blanco.png" alt="GlitchRushGG" /></a>
     <div class="socials">
       <a href="https://www.tiktok.com/@glitchrush.gg" target="_blank" rel="noopener">TikTok</a>
       <a href="https://www.youtube.com/channel/UCGpJVDNE-JlZakHE6dRHoAw" target="_blank" rel="noopener">YouTube</a>
-      <a href="mailto:glitchrush.gg@gmail.com">Contact</a>
+      <a href="#feedback">Feedback</a>
     </div>
-    <p class="small">© 2026 GlitchRushGG · Built in public · <a href="mailto:glitchrush.gg@gmail.com">glitchrush.gg@gmail.com</a></p>
+    <p class="small">© 2026 GlitchRushGG</p>
   </footer>
+
+  <script>
+    // Close the mobile menu after tapping any nav link
+    (function () {
+      var check = document.getElementById('nav-check');
+      if (!check) return;
+      document.querySelectorAll('.nav-links a').forEach(function (a) {
+        a.addEventListener('click', function () { check.checked = false; });
+      });
+    })();
+
+    // Feedback form → Web3Forms (keeps the studio inbox private, no page reload)
+    (function () {
+      var form = document.getElementById('fbForm');
+      if (!form) return;
+      var out = document.getElementById('fbStatus');
+      var btn = form.querySelector('button[type=submit]');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (form.access_key.value.indexOf('YOUR_WEB3FORMS') === 0) {
+          out.className = 'fb-msg err';
+          out.textContent = 'Feedback inbox not configured yet.';
+          return;
+        }
+        out.className = 'fb-msg';
+        out.textContent = 'Sending…';
+        btn.disabled = true;
+        fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new FormData(form)
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (res.success) {
+              out.className = 'fb-msg ok';
+              out.textContent = 'Thanks! Your message reached the studio. 🙌';
+              form.reset();
+            } else {
+              out.className = 'fb-msg err';
+              out.textContent = 'It didn’t send. Please try again in a moment.';
+            }
+          })
+          .catch(function () {
+            out.className = 'fb-msg err';
+            out.textContent = 'Network error — please try again.';
+          })
+          .finally(function () { btn.disabled = false; });
+      });
+    })();
+  </script>
 
 </body>
 </html>
