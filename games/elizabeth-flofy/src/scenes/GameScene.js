@@ -8,7 +8,9 @@ import { W, H } from "../main.js";
 import { t } from "../i18n.js";
 import { Sound } from "../utils/Sound.js";
 
-const PLAY = { xMin: 44, xMax: W - 44, yMin: 120, yMax: 690 };
+// Zona de aparición de glitches (cableada al espacio lógico 390×844, ver main.js).
+// OJO: no usar W/H aquí — son import circular y darían TDZ a nivel de módulo.
+const PLAY = { xMin: 44, xMax: 346, yMin: 120, yMax: 690 };
 const MEGA_MAX = 12; // chispas para el Abrazo Total
 const COMBO_WINDOW = 1600; // ms para mantener combo
 const GLITCH_EMOJIS = ["📬", "💡", "🗑️", "🚲", "🌳", "🚦", "📦", "🪧", "🛹", "⛲"];
