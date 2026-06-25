@@ -250,7 +250,7 @@ function genRooms() {
     const st = statuses[i];
     const r = {
       idx: i, num: PLAYER_FLOOR * 100 + i + 1, status: st,
-      guests: st === 'L' ? 0 : pick([1, 2, 2, 2, 3, 3, 4]),
+      guests: st === 'L' ? 0 : pick([1, 1, 2, 2, 2, 2]),   // máx 2 (1 cama doble = 2 personas)
       stay: 0, sheetChange: false,
       tasks: [], done: false, inspected: false, mistakes: 0, vis: {},
     };
@@ -544,14 +544,17 @@ function buildRoomShell(g, f, rc, i, isOpen) {
   const vm = seaSide ? (VIEW.sea ||= viewMat(true)) : (VIEW.town ||= viewMat(false));
   const view = add(g, new THREE.Mesh(new THREE.PlaneGeometry(13, 8), vm), rc.x0 + 2.05, 2.4, wz + rc.dir * 9);
   view.rotation.y = seaSide ? Math.PI : 0;
-  // marco de aluminio + cristal limpio
+  // marco de aluminio + cristal limpio (SIN panel opaco detrás → se ve la vista al mar)
   add(g, bx(2.12, 1.85, 0.05), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.02).material = MAT.steel;
-  add(g, bx(1.94, 1.7, 0.04), rc.x0 + 2.05, 1.62, wz - rc.dir * 0.01).material = MAT.wallIn;
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.7), MAT.steel), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03); // montante central
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.66), MAT.glass), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03);
   // alféizar de mármol como en las fotos
   add(g, bx(2.2, 0.08, 0.3), rc.x0 + 2.05, 0.74, wz - rc.dir * 0.12).material = MAT.marble;
 }
+
+// color del lector de la puerta según estado (como en los hoteles reales):
+// 🟡 SALIDA (se fue el huésped) · 🔵 ESTANCIA (libre para limpiar) · 🟢 hecha · 🟣 libre
+const doorColor = r => r.done ? 0x46d17a : r.status === 'P' ? 0xffcc33 : r.status === 'F' ? 0x2e9bff : 0x9b59ff;
 
 // tarjeta de estado en la puerta (piso del jugador, se actualiza)
 function buildRoomCard(g, rc, room) {
@@ -567,6 +570,13 @@ function buildRoomCard(g, rc, room) {
   mesh.position.set(p.x, 1.62, rc.zIn - rc.dir * 0.085);
   mesh.rotation.y = rc.dir > 0 ? Math.PI : 0;
   g.add(mesh);
+
+  // lector de tarjeta junto a la puerta, con luz de color que indica si se puede entrar
+  const dp = lpos(rc, 2.62, 0), zc = rc.zIn - rc.dir * 0.075, ry = rc.dir > 0 ? Math.PI : 0;
+  add(g, bx(0.16, 0.24, 0.03), dp.x, 1.32, zc).material = MAT.black;          // panel negro
+  room.doorLightMat = new THREE.MeshBasicMaterial({ color: doorColor(room) });
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.055), room.doorLightMat), dp.x, 1.39, zc - rc.dir * 0.018, ry); // luz
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.06), MAT.steel), dp.x, 1.26, zc - rc.dir * 0.018, ry);          // ranura de la tarjeta
 }
 function drawRoomCard(room) {
   const ctx = room.cardCtx, W = 256, H = 170;
@@ -589,6 +599,7 @@ function drawRoomCard(room) {
     if (room.sheetChange) { ctx.fillStyle = '#c0392b'; ctx.font = 'bold 20px sans-serif'; ctx.fillText(S.sheetChangeCard, W / 2, 148); }
   }
   room.cardTex.needsUpdate = true;
+  if (room.doorLightMat) room.doorLightMat.color.setHex(doorColor(room));   // la luz pasa a verde al terminar
 }
 // tarjeta decorativa en otros pisos
 function buildOtherCard(g, f, rc, i) {
