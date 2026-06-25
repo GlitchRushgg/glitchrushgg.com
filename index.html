@@ -74,8 +74,12 @@
 
     .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-    /* ── Hero: characters left, name + intro right ──── */
-    .hero { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 40px; padding: 60px 0 50px; }
+    /* ── Hero (limpio, centrado) ──────────────────────── */
+    .hero { text-align: center; padding: 64px 0 52px; }
+    .hero .hero-text { max-width: 760px; margin: 0 auto; }
+    .hero .lead { margin-left: auto; margin-right: auto; }
+    /* (cluster de personajes retirado) */
+    .hero-old-grid { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 40px; padding: 60px 0 50px; }
     /* cluster of the actual game characters (cut-outs), standing together */
     .hero-art-cluster { position: relative; height: clamp(320px, 40vw, 470px); }
     .ch { position: absolute; bottom: 0; filter: drop-shadow(0 14px 16px rgba(12,14,20,0.18)); }
@@ -141,6 +145,9 @@
     .game.soon .ph { position: absolute; top: 16%; left: 0; right: 0; text-align: center; font-size: 78px; opacity: 0.22; z-index: -1; }
     .badge-soon { background: #5b6675; color: #fff; }
     .game.soon .play { background: rgba(255,255,255,0.16); box-shadow: none; cursor: default; }
+    /* tarjeta de diseño para los juegos publicados (sin foto, degradado + icono) */
+    .game.tile::after { display: none; }
+    .game.tile .ph { position: absolute; top: 13%; left: 0; right: 0; text-align: center; font-size: 86px; opacity: 0.3; z-index: -1; }
 
     /* ── Studio (light gray) ────────────────────────── */
     .soft { background: var(--soft); }
@@ -207,13 +214,8 @@
     </nav>
   </div>
 
-  <!-- ── Hero: characters left, name + intro right ──── -->
+  <!-- ── Hero (limpio, centrado) ──────────────────────── -->
   <header class="hero wrap" id="top">
-    <div class="hero-art-cluster">
-      <img class="ch maid" src="hotel-dino-blu/assets/housekeper/sofia-cut.png" alt="Hotel Dino Blu maid" fetchpriority="high" decoding="async" />
-      <img class="ch noah px" src="noah/assets/noah.png" alt="Noah" decoding="async" />
-      <img class="ch peng px" src="noah/assets/images/penguin.png" alt="" decoding="async" />
-    </div>
     <div class="hero-text">
       <h1>GLITCHRUSH<span class="gg">GG</span></h1>
       <p class="lead">Makers of <b>Hotel Dino Blu</b>, <b>Noah</b> and more arcade games for your browser. Open and play — free, no downloads.</p>
@@ -232,8 +234,8 @@
     <div class="cat">
       <h3 class="cat-title">🕹️ Arcade &amp; Skill <span class="count">1 LIVE</span></h3>
       <div class="cat-row">
-        <a class="game" href="./noah/">
-          <div class="art" style="background-image:url('noah/assets/cover.jpg')"></div>
+        <a class="game tile" href="./noah/" style="background:linear-gradient(160deg,#2aa7e0,#0d4f80)">
+          <div class="ph">🌊</div>
           <div class="badges"><span class="badge badge-free">FREE</span></div>
           <div class="game-body">
             <div class="kicker">Platform arcade</div>
@@ -259,8 +261,8 @@
     <div class="cat">
       <h3 class="cat-title">🧹 Sim &amp; Care <span class="count">1 LIVE</span></h3>
       <div class="cat-row">
-        <a class="game" href="./hotel-dino-blu/">
-          <div class="art" style="background-image:url('hotel-dino-blu/assets/cover.jpg')"></div>
+        <a class="game tile" href="./hotel-dino-blu/" style="background:linear-gradient(160deg,#1aa0bd,#0e5566)">
+          <div class="ph">🧹</div>
           <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
           <div class="game-body">
             <div class="kicker">3D simulator · Mobile-first</div>
