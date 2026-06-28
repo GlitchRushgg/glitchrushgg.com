@@ -44,8 +44,8 @@
     .nav-bar { background: var(--blue); position: sticky; top: 0; z-index: 40; }
     nav { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; padding: 14px 24px; }
     .brand { display: inline-flex; align-items: center; }
-    .brand img { height: 46px; width: auto; image-rendering: pixelated; }
-    @media (max-width: 560px) { .brand img { height: 36px; } }
+    .brand img { height: 58px; width: auto; image-rendering: pixelated; }
+    @media (max-width: 560px) { .brand img { height: 44px; } }
     .nav-links { display: flex; align-items: center; gap: 26px; }
     .nav-links a { color: rgba(255,255,255,0.9); text-decoration: none; font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
     .nav-links a:hover { color: #fff; }
@@ -74,12 +74,28 @@
 
     .wrap { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
-    /* ── Hero (limpio, centrado) ──────────────────────── */
-    .hero { text-align: center; padding: 64px 0 52px; }
+    /* ── Hero (amigable, centrado, con color suave) ───── */
+    .hero { position: relative; text-align: center; padding: 56px 0 60px; overflow: hidden; }
+    .hero::before { content: ""; position: absolute; inset: -10% -10% 0 -10%; z-index: -2;
+      background:
+        radial-gradient(820px 460px at 50% -12%, #d6e9ff, transparent 62%),
+        radial-gradient(560px 440px at 10% 24%, #ffe7c4, transparent 58%),
+        radial-gradient(560px 440px at 90% 18%, #ffd5e7, transparent 58%); }
     .hero .hero-text { max-width: 760px; margin: 0 auto; }
     .hero .lead { margin-left: auto; margin-right: auto; }
-    /* (cluster de personajes retirado) */
-    .hero-old-grid { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: 40px; padding: 60px 0 50px; }
+    .hero-bolt { width: clamp(74px, 11vw, 104px); height: auto; display: block; margin: 0 auto 20px;
+      image-rendering: pixelated; border-radius: 22px;
+      box-shadow: 0 14px 30px rgba(46,107,255,0.30), 0 0 0 1px rgba(255,224,102,0.45);
+      animation: floaty 3.6s ease-in-out infinite; }
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line);
+      color: var(--muted); font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 8px 16px; border-radius: 100px; margin-bottom: 20px; box-shadow: 0 6px 16px rgba(12,14,20,0.06); }
+    .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 8px; background: #fff; color: var(--blue);
+      border: 2px solid var(--blue); font-weight: 800; font-size: 16px; padding: 14px 28px; border-radius: 100px;
+      text-decoration: none; transition: transform .12s, background .12s; }
+    .btn-ghost:hover { background: #eef3ff; transform: translateY(-2px); }
     /* cluster of the actual game characters (cut-outs), standing together */
     .hero-art-cluster { position: relative; height: clamp(320px, 40vw, 470px); }
     .ch { position: absolute; bottom: 0; filter: drop-shadow(0 14px 16px rgba(12,14,20,0.18)); }
@@ -214,12 +230,19 @@
     </nav>
   </div>
 
-  <!-- ── Hero (limpio, centrado) ──────────────────────── -->
-  <header class="hero wrap" id="top">
-    <div class="hero-text">
-      <h1>GLITCHRUSH<span class="gg">GG</span></h1>
-      <p class="lead">Makers of <b>Hotel Dino Blu</b>, <b>Noah</b> and more arcade games for your browser. Open and play — free, no downloads.</p>
-      <a class="btn-blue" href="#games">▶ SEE THE GAMES</a>
+  <!-- ── Hero (amigable, centrado) ────────────────────── -->
+  <header class="hero" id="top">
+    <div class="wrap">
+      <img class="hero-bolt" src="brand/avatar-pixel-800.png" alt="" aria-hidden="true" />
+      <span class="eyebrow">🎮 Indie browser games · Free · No downloads</span>
+      <div class="hero-text">
+        <h1>GLITCHRUSH<span class="gg">GG</span></h1>
+        <p class="lead">Makers of <b>Hotel Dino Blu</b>, <b>Noah</b> and more arcade games you play right in your browser — free, no downloads, on phone or PC.</p>
+        <div class="hero-cta">
+          <a class="btn-blue" href="#games">▶ See the games</a>
+          <a class="btn-ghost" href="./hotel-dino-blu/">🧹 Play Hotel Dino Blu</a>
+        </div>
+      </div>
     </div>
   </header>
 
