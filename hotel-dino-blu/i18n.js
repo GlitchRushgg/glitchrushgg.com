@@ -92,7 +92,7 @@ const DICTS = {
     liftTitle: '🛗 Ascensor de servicio', liftMeta: '¿A qué planta vas?', close: 'Cerrar',
     floors: {
       '-1': 'P-1 · Lavandería 🧺', 0: 'PB · Recepción 🛎', 1: 'Piso 1 · Anna',
-      2: 'Piso 2 · TU PISO 🧹', 3: 'Piso 3 · Giulia', 4: 'Piso 4 · Martina',
+      2: 'Piso 2 · TU PISO 🧹', 3: 'Piso 3 · Giulia', 4: 'Piso 4 · Marco',
     },
     toastLaundry: '🧺 Lavandería: 5 lavadoras y 2 secadoras a pleno rendimiento.',
     toastLobby: '🛎 Recepción del Hotel Dino Blu. ¡La piazzetta y el mar están ahí fuera!',
@@ -281,7 +281,7 @@ const DICTS = {
     liftTitle: '🛗 Service lift', liftMeta: 'Which floor?', close: 'Close',
     floors: {
       '-1': 'B1 · Laundry 🧺', 0: 'GF · Reception 🛎', 1: 'Floor 1 · Anna',
-      2: 'Floor 2 · YOUR FLOOR 🧹', 3: 'Floor 3 · Giulia', 4: 'Floor 4 · Martina',
+      2: 'Floor 2 · YOUR FLOOR 🧹', 3: 'Floor 3 · Giulia', 4: 'Floor 4 · Marco',
     },
     toastLaundry: '🧺 Laundry: 5 washers and 2 dryers running at full steam.',
     toastLobby: '🛎 Hotel Dino Blu reception. The piazzetta and the sea are right outside!',
@@ -470,7 +470,7 @@ const DICTS = {
     liftTitle: '🛗 Ascensore di servizio', liftMeta: 'A che piano vai?', close: 'Chiudi',
     floors: {
       '-1': 'P-1 · Lavanderia 🧺', 0: 'PT · Reception 🛎', 1: '1º piano · Anna',
-      2: '2º piano · IL TUO PIANO 🧹', 3: '3º piano · Giulia', 4: '4º piano · Martina',
+      2: '2º piano · IL TUO PIANO 🧹', 3: '3º piano · Giulia', 4: '4º piano · Marco',
     },
     toastLaundry: '🧺 Lavanderia: 5 lavatrici e 2 asciugatrici a pieno regime.',
     toastLobby: `🛎 Reception dell'Hotel Dino Blu. La piazzetta e il mare sono lì fuori!`,
