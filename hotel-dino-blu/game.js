@@ -100,7 +100,7 @@ const G = {
   // mini-tutorial (0 = moverse, 1 = mirar, 2 = hecho) y objetivo guiado
   tut: localStorage.getItem('hg-tut') ? 2 : 0, tutDist: 0, tutLookAcc: 0, objective: null,
   lastInspect: SHIFT_START - 10,
-  keys: {}, joy: { x: 0, y: 0, on: false },
+  keys: {}, joy: { x: 0, y: 0, on: false, run: false },
 };
 
 const SOLID = {};   // colisiones por planta: SOLID[f] = [{x0,x1,z0,z1},...]
@@ -1808,7 +1808,10 @@ function fmtTime(min) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 function updateHUD() {
-  $('clock').textContent = `🕐 ${fmtTime(G.time)}`;
+  const left = SHIFT_END - G.time;            // minutos de juego que quedan
+  const urgent = G.started && left <= 90 && left > 0;
+  $('clock').textContent = `${urgent ? '⏰' : '🕐'} ${fmtTime(G.time)}`;
+  $('clock').classList.toggle('urgent', urgent);
   $('roomsDone').textContent = `🛏 ${G.done}/${G.totalToClean}`;
   $('score').textContent = `⭐ ${G.score}`;
   $('hearts').textContent = '❤'.repeat(3 - G.warnings) + '🖤'.repeat(G.warnings);
@@ -2414,8 +2417,11 @@ if (IS_TOUCH) {
         G.joy.x = Math.abs(dx) > 1 ? dx / len : dx;
         G.joy.y = Math.abs(dy) > 1 ? dy / len : dy;
         G.joy.on = true;
-        stick.style.left = `${35 + G.joy.x * 30}px`;
-        stick.style.top = `${35 + G.joy.y * 30}px`;
+        // empujar el stick al borde = correr (en móvil no hay tecla Shift)
+        G.joy.run = Math.hypot(G.joy.x, G.joy.y) > 0.82;
+        joy.classList.toggle('run', G.joy.run);
+        stick.style.left = `${41 + G.joy.x * 38}px`;
+        stick.style.top = `${41 + G.joy.y * 38}px`;
       } else if (t.identifier === lookId) {
         if (G.tut === 1) {
           G.tutLookAcc += Math.abs((t.clientX - lx) * 0.005);
@@ -2430,8 +2436,9 @@ if (IS_TOUCH) {
   addEventListener('touchend', e => {
     for (const t of e.changedTouches) {
       if (t.identifier === joyId) {
-        joyId = null; G.joy.on = false; G.joy.x = G.joy.y = 0;
-        stick.style.left = '35px'; stick.style.top = '35px';
+        joyId = null; G.joy.on = false; G.joy.x = G.joy.y = 0; G.joy.run = false;
+        joy.classList.remove('run');
+        stick.style.left = '41px'; stick.style.top = '41px';
       }
       if (t.identifier === lookId) lookId = null;
     }
@@ -2475,7 +2482,7 @@ function movePlayer(dt) {
   const len = Math.hypot(ix, iz);
   if (len < 0.01) return;
   ix /= Math.max(1, len); iz /= Math.max(1, len);
-  const run = G.keys.ShiftLeft || G.keys.ShiftRight;
+  const run = G.keys.ShiftLeft || G.keys.ShiftRight || (G.joy.on && G.joy.run);
   let speed = (run ? 4.6 : 3.1) * (G.dirty > 20 ? 0.85 : 1);
   const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw);
   const rx = Math.cos(G.yaw), rz = -Math.sin(G.yaw);
@@ -2730,6 +2737,8 @@ function applyIntroTexts() {
   $('deskHelp').innerHTML = S.desktopHelp;
   $('touchHelp').innerHTML = S.touchHelp;
   $('btnStart').textContent = S.start;
+  $('btnStartTop').textContent = S.start;
+  $('tweakHint').textContent = S.tweakHint;
   $('disclaimer').textContent = S.disclaimer;
   buildCustomizer();   // personalización: vista previa 3D + selectores
   // día actual + mapa de zonas del hotel (progresión)
@@ -2832,14 +2841,16 @@ async function loadDecorModels() {
 }
 loadDecorModels();
 
-$('btnStart').addEventListener('click', () => {
+function beginShift() {
   $('intro').classList.add('hidden');
   $('hud').classList.remove('hidden');
   if (pvRAF) cancelAnimationFrame(pvRAF);   // detener la vista previa 3D
   G.uiOpen = false;
   G.started = true;
   luciaHandover();   // Lucía te recibe y te entrega el carro antes de la ronda
-});
+}
+$('btnStart').addEventListener('click', beginShift);
+$('btnStartTop').addEventListener('click', beginShift);
 
 // Lucía te saluda y te entrega el carro; al cerrar, empieza la ronda (ella se va)
 function luciaHandover() {
@@ -2918,13 +2929,24 @@ function updateHands(dt, t) {
 }
 
 const clock = new THREE.Clock();
-let hudTimer = 0;
+let hudTimer = 0, rushTick = 0;
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(0.05, clock.getDelta());
   const t = clock.elapsedTime;
   if (G.started && !G.over) {
     G.time = Math.min(G.time + dt * TIME_RATE, SHIFT_END); // minutos de juego
+    // recta final: aviso único + tic-tac que se acelera = tensión
+    const left = SHIFT_END - G.time;
+    if (left <= 90 && !G._rushNotified) {
+      G._rushNotified = true;
+      toast(S.rushWarn, 3600); beep(880, 0.18, 'square', 0.16);
+    }
+    if (left <= 90 && left > 0) {
+      rushTick += dt;
+      const interval = 0.4 + (left / 90) * 1.0;   // de ~1.4s a ~0.4s al acercarse el cierre
+      if (rushTick >= interval) { rushTick = 0; beep(left <= 30 ? 1100 : 760, 0.06, 'square', 0.09); }
+    }
     if (G.time >= SHIFT_END) endShift('fin');
     if (G.combo > 0 && t - G.lastTaskAt > COMBO_WINDOW) breakCombo();  // se enfría la cadena
     if (!G.uiOpen && !G.dialogOpen) {

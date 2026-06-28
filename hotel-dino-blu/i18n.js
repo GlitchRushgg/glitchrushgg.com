@@ -31,6 +31,7 @@ const DICTS = {
     touchHelp: `Joystick izquierdo para moverte · arrastra la pantalla para mirar ·
         mantén pulsado el botón ✋ para realizar tareas`,
     start: '🧹 Empezar el turno',
+    tweakHint: 'o baja para personalizar tu personaje y ver el mapa ↓',
     luciaWelcome: [
       'Buenos días, Sofía. Aquí tienes tu carro: sábanas, toallas, alfombrines y cortesías.',
       'Empieza por las habitaciones de SALIDA. Vuelvo a las 14:00 a revisar cómo quedó todo. ¡Mucho ánimo! 🧹',
@@ -62,6 +63,7 @@ const DICTS = {
     cartTitle: '🛒 TU CARRO',
     dirtyLabel: '🧺 Ropa sucia', heavy: ' (¡pesa!)',
     paceOk: 'Ritmo ✅', paceBad: 'Ritmo ⚠️ ¡date prisa!',
+    rushWarn: '⏰ ¡Hora punta! Cierra el turno antes de las 14:00',
 
     partenza: 'SALIDA', fermata: 'ESTANCIA', libre: 'LIBRE', hecha: '✔ HECHA',
     roomTitle: n => `Habitación ${n}`,
@@ -220,6 +222,7 @@ const DICTS = {
     touchHelp: `Left joystick to move · drag the screen to look ·
         press and hold the ✋ button to do tasks`,
     start: '🧹 Start the shift',
+    tweakHint: 'or scroll down to customize your character and see the map ↓',
     luciaWelcome: [
       "Good morning, Sofía. Here's your cart: sheets, towels, bath mats and amenities.",
       "Start with the CHECK-OUT rooms. I'll be back at 14:00 to see how it all turned out. Good luck! 🧹",
@@ -251,6 +254,7 @@ const DICTS = {
     cartTitle: '🛒 YOUR CART',
     dirtyLabel: '🧺 Dirty linen', heavy: ' (heavy!)',
     paceOk: 'Pace ✅', paceBad: 'Pace ⚠️ hurry up!',
+    rushWarn: '⏰ Crunch time! Finish your shift before 14:00',
 
     partenza: 'CHECK-OUT', fermata: 'STAY-OVER', libre: 'VACANT', hecha: '✔ DONE',
     roomTitle: n => `Room ${n}`,
@@ -409,6 +413,7 @@ const DICTS = {
     touchHelp: `Joystick sinistro per muoverti · trascina lo schermo per guardare ·
         tieni premuto il pulsante ✋ per le attività`,
     start: '🧹 Inizia il turno',
+    tweakHint: 'oppure scorri giù per personalizzare il personaggio e vedere la mappa ↓',
     luciaWelcome: [
       'Buongiorno, Sofia. Ecco il tuo carrello: lenzuola, asciugamani, tappetini e cortesie.',
       "Comincia dalle camere in PARTENZA. Torno alle 14:00 a controllare com'è andata. In bocca al lupo! 🧹",
@@ -440,6 +445,7 @@ const DICTS = {
     cartTitle: '🛒 IL TUO CARRELLO',
     dirtyLabel: '🧺 Biancheria sporca', heavy: ' (pesa!)',
     paceOk: 'Ritmo ✅', paceBad: 'Ritmo ⚠️ sbrigati!',
+    rushWarn: '⏰ Ora di punta! Chiudi il turno prima delle 14:00',
 
     partenza: 'PARTENZA', fermata: 'FERMATA', libre: 'LIBERA', hecha: '✔ FATTA',
     roomTitle: n => `Camera ${n}`,
