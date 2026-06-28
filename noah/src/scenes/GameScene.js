@@ -59,6 +59,7 @@ export default class GameScene extends Phaser.Scene {
     this._combo       = 0;
     this._lastCollect = -1e9;
     this._calmUntil   = 0;   // power-up: hasta cuándo la inundación está pausada
+    this._shield      = false; this._shieldGfx = null;   // power-up: escudo que perdona una muerte
     this.sound = new SoundManager();
   }
 
@@ -317,8 +318,11 @@ export default class GameScene extends Phaser.Scene {
     // animals read the same size, preserving each sprite's aspect ratio.
     // A couple get tweaked: monkey a bit bigger (its art is low-detail),
     // penguin a bit smaller.
-    const H = type === 'monkey' ? 52 : type === 'penguin' ? 36 : 42;
+    let H = type === 'monkey' ? 52 : type === 'penguin' ? 36 : 42;
+    const golden = Math.random() < 0.12;             // ~1 de cada 8 es DORADO (x4 puntos)
+    if (golden) H *= 1.3;
     animal.setDisplaySize(H * (animal.width / animal.height), H).setDepth(4);
+    if (golden) { animal.setData('golden', true); animal.setTint(0xffd54a); }
     animal.body.allowGravity = false;
     animal.body.immovable = true;
     this.tweens.add({
@@ -332,52 +336,82 @@ export default class GameScene extends Phaser.Scene {
 
   _onCollectAnimal(noah, animal) {
     const ax = animal.x, ay = animal.y;
+    const golden = animal.getData && animal.getData('golden');
     animal.destroy();
 
     // Combo: chaining rescues within 4s multiplies the points
     const now = this.time.now;
     this._combo = (now - this._lastCollect < 4000) ? this._combo + 1 : 1;
     this._lastCollect = now;
-    const pts = 25 * this._combo;
+    let pts = 25 * this._combo;
+    if (golden) pts *= 4;                            // ¡animal dorado!
     this.score += pts;
     this._animalsCollected++;
 
     this.sound.collect(this._combo);
     const comboCols = ['#ffe066', '#ffb347', '#ff7eb6', '#ff5252', '#e040fb'];
-    const col = comboCols[Math.min(this._combo - 1, comboCols.length - 1)];
-    this._showFloatText(ax, ay - 28, this._combo > 1 ? `+${pts}  x${this._combo} COMBO!` : '+25', col);
-    if (this._combo >= 3) this.cameras.main.shake(90, 0.004);
+    const col = golden ? '#ffd54a' : comboCols[Math.min(this._combo - 1, comboCols.length - 1)];
+    const label = golden ? `🌟 +${pts}  ¡DORADO!` : (this._combo > 1 ? `+${pts}  x${this._combo} COMBO!` : '+25');
+    this._showFloatText(ax, ay - 28, label, col);
+    if (golden) this.cameras.main.shake(160, 0.007);
+    else if (this._combo >= 3) this.cameras.main.shake(90, 0.004);
     this._showCollectEffect(ax, ay);
     this.events.emit('scoreUpdate', this.score);
   }
 
-  // power-ups "estrella de calma": detienen la inundación unos segundos al cogerlas
+  // power-ups: ⭐ estrella de calma (pausa la inundación) y 🫧 burbuja-escudo (perdona una muerte)
   _spawnPowerups() {
     this.powerGroup = this.physics.add.group();
+    // textura de burbuja generada una vez
+    if (!this.textures.exists('bubble')) {
+      const bg = this.make.graphics({ x: 0, y: 0, add: false });
+      bg.fillStyle(0xbff0ff, 0.28); bg.fillCircle(20, 20, 16);
+      bg.lineStyle(4, 0x8fe7ff, 1); bg.strokeCircle(20, 20, 16);
+      bg.fillStyle(0xffffff, 0.9); bg.fillCircle(14, 14, 4);
+      bg.generateTexture('bubble', 40, 40); bg.destroy();
+    }
     const statics = this.staticPlatGroup.getChildren();
-    let placed = 0;
-    for (let i = 0; i < statics.length && placed < 3; i++) {
-      if (i === 0 || i % 6 !== 4) continue;          // repartidas, lejos del suelo
-      const plat = statics[i];
-      const star = this.powerGroup.create(plat.x, plat.y - 36, 'star');
-      star.setDisplaySize(30, 30).setDepth(4).setTint(0x8fe7ff);
-      star.body.allowGravity = false; star.body.immovable = true;
-      this.tweens.add({ targets: star, y: star.y - 8, duration: 820, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-      this.tweens.add({ targets: star, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
-      placed++;
+    const make = (plat, key, kind, tint) => {
+      const p = this.powerGroup.create(plat.x, plat.y - 36, key);
+      p.setDisplaySize(30, 30).setDepth(4); if (tint) p.setTint(tint);
+      p.setData('kind', kind);
+      p.body.allowGravity = false; p.body.immovable = true;
+      this.tweens.add({ targets: p, y: p.y - 8, duration: 820, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: p, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
+    };
+    let stars = 0, shields = 0;
+    for (let i = 0; i < statics.length; i++) {
+      if (i === 0) continue;
+      if (i % 6 === 4 && stars < 3) { make(statics[i], 'star', 'calm', 0x8fe7ff); stars++; }
+      else if (i % 7 === 3 && shields < 2) { make(statics[i], 'bubble', 'shield', null); shields++; }
     }
   }
 
-  _onCollectPower(noah, star) {
-    const sx = star.x, sy = star.y;
-    star.destroy();
-    this._calmUntil = this.time.now + 3800;          // la inundación se pausa ~3,8 s
-    this.score += 50;
-    this.events.emit('scoreUpdate', this.score);
+  _onCollectPower(noah, p) {
+    const sx = p.x, sy = p.y, kind = p.getData('kind');
+    p.destroy();
     if (this.sound && this.sound.collect) this.sound.collect(3);
-    this._showFloatText(sx, sy - 28, '☀️ ¡CALMA!  +50', '#8fe7ff');
     this._showCollectEffect(sx, sy);
-    this.cameras.main.flash(260, 150, 220, 255);     // destello azul claro
+    if (kind === 'shield') {
+      this._giveShield();
+      this.score += 40; this.events.emit('scoreUpdate', this.score);
+      this._showFloatText(sx, sy - 28, '🫧 ¡Escudo!  +40', '#bff0ff');
+    } else {
+      this._calmUntil = this.time.now + 3800;        // la inundación se pausa ~3,8 s
+      this.score += 50; this.events.emit('scoreUpdate', this.score);
+      this._showFloatText(sx, sy - 28, '☀️ ¡CALMA!  +50', '#8fe7ff');
+      this.cameras.main.flash(260, 150, 220, 255);
+    }
+  }
+
+  _giveShield() {
+    this._shield = true;
+    if (!this._shieldGfx) {
+      this._shieldGfx = this.add.circle(this.noah.x, this.noah.y, 26, 0x8fe7ff, 0.16)
+        .setStrokeStyle(3, 0xbff0ff, 0.9).setDepth(6);
+      this.tweens.add({ targets: this._shieldGfx, alpha: { from: 0.16, to: 0.4 }, scale: { from: 1, to: 1.08 },
+        duration: 600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
   }
 
   _showCollectEffect(x, y) {
@@ -581,6 +615,18 @@ export default class GameScene extends Phaser.Scene {
   // ── Death / Win ───────────────────────────────────────────────────────
   handleDeath() {
     if (this._dying) return;
+    // El escudo-burbuja perdona UNA muerte: rebota arriba, aleja el agua y da calma breve
+    if (this._shield) {
+      this._shield = false;
+      if (this._shieldGfx) { this._shieldGfx.destroy(); this._shieldGfx = null; }
+      this.cameras.main.flash(240, 180, 240, 255);
+      this._showFloatText(this.noah.x, this.noah.y - 30, '🫧 ¡Salvado!', '#bff0ff');
+      this.noah.setVelocity(0, JUMP_FORCE);
+      this._waterLevel = Math.min(this._waterLevel + 200, WORLD_H + 40);
+      this._calmUntil = this.time.now + 1600;
+      if (this.sound && this.sound.collect) this.sound.collect(2);
+      return;
+    }
     this._dying = true;
     this.lives--;
     this.events.emit('livesUpdate', this.lives);
@@ -768,6 +814,7 @@ export default class GameScene extends Phaser.Scene {
     const waterBlockH = 2400;
     this._waterGfx.setPosition(195, this._waterLevel + waterBlockH / 2);
     this._waterSurface.setPosition(195, this._waterLevel + 60);
+    if (this._shieldGfx) this._shieldGfx.setPosition(noah.x, noah.y);   // el escudo sigue a Noah
 
     // Death from water
     if (!this._dying && noah.y + 20 >= this._waterLevel) {
