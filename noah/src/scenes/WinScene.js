@@ -1,6 +1,7 @@
 import { addScore } from '../utils/Scores.js';
 import { shareScore } from '../utils/Share.js';
 import { buildCardCanvas, shareCard } from '../utils/ResultCard.js';
+import { T } from '../utils/i18n.js';
 
 export default class WinScene extends Phaser.Scene {
   constructor() { super('Win'); }
@@ -67,11 +68,11 @@ export default class WinScene extends Phaser.Scene {
 
     // Title banner
     this.add.rectangle(W / 2, 55, W, 106, 0x000000, 0.5).setDepth(10);
-    this.add.text(W / 2, 22, `Level ${this.level} Complete!`, {
+    this.add.text(W / 2, 22, T.levelComplete(this.level), {
       fontSize: '32px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffe066', stroke: '#7a4200', strokeThickness: 5,
     }).setOrigin(0.5).setDepth(11);
-    this.add.text(W / 2, 58, `Animals saved: ${this.animalsCollected}   Score: ${this.finalScore}`, {
+    this.add.text(W / 2, 58, T.animalsScore(this.animalsCollected, this.finalScore), {
       fontSize: '15px', fontFamily: 'Arial',
       fill: '#aaffaa', stroke: '#222', strokeThickness: 2,
     }).setOrigin(0.5).setDepth(11);
@@ -79,7 +80,7 @@ export default class WinScene extends Phaser.Scene {
     // Rank badge in banner
     if (this.rank) {
       const rankColor = this.rank === 1 ? '#ffd700' : this.rank === 2 ? '#c0c0c0' : this.rank === 3 ? '#cd7f32' : '#aaddff';
-      const rankText  = this.add.text(W / 2, 88, `Rank #${this.rank} on the leaderboard!`, {
+      const rankText  = this.add.text(W / 2, 88, T.rank(this.rank), {
         fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold',
         fill: rankColor, stroke: '#222', strokeThickness: 2,
       }).setOrigin(0.5).setDepth(11);
@@ -98,7 +99,7 @@ export default class WinScene extends Phaser.Scene {
     const nextBtn = this.add.rectangle(W / 2, H - 68, 240, 64, 0xff8c00)
       .setInteractive({ useHandCursor: true }).setDepth(10);
     const btnHighlight = this.add.rectangle(W / 2, H - 78, 228, 26, 0xffbb44, 0.4).setDepth(11);
-    this.add.text(W / 2, H - 68, 'Next Level →', {
+    this.add.text(W / 2, H - 68, T.nextLevel, {
       fontSize: '28px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffffff', stroke: '#7a4200', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(12);
@@ -114,19 +115,23 @@ export default class WinScene extends Phaser.Scene {
       duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    // Share button — generates a visual score card
-    const shareBtn = this.add.rectangle(W / 2, H - 130, 220, 42, 0x1976d2)
+    // Share button — generates a visual score card. Bigger + green + pulsing so it stands out.
+    const shareGlow = this.add.graphics().setDepth(9);
+    shareGlow.fillStyle(0x29c466, 0.4); shareGlow.fillRoundedRect(W / 2 - 125, H - 130 - 28, 250, 56, 15);
+    this.tweens.add({ targets: shareGlow, alpha: { from: 0.25, to: 0.7 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const shareBtn = this.add.rectangle(W / 2, H - 130, 232, 48, 0x1aa84f)
       .setInteractive({ useHandCursor: true }).setDepth(10);
-    this.add.text(W / 2, H - 130, '📸  Share Score Card', {
-      fontSize: '17px', fontFamily: 'Arial', fontStyle: 'bold',
-      fill: '#ffffff', stroke: '#0a3a66', strokeThickness: 3,
+    const shareTxt = this.add.text(W / 2, H - 130, T.shareCard, {
+      fontSize: '19px', fontFamily: 'Arial', fontStyle: 'bold',
+      fill: '#ffffff', stroke: '#0a4422', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(11);
+    this.tweens.add({ targets: [shareBtn, shareTxt], scaleX: 1.05, scaleY: 1.05, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     shareBtn.on('pointerdown', () => this._showShareCard());
 
     // Menu button
     const menuBtn = this.add.rectangle(W / 2, H - 18, 150, 36, 0x444444)
       .setInteractive({ useHandCursor: true }).setDepth(10);
-    this.add.text(W / 2, H - 18, 'Main Menu', {
+    this.add.text(W / 2, H - 18, T.mainMenu, {
       fontSize: '17px', fontFamily: 'Arial', fill: '#cccccc',
     }).setOrigin(0.5).setDepth(11);
     menuBtn.on('pointerdown', () => this.scene.start('Menu'));
@@ -147,7 +152,7 @@ export default class WinScene extends Phaser.Scene {
 
     const dim   = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.82).setDepth(40).setInteractive();
     const card  = this.add.image(W / 2, H / 2 - 40, key).setDepth(41).setAlpha(0).setY(H / 2);
-    const hint  = this.add.text(W / 2, H / 2 + 125, '📸  Screenshot this to post on TikTok!', {
+    const hint  = this.add.text(W / 2, H / 2 + 125, T.screenshotTt, {
       fontSize: '14px', fontFamily: 'Arial', fill: '#aaffaa', stroke: '#113322', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(41).setAlpha(0);
     const close = this.add.text(W / 2, H / 2 + 158, '✕  Close', {

@@ -1,6 +1,7 @@
 import { addScore, getScores } from '../utils/Scores.js';
 import { shareScore } from '../utils/Share.js';
 import { buildCardCanvas, shareCard } from '../utils/ResultCard.js';
+import { T } from '../utils/i18n.js';
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOver'); }
@@ -52,18 +53,18 @@ export default class GameOverScene extends Phaser.Scene {
 
     // GAME OVER title
     this.add.rectangle(W / 2, H * 0.17, W, 80, 0x000000, 0.55);
-    const title = this.add.text(W / 2, H * 0.145, 'GAME OVER', {
+    const title = this.add.text(W / 2, H * 0.145, T.gameOver, {
       fontSize: '50px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ff3333', stroke: '#660000', strokeThickness: 7,
     }).setOrigin(0.5).setAlpha(0);
-    this.add.text(W / 2, H * 0.205, `You reached Level ${this.level}`, {
+    this.add.text(W / 2, H * 0.205, T.reachedLevel(this.level), {
       fontSize: '16px', fontFamily: 'Arial', fill: '#99bbdd', stroke: '#112233', strokeThickness: 2,
     }).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: 1, duration: 600, ease: 'Back.easeOut' });
 
     // Score row
     this.add.rectangle(W / 2, H * 0.285, 300, 44, 0x000000, 0.5);
-    this.add.text(W / 2 - 60, H * 0.285, 'Score', {
+    this.add.text(W / 2 - 60, H * 0.285, T.score, {
       fontSize: '15px', fontFamily: 'Arial', fill: '#88bbdd',
     }).setOrigin(0.5);
     this.add.text(W / 2 + 44, H * 0.285, `${this.finalScore}`, {
@@ -76,7 +77,7 @@ export default class GameOverScene extends Phaser.Scene {
 
     // New record banner
     if (this.rank === 1 && this.finalScore > 0) {
-      const rec = this.add.text(W / 2, H * 0.243, '🏆 NEW RECORD!', {
+      const rec = this.add.text(W / 2, H * 0.243, T.newRecord, {
         fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold',
         fill: '#ffd700', stroke: '#664400', strokeThickness: 4,
       }).setOrigin(0.5);
@@ -87,7 +88,7 @@ export default class GameOverScene extends Phaser.Scene {
     const retryBtn = this.add.rectangle(W / 2, H * 0.74, 240, 60, 0xcc4400)
       .setInteractive({ useHandCursor: true });
     const retryHL  = this.add.rectangle(W / 2, H * 0.74 - 10, 228, 20, 0xffffff, 0.14);
-    this.add.text(W / 2, H * 0.74, '↺  Try Again', {
+    this.add.text(W / 2, H * 0.74, T.tryAgain, {
       fontSize: '28px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffffff', stroke: '#661100', strokeThickness: 4,
     }).setOrigin(0.5);
@@ -99,18 +100,22 @@ export default class GameOverScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: retryBtn, scaleX: 1.05, scaleY: 1.05, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // Share button — generates a visual score card
-    const shareBtn = this.add.rectangle(W / 2, H * 0.825, 220, 46, 0x1976d2)
+    // Share button — generates a visual score card. Bigger + green + pulsing so it stands out.
+    const shareGlow = this.add.graphics();
+    shareGlow.fillStyle(0x29c466, 0.4); shareGlow.fillRoundedRect(W / 2 - 130, H * 0.825 - 32, 260, 64, 16);
+    this.tweens.add({ targets: shareGlow, alpha: { from: 0.25, to: 0.7 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const shareBtn = this.add.rectangle(W / 2, H * 0.825, 240, 54, 0x1aa84f)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H * 0.825, '📸  Share Score Card', {
-      fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold',
-      fill: '#ffffff', stroke: '#0a3a66', strokeThickness: 3,
+    const shareTxt = this.add.text(W / 2, H * 0.825, T.shareCard, {
+      fontSize: '21px', fontFamily: 'Arial', fontStyle: 'bold',
+      fill: '#ffffff', stroke: '#0a4422', strokeThickness: 4,
     }).setOrigin(0.5);
+    this.tweens.add({ targets: [shareBtn, shareTxt], scaleX: 1.05, scaleY: 1.05, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     shareBtn.on('pointerdown', () => this._showShareCard());
 
     const menuBtn = this.add.rectangle(W / 2, H * 0.905, 180, 44, 0x334466)
       .setInteractive({ useHandCursor: true });
-    this.add.text(W / 2, H * 0.905, 'Main Menu', {
+    this.add.text(W / 2, H * 0.905, T.mainMenu, {
       fontSize: '20px', fontFamily: 'Arial', fill: '#aabbcc',
     }).setOrigin(0.5);
     menuBtn.on('pointerdown', () => this.scene.start('Menu'));
@@ -131,7 +136,7 @@ export default class GameOverScene extends Phaser.Scene {
 
     const dim   = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.82).setDepth(40).setInteractive();
     const card  = this.add.image(W / 2, H / 2 - 40, key).setDepth(41).setAlpha(0).setY(H / 2);
-    const hint  = this.add.text(W / 2, H / 2 + 125, '📸  Screenshot this to post on TikTok!', {
+    const hint  = this.add.text(W / 2, H / 2 + 125, T.screenshotTt, {
       fontSize: '14px', fontFamily: 'Arial', fill: '#aaffaa', stroke: '#113322', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(41).setAlpha(0);
     const close = this.add.text(W / 2, H / 2 + 158, '✕  Close', {
@@ -162,7 +167,7 @@ export default class GameOverScene extends Phaser.Scene {
     const panelH = 28 + rows * rowH + 6;
 
     this.add.rectangle(cx, topY + panelH / 2, 310, panelH, 0x000000, 0.52).setOrigin(0.5);
-    this.add.text(cx, topY + 13, 'HIGH SCORES', {
+    this.add.text(cx, topY + 13, T.highScores, {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#aaddff',
     }).setOrigin(0.5);
 

@@ -1,4 +1,5 @@
 import { getScores } from '../utils/Scores.js';
+import { T, LANG, setNoahLang } from '../utils/i18n.js';
 
 export default class MenuScene extends Phaser.Scene {
   constructor() {
@@ -26,6 +27,15 @@ export default class MenuScene extends Phaser.Scene {
     const water = this.add.image(W / 2, H - 22, 'water').setDisplaySize(W, 90).setDepth(2);
     this.tweens.add({ targets: water, y: H - 14, alpha: { from: 0.9, to: 1 }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
+    // ── selector de idioma ES/EN (arriba a la derecha) ───────────────────
+    ['es', 'en'].forEach((lg, i) => {
+      const b = this.add.text(W - 62 + i * 34, 18, lg.toUpperCase(), {
+        fontSize: '16px', fontFamily: 'Arial', fontStyle: 'bold',
+        color: LANG === lg ? '#ffe066' : '#ffffff', stroke: '#0d3a5c', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(8).setInteractive({ useHandCursor: true });
+      b.on('pointerdown', () => { if (LANG !== lg) { setNoahLang(lg); this.scene.restart(); } });
+    });
+
     // ── TITLE (bounce in, then gentle bob) ───────────────────────────────
     this.roundPanel(W / 2, 96, 372, 96, 0x06243f, 0.42, 22).setDepth(5);
     const t1 = this.add.text(W / 2, 78, "DON'T DROWN,", {
@@ -45,7 +55,7 @@ export default class MenuScene extends Phaser.Scene {
     // ── DIORAMA: ark above, Noah + animals hopping on platforms ──────────
     const ark = this.add.image(W / 2, 238, 'ark').setScale(1.7).setDepth(4);
     this.tweens.add({ targets: ark, y: 230, duration: 1900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    this.add.text(W / 2, 300, '⛵ The Ark — safe & dry', {
+    this.add.text(W / 2, 300, T.arkSafe, {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffffff', stroke: '#1a5a90', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(5);
 
@@ -61,7 +71,7 @@ export default class MenuScene extends Phaser.Scene {
     this.placeAnimal('elephant', 295, platY, 48, 260);
 
     // ── HOOK ─────────────────────────────────────────────────────────────
-    this.add.text(W / 2, 470, 'Rescue the animals and reach the Ark\nbefore the flood swallows you! 🌊', {
+    this.add.text(W / 2, 470, T.hook, {
       fontSize: '17px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffffff', stroke: '#0d3a5c', strokeThickness: 4,
       align: 'center', lineSpacing: 4,
@@ -75,12 +85,12 @@ export default class MenuScene extends Phaser.Scene {
     const panelH = 34 + Math.max(rows, 1) * rowH + 10;
 
     this.roundPanel(W / 2, panelTop + panelH / 2, 320, panelH, 0x05203a, 0.56, 16).setDepth(5);
-    this.add.text(W / 2, panelTop + 16, '🏆 HIGH SCORES', {
+    this.add.text(W / 2, panelTop + 16, T.highScores, {
       fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffe066',
     }).setOrigin(0.5).setDepth(6);
 
     if (rows === 0) {
-      this.add.text(W / 2, panelTop + 48, 'No scores yet —\nplay to top the board!', {
+      this.add.text(W / 2, panelTop + 48, T.noScores, {
         fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#bcd3e8',
         align: 'center', lineSpacing: 3,
       }).setOrigin(0.5).setDepth(6);
@@ -106,7 +116,7 @@ export default class MenuScene extends Phaser.Scene {
     bgfx.fillStyle(0xe66a00, 1); bgfx.fillRoundedRect(-124, -36, 248, 74, 22);
     bgfx.fillStyle(0xff8c1a, 1); bgfx.fillRoundedRect(-124, -36, 248, 64, 22);
     bgfx.fillStyle(0xffb14d, 0.5); bgfx.fillRoundedRect(-114, -28, 228, 22, 12);
-    const label = this.add.text(0, 0, '▶  PLAY', {
+    const label = this.add.text(0, 0, T.play, {
       fontSize: '34px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffffff', stroke: '#7a3a00', strokeThickness: 5,
     }).setOrigin(0.5);
@@ -123,7 +133,7 @@ export default class MenuScene extends Phaser.Scene {
       this.tweens.add({ targets: btn, scaleX: 0.92, scaleY: 0.92, duration: 90, yoyo: true, onComplete: start });
     });
 
-    this.add.text(W / 2, btnY + 56, 'Free · No download · Tap and play', {
+    this.add.text(W / 2, btnY + 56, T.freeTag, {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#e9f4ff', stroke: '#0d3a5c', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(6);
   }

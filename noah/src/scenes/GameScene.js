@@ -1,4 +1,5 @@
 import SoundManager from '../utils/SoundManager.js';
+import { T } from '../utils/i18n.js';
 
 const WORLD_H    = 2800;
 const NOAH_SPEED = 220;
@@ -121,7 +122,7 @@ export default class GameScene extends Phaser.Scene {
     this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7).setTint(theme.water);
 
     // Cartel de nivel + bioma (que cada nivel se sienta distinto); en tormenta, aviso especial
-    const bannerTxt = this._storm ? `LEVEL ${this.level}\n⛈️ ¡TORMENTA!` : `LEVEL ${this.level}\n${theme.name}`;
+    const bannerTxt = this._storm ? `${T.level} ${this.level}\n${T.storm}` : `${T.level} ${this.level}\n${theme.name}`;
     const banner = this.add.text(195, 250, bannerTxt, {
       fontSize: this._storm ? '30px' : '26px', fontFamily: 'Arial', fontStyle: 'bold',
       color: this._storm ? '#ffe066' : '#ffffff',
@@ -283,6 +284,13 @@ export default class GameScene extends Phaser.Scene {
         img._fallSpeed = 0;
         this.fallingPlatGroup.add(img);
 
+        // Telegraph: pulsing ⚠ marker so the platform reads as unstable at a glance
+        const warn = this.add.text(p.x, p.y - 16, '⚠', {
+          fontSize: '16px', fontFamily: 'Arial',
+        }).setOrigin(0.5).setDepth(img.depth + 1);
+        img._warn = warn;
+        this.tweens.add({ targets: warn, alpha: { from: 1, to: 0.3 }, scaleX: 1.2, scaleY: 1.2, duration: 520, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+
       } else if (p.type === 'moving') {
         const img = this.physics.add.image(p.x, p.y, texKey)
           .setDisplaySize(p.w, 18);
@@ -359,12 +367,13 @@ export default class GameScene extends Phaser.Scene {
     this.sound.collect(this._combo);
     const comboCols = ['#ffe066', '#ffb347', '#ff7eb6', '#ff5252', '#e040fb'];
     const col = golden ? '#ffd54a' : comboCols[Math.min(this._combo - 1, comboCols.length - 1)];
-    const label = golden ? `🌟 +${pts}  ¡DORADO!` : (this._combo > 1 ? `+${pts}  x${this._combo} COMBO!` : '+25');
+    const label = golden ? `🌟 +${pts}  ${T.golden}` : (this._combo > 1 ? `+${pts}  x${this._combo} ${T.combo}!` : '+25');
     this._showFloatText(ax, ay - 28, label, col);
     if (golden) this.cameras.main.shake(160, 0.007);
     else if (this._combo >= 3) this.cameras.main.shake(90, 0.004);
     this._showCollectEffect(ax, ay);
     this.events.emit('scoreUpdate', this.score);
+    this.events.emit('animalsUpdate', this._animalsCollected, this._totalAnimals);
   }
 
   // power-ups: ⭐ estrella de calma (pausa la inundación) y 🫧 burbuja-escudo (perdona una muerte)
@@ -413,15 +422,15 @@ export default class GameScene extends Phaser.Scene {
     if (kind === 'shield') {
       this._giveShield();
       this.score += 40; this.events.emit('scoreUpdate', this.score);
-      this._showFloatText(sx, sy - 28, '🫧 ¡Escudo!  +40', '#bff0ff');
+      this._showFloatText(sx, sy - 28, `${T.shield}  +40`, '#bff0ff');
     } else if (kind === 'spring') {
       this._springUntil = this.time.now + 6000;        // ~6 s de súper-salto
       this.score += 40; this.events.emit('scoreUpdate', this.score);
-      this._showFloatText(sx, sy - 28, '🦘 ¡SÚPER SALTO!  +40', '#7df09a');
+      this._showFloatText(sx, sy - 28, `${T.superJump}  +40`, '#7df09a');
     } else {
       this._calmUntil = this.time.now + 3800;        // la inundación se pausa ~3,8 s
       this.score += 50; this.events.emit('scoreUpdate', this.score);
-      this._showFloatText(sx, sy - 28, '☀️ ¡CALMA!  +50', '#8fe7ff');
+      this._showFloatText(sx, sy - 28, `${T.calm}  +50`, '#8fe7ff');
       this.cameras.main.flash(260, 150, 220, 255);
     }
   }
@@ -486,6 +495,10 @@ export default class GameScene extends Phaser.Scene {
     if (!noah.body.blocked.down) return;
     if (plat.triggered) return; // shake already running — don't restart it
     plat.triggered = true;
+
+    // Flash red so the imminent drop is unmistakable
+    plat.setTint(0xff4444);
+    if (plat._warn) plat._warn.setText('❗');
 
     // Shake sideways for ~450ms, then drop
     this.tweens.add({
@@ -642,7 +655,7 @@ export default class GameScene extends Phaser.Scene {
       this._shield = false;
       if (this._shieldGfx) { this._shieldGfx.destroy(); this._shieldGfx = null; }
       this.cameras.main.flash(240, 180, 240, 255);
-      this._showFloatText(this.noah.x, this.noah.y - 30, '🫧 ¡Salvado!', '#bff0ff');
+      this._showFloatText(this.noah.x, this.noah.y - 30, T.saved, '#bff0ff');
       this.noah.setVelocity(0, JUMP_FORCE);
       this._waterLevel = Math.min(this._waterLevel + 200, WORLD_H + 40);
       this._calmUntil = this.time.now + 1600;
@@ -685,7 +698,7 @@ export default class GameScene extends Phaser.Scene {
     let allBonus = 0;
     if (this._totalAnimals > 0 && this._animalsCollected >= this._totalAnimals) {
       allBonus = 150;     // bonus por rescatar a TODOS los animales del nivel
-      this._showFloatText(195, ARK_Y + 90, '🐾 ¡TODOS RESCATADOS!  +150', '#ffe066');
+      this._showFloatText(195, ARK_Y + 90, `${T.allRescued}  +150`, '#ffe066');
     }
     this.score += 100 + this.lives * 50 + allBonus;
     this.sound.stopMusic();
@@ -762,6 +775,7 @@ export default class GameScene extends Phaser.Scene {
       const dy = fp._fallSpeed * dt;
       fp.y += dy;
       fp.body.position.y = fp.y - fp.body.halfHeight;
+      if (fp._warn) fp._warn.y = fp.y - 16;
 
       const platTop  = fp.body.position.y;
       const noahFeet = noah.body.position.y + noah.body.height;
@@ -781,6 +795,7 @@ export default class GameScene extends Phaser.Scene {
 
       if (fp.y > this._waterLevel + 300) {
         this._fallingActive.splice(i, 1);
+        if (fp._warn) fp._warn.destroy();
         fp.destroy();
       }
     }
