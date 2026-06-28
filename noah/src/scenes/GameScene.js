@@ -60,6 +60,7 @@ export default class GameScene extends Phaser.Scene {
     this._lastCollect = -1e9;
     this._calmUntil   = 0;   // power-up: hasta cuándo la inundación está pausada
     this._shield      = false; this._shieldGfx = null;   // power-up: escudo que perdona una muerte
+    this._springUntil = 0;     // power-up: súper-salto temporal
     this.sound = new SoundManager();
   }
 
@@ -309,6 +310,7 @@ export default class GameScene extends Phaser.Scene {
       if (i % 2 !== 0) return;
       this._placeAnimalOn(plat.x, plat.y);
     });
+    this._totalAnimals = this.animalGroup.getLength();   // para el bonus "todos rescatados"
   }
 
   _placeAnimalOn(px, py) {
@@ -370,6 +372,14 @@ export default class GameScene extends Phaser.Scene {
       bg.fillStyle(0xffffff, 0.9); bg.fillCircle(14, 14, 4);
       bg.generateTexture('bubble', 40, 40); bg.destroy();
     }
+    if (!this.textures.exists('spring')) {            // súper-salto: círculo verde con flecha
+      const sg = this.make.graphics({ x: 0, y: 0, add: false });
+      sg.fillStyle(0x44d36a, 1); sg.fillCircle(20, 20, 16);
+      sg.lineStyle(3, 0x1f7a3d, 1); sg.strokeCircle(20, 20, 16);
+      sg.fillStyle(0xffffff, 1);
+      sg.fillTriangle(20, 8, 12, 20, 28, 20); sg.fillRect(16, 19, 8, 9);
+      sg.generateTexture('spring', 40, 40); sg.destroy();
+    }
     const statics = this.staticPlatGroup.getChildren();
     const make = (plat, key, kind, tint) => {
       const p = this.powerGroup.create(plat.x, plat.y - 36, key);
@@ -379,11 +389,12 @@ export default class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: p, y: p.y - 8, duration: 820, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.tweens.add({ targets: p, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
     };
-    let stars = 0, shields = 0;
+    let stars = 0, shields = 0, springs = 0;
     for (let i = 0; i < statics.length; i++) {
       if (i === 0) continue;
       if (i % 6 === 4 && stars < 3) { make(statics[i], 'star', 'calm', 0x8fe7ff); stars++; }
       else if (i % 7 === 3 && shields < 2) { make(statics[i], 'bubble', 'shield', null); shields++; }
+      else if (i % 5 === 2 && springs < 2) { make(statics[i], 'spring', 'spring', null); springs++; }
     }
   }
 
@@ -396,6 +407,10 @@ export default class GameScene extends Phaser.Scene {
       this._giveShield();
       this.score += 40; this.events.emit('scoreUpdate', this.score);
       this._showFloatText(sx, sy - 28, '🫧 ¡Escudo!  +40', '#bff0ff');
+    } else if (kind === 'spring') {
+      this._springUntil = this.time.now + 6000;        // ~6 s de súper-salto
+      this.score += 40; this.events.emit('scoreUpdate', this.score);
+      this._showFloatText(sx, sy - 28, '🦘 ¡SÚPER SALTO!  +40', '#7df09a');
     } else {
       this._calmUntil = this.time.now + 3800;        // la inundación se pausa ~3,8 s
       this.score += 50; this.events.emit('scoreUpdate', this.score);
@@ -660,7 +675,12 @@ export default class GameScene extends Phaser.Scene {
     if (this._won) return;
     this._won = true;
     this._waterSpeed = 0; // flood stops!
-    this.score += 100 + this.lives * 50;
+    let allBonus = 0;
+    if (this._totalAnimals > 0 && this._animalsCollected >= this._totalAnimals) {
+      allBonus = 150;     // bonus por rescatar a TODOS los animales del nivel
+      this._showFloatText(195, ARK_Y + 90, '🐾 ¡TODOS RESCATADOS!  +150', '#ffe066');
+    }
+    this.score += 100 + this.lives * 50 + allBonus;
     this.sound.stopMusic();
     this.sound.win();
 
@@ -761,7 +781,7 @@ export default class GameScene extends Phaser.Scene {
     // Jump — held finger auto-jumps on landing; quick tap gives 300 ms buffer
     const jumpReady = this.cursors.up.isDown || jTouched || (time - this._jumpLastPressed < 1500);
     if (jumpReady && (noah.body.blocked.down || this._ridingFalling)) {
-      noah.setVelocityY(JUMP_FORCE);
+      noah.setVelocityY(time < this._springUntil ? JUMP_FORCE * 1.45 : JUMP_FORCE);
       noah.body.gravity.y   = 680;
       this._jumpLastPressed = -1000;
       this._ridingFalling   = false;
@@ -815,6 +835,7 @@ export default class GameScene extends Phaser.Scene {
     this._waterGfx.setPosition(195, this._waterLevel + waterBlockH / 2);
     this._waterSurface.setPosition(195, this._waterLevel + 60);
     if (this._shieldGfx) this._shieldGfx.setPosition(noah.x, noah.y);   // el escudo sigue a Noah
+    if (time < this._springUntil) noah.setTint(0x8bf0a0); else noah.clearTint();  // verde con súper-salto
 
     // Death from water
     if (!this._dying && noah.y + 20 >= this._waterLevel) {
