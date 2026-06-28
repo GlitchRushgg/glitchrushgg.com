@@ -58,6 +58,7 @@ export default class GameScene extends Phaser.Scene {
     this._dying = false;
     this._combo       = 0;
     this._lastCollect = -1e9;
+    this._calmUntil   = 0;   // power-up: hasta cuándo la inundación está pausada
     this.sound = new SoundManager();
   }
 
@@ -104,6 +105,7 @@ export default class GameScene extends Phaser.Scene {
 
     this._generatePlatforms();
     this._spawnAnimals();
+    this._spawnPowerups();
 
     // Rising water — starts just below the screen so it's visible from the first second
     this._waterLevel  = WORLD_H + 40;
@@ -136,6 +138,8 @@ export default class GameScene extends Phaser.Scene {
 
     // Animal collection
     this.physics.add.overlap(this.noah, this.animalGroup, this._onCollectAnimal, null, this);
+    // Power-up collection (estrella de calma)
+    this.physics.add.overlap(this.noah, this.powerGroup, this._onCollectPower, null, this);
 
     // Camera — start high enough so Noah is above the control buttons (bottom 142px)
     this.camMinScrollY = WORLD_H - 702;
@@ -345,6 +349,35 @@ export default class GameScene extends Phaser.Scene {
     if (this._combo >= 3) this.cameras.main.shake(90, 0.004);
     this._showCollectEffect(ax, ay);
     this.events.emit('scoreUpdate', this.score);
+  }
+
+  // power-ups "estrella de calma": detienen la inundación unos segundos al cogerlas
+  _spawnPowerups() {
+    this.powerGroup = this.physics.add.group();
+    const statics = this.staticPlatGroup.getChildren();
+    let placed = 0;
+    for (let i = 0; i < statics.length && placed < 3; i++) {
+      if (i === 0 || i % 6 !== 4) continue;          // repartidas, lejos del suelo
+      const plat = statics[i];
+      const star = this.powerGroup.create(plat.x, plat.y - 36, 'star');
+      star.setDisplaySize(30, 30).setDepth(4).setTint(0x8fe7ff);
+      star.body.allowGravity = false; star.body.immovable = true;
+      this.tweens.add({ targets: star, y: star.y - 8, duration: 820, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: star, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
+      placed++;
+    }
+  }
+
+  _onCollectPower(noah, star) {
+    const sx = star.x, sy = star.y;
+    star.destroy();
+    this._calmUntil = this.time.now + 3800;          // la inundación se pausa ~3,8 s
+    this.score += 50;
+    this.events.emit('scoreUpdate', this.score);
+    if (this.sound && this.sound.collect) this.sound.collect(3);
+    this._showFloatText(sx, sy - 28, '☀️ ¡CALMA!  +50', '#8fe7ff');
+    this._showCollectEffect(sx, sy);
+    this.cameras.main.flash(260, 150, 220, 255);     // destello azul claro
   }
 
   _showCollectEffect(x, y) {
@@ -730,8 +763,8 @@ export default class GameScene extends Phaser.Scene {
       if (plat.x >= plat.maxX && plat.body.velocity.x > 0) plat.setVelocityX(-Math.abs(plat.body.velocity.x));
     });
 
-    // Rising water — paused during respawn grace period
-    if (!this._waterPaused) this._waterLevel -= this._waterSpeed * dt;
+    // Rising water — paused during respawn grace period o por el power-up de calma
+    if (!this._waterPaused && time > this._calmUntil) this._waterLevel -= this._waterSpeed * dt;
     const waterBlockH = 2400;
     this._waterGfx.setPosition(195, this._waterLevel + waterBlockH / 2);
     this._waterSurface.setPosition(195, this._waterLevel + 60);
