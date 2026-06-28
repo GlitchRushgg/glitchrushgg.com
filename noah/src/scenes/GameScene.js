@@ -84,7 +84,9 @@ export default class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, 390, WORLD_H);
     // Extend camera bounds 142px below world so Noah clears the control buttons
     this.cameras.main.setBounds(0, 0, 390, WORLD_H + 142);
-    const theme = THEMES[(this.level - 1) % THEMES.length];
+    this._storm = (this.level % 5 === 0);            // cada 5 niveles: TORMENTA especial
+    let theme = THEMES[(this.level - 1) % THEMES.length];
+    if (this._storm) theme = THEMES.find(t => t.name === 'Storm') || theme;
     this.cameras.main.setBackgroundColor(theme.sky);
     for (let i = 0; i < 4; i++) {
       this.add.image(195, 422 + i * 844, 'background').setDepth(0).setTint(theme.bg);
@@ -113,16 +115,19 @@ export default class GameScene extends Phaser.Scene {
     this._waterLevel  = WORLD_H + 40;
     this._waterPaused = false;
     this._waterSpeed  = 22 + this.level * 5; // px/s; lvl1=27, lvl5=47, lvl8=62
+    if (this._storm) this._waterSpeed = Math.round(this._waterSpeed * 1.35); // la tormenta sube más rápido
     const waterBlockH = 2400;
     this._waterGfx    = this.add.rectangle(195, this._waterLevel + waterBlockH / 2, 390, waterBlockH, theme.water, 0.82).setDepth(6);
     this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7).setTint(theme.water);
 
-    // Cartel de nivel + bioma (que cada nivel se sienta distinto)
-    const banner = this.add.text(195, 250, `LEVEL ${this.level}\n${theme.name}`, {
-      fontSize: '26px', fontFamily: 'Arial', fontStyle: 'bold', color: '#ffffff',
-      stroke: '#0d3a5c', strokeThickness: 6, align: 'center', lineSpacing: 2,
+    // Cartel de nivel + bioma (que cada nivel se sienta distinto); en tormenta, aviso especial
+    const bannerTxt = this._storm ? `LEVEL ${this.level}\n⛈️ ¡TORMENTA!` : `LEVEL ${this.level}\n${theme.name}`;
+    const banner = this.add.text(195, 250, bannerTxt, {
+      fontSize: this._storm ? '30px' : '26px', fontFamily: 'Arial', fontStyle: 'bold',
+      color: this._storm ? '#ffe066' : '#ffffff',
+      stroke: this._storm ? '#3a1d5c' : '#0d3a5c', strokeThickness: 6, align: 'center', lineSpacing: 2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(60);
-    this.tweens.add({ targets: banner, alpha: 0, y: 220, delay: 1300, duration: 700, onComplete: () => banner.destroy() });
+    this.tweens.add({ targets: banner, alpha: 0, y: 220, delay: this._storm ? 1800 : 1300, duration: 700, onComplete: () => banner.destroy() });
 
     // Noah
     this.noah = this.physics.add.sprite(195, WORLD_H - 120, 'noah').setDepth(5);
@@ -152,6 +157,7 @@ export default class GameScene extends Phaser.Scene {
       _rainNext += (_rainTier * 5 + 2) % 3 + 2;
       _rainTier++;
     }
+    if (this._storm) _rainTier += 3;                 // tormenta: lluvia mucho más intensa
     this._rainTier = _rainTier;
     this.rainGroup = this.add.group();
     this.time.addEvent({
@@ -390,9 +396,10 @@ export default class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: p, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
     };
     let stars = 0, shields = 0, springs = 0;
+    const maxStars = this._storm ? 5 : 3;            // en tormenta hay más estrellas de calma
     for (let i = 0; i < statics.length; i++) {
       if (i === 0) continue;
-      if (i % 6 === 4 && stars < 3) { make(statics[i], 'star', 'calm', 0x8fe7ff); stars++; }
+      if (i % 6 === 4 && stars < maxStars) { make(statics[i], 'star', 'calm', 0x8fe7ff); stars++; }
       else if (i % 7 === 3 && shields < 2) { make(statics[i], 'bubble', 'shield', null); shields++; }
       else if (i % 5 === 2 && springs < 2) { make(statics[i], 'spring', 'spring', null); springs++; }
     }

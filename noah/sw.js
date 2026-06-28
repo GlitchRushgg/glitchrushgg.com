@@ -1,7 +1,7 @@
 // Service worker de "Don't Drown, Noah!"
 // IMPORTANTE: al añadir/renombrar archivos del juego, añádelos a ASSETS
 // y sube la versión de CACHE — si no, los jugadores instalados verán la versión vieja.
-const CACHE = 'noah-v12';
+const CACHE = 'noah-v13';
 
 const ASSETS = [
   './',
