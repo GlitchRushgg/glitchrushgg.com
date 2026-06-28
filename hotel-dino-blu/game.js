@@ -110,6 +110,11 @@ const NPCS = [];
 const DRUMS = [];   // tambores de lavadoras que giran
 const ELEV_MARK = {}; // flecha dorada sobre el ascensor, por planta
 const VIEW = {};      // materiales de vista (mar / pueblo) compartidos entre habitaciones
+const AREAS = {};     // grupo Three por planta/zona (para mostrar solo la que visitas → +FPS)
+// muestra solo el área actual (el resto se oculta para no renderizar plantas que no se ven)
+function setAreaVisibility(cur) {
+  for (const k in AREAS) AREAS[k].visible = (+k === cur);
+}
 
 function addSolid(f, x0, x1, z0, z1) {
   (SOLID[f] ||= []).push({ x0, x1, z0, z1 });
@@ -291,6 +296,7 @@ function buildGuestFloor(f) {
   const g = new THREE.Group();
   g.position.y = f * FH;
   scene.add(g);
+  AREAS[f] = g;
   const full = f === PLAYER_FLOOR;
   BOUNDS[f] = { x0: BX0 + 0.3, x1: BX1 - 0.3, z0: -BZ + 0.3, z1: BZ - 0.3 };
 
@@ -822,6 +828,7 @@ function buildLobby() {
   const f = 0;
   const g = new THREE.Group();
   scene.add(g);
+  AREAS[f] = g;
   BOUNDS[f] = { x0: BX0 + 0.35, x1: BX1 - 0.35, z0: -BZ + 0.35, z1: BZ - 0.35 };
 
   add(g, bx(BX1 - BX0, 0.14, BZ * 2), (BX0 + BX1) / 2, -0.07, 0).material = MAT.marble;
@@ -997,6 +1004,7 @@ function buildLaundry() {
   const g = new THREE.Group();
   g.position.y = -FH;
   scene.add(g);
+  AREAS[f] = g;
   const X0 = 2, X1 = BX1, Z = 6.2;
   BOUNDS[f] = { x0: X0 + 0.35, x1: X1 - 0.35, z0: -Z + 0.35, z1: Z - 0.35 };
 
@@ -1146,6 +1154,7 @@ function buildZone(z) {
   zoneByFloor[f] = z;
   z.done = [false, false, false];
   const g = new THREE.Group(); g.position.y = f * FH; scene.add(g);
+  AREAS[f] = g;
   const X0 = -8, X1 = BX1, Z = 6.5, CX = (X0 + X1) / 2;
   BOUNDS[f] = { x0: X0 + 0.5, x1: X1 - 0.6, z0: -Z + 0.5, z1: Z - 0.5 };
 
@@ -2176,6 +2185,7 @@ function travelTo(f) {
   dingLift();
   setTimeout(() => {
     G.floor = f;
+    setAreaVisibility(f);   // solo se renderiza la planta/zona actual (+FPS)
     G.px = ELEV.x - 0.6; G.pz = ELEV.z;
     G.yaw = Math.PI / 2; G.pitch = 0;
     fade.style.opacity = 0;
@@ -2769,6 +2779,7 @@ for (let f = 1; f <= 4; f++) {
 // zonas ya abiertas según el día actual (terraza, restaurante, piscina, jardín);
 // con try/catch para que un fallo en una zona nunca rompa el juego entero
 ZONES.forEach(z => { if (zoneUnlocked(z)) { try { buildZone(z); } catch (e) { console.warn('[zona]', z.id, e); } } });
+setAreaVisibility(PLAYER_FLOOR);   // al arrancar solo se ve el piso del jugador (el resto oculto → +FPS)
 // Lucía ya no ronda el pasillo: aparece solo en el saludo inicial y el veredicto final
 updateHUD();
 
