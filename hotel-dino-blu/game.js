@@ -2210,8 +2210,14 @@ function checkInspection() {
   const room = pick(candidates);
   room.inspected = true;
   const rc = roomRect(room.idx);
-  lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+  if (lucia) {
+    lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+    lucia.rotation.y = Math.PI;
+    lucia.visible = true;
+  }
   luciaState = { mode: 'inspect', t: 8 };
+  toast(S.luciaInspect(room.num), 2600);   // aviso: ¡la gobernanta está revisando!
+  beep(440, 0.16, 'triangle', 0.12);
   if (room.mistakes > 0) {
     G.warnings++;
     G.score = Math.max(0, G.score - 60);
@@ -2554,7 +2560,7 @@ function updateNPCs(dt, t) {
     const limbs = m.userData.limbs;
     if (n.isBoss && luciaState.mode === 'inspect') {
       luciaState.t -= dt;
-      if (luciaState.t <= 0) luciaState.mode = 'patrol';
+      if (luciaState.t <= 0) { luciaState.mode = 'patrol'; if (lucia) lucia.visible = false; }
     }
     if (G.celebrating) {                                  // tarantela: saltos + giros + brazos arriba
       m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.22;
@@ -2789,7 +2795,9 @@ for (let f = 1; f <= 4; f++) {
 // con try/catch para que un fallo en una zona nunca rompa el juego entero
 ZONES.forEach(z => { if (zoneUnlocked(z)) { try { buildZone(z); } catch (e) { console.warn('[zona]', z.id, e); } } });
 setAreaVisibility(PLAYER_FLOOR);   // al arrancar solo se ve el piso del jugador (el resto oculto → +FPS)
-// Lucía ya no ronda el pasillo: aparece solo en el saludo inicial y el veredicto final
+// Lucía existe en el piso pero oculta: aparece en el saludo, en las INSPECCIONES y en el veredicto.
+// No patrulla el pasillo (su entrada en NPCS no tiene `walk`); checkInspection la muestra y la coloca.
+if (floor2Group) { spawnLucia(floor2Group); if (lucia) lucia.visible = false; }
 updateHUD();
 
 // ----------------------------------------------------------------------------
@@ -2954,7 +2962,10 @@ function loop() {
       updateInteraction(dt);
     }
     hudTimer += dt;
-    if (hudTimer > 0.4) { hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD(); }
+    if (hudTimer > 0.4) {
+      hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD();
+      if (!G.dialogOpen) checkInspection();   // Lucía inspecta habitaciones terminadas (cooldown 45 min)
+    }
   }
   updateNPCs(dt, t);
   updateFX(dt);

@@ -103,6 +103,7 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: «¡Sofía! Las toallas de la ${num} NO están bien. ${g} huéspedes: ${g} grandes, ${g} de bidet, ${g} pequeñas y 1 alfombrín.» (fallo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: «La ${num} está perfecta, brava Sofía.» (+30)`,
+    luciaInspect: num => `👀 Lucía está inspeccionando la habitación ${num}…`,
 
     towelDlgTitle: num => `🧺 Reponer toallas — Hab. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — ¿cuántas dejas de cada?`,
@@ -294,6 +295,7 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: "Sofía! The towels in ${num} are NOT right. ${g} guests: ${g} bath, ${g} bidet, ${g} hand towels and 1 bath mat." (strike ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: "Room ${num} is perfect, brava Sofía." (+30)`,
+    luciaInspect: num => `👀 Lucía is inspecting room ${num}…`,
 
     towelDlgTitle: num => `🧺 Restock towels — Room ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — how many of each do you leave?`,
@@ -485,6 +487,7 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucia: «Sofia! Gli asciugamani della ${num} NON vanno bene. ${g} ospiti: ${g} grandi, ${g} bidet, ${g} piccoli e 1 tappetino.» (richiamo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucia: «La ${num} è perfetta, brava Sofia.» (+30)`,
+    luciaInspect: num => `👀 Lucia sta ispezionando la camera ${num}…`,
 
     towelDlgTitle: num => `🧺 Rifornire asciugamani — Cam. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — quanti ne lasci di ognuno?`,
