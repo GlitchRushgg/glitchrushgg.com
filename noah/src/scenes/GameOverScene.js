@@ -153,10 +153,10 @@ export default class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
     // Auto-trigger share sheet
-    const text = `🌊 I scored ${this.finalScore} pts and reached level ${this.level} in Don't Drown, Noah! Can you beat me?`;
+    const text = T.shareTextGO(this.finalScore, this.level);
     shareCard(cv, text).then(result => {
-      if (result === 'copied')     hint.setText('Link copied! 📋  Screenshot the card to post on TikTok!');
-      if (result === 'downloaded') hint.setText('Image saved! 📁  Post it on TikTok with #DontDrownNoah');
+      if (result === 'copied')     hint.setText(T.linkCopied);
+      if (result === 'downloaded') hint.setText(T.imgSaved);
     });
   }
 
@@ -192,7 +192,7 @@ export default class GameOverScene extends Phaser.Scene {
       this.add.text(cx + 50, y, `${score}`, {
         fontSize: '16px', fontFamily: 'Arial', fontStyle: 'bold', fill: col,
       }).setOrigin(1, 0.5);
-      this.add.text(cx + 80, y, `Lv.${level}`, {
+      this.add.text(cx + 80, y, `${T.lvAbbr}${level}`, {
         fontSize: '12px', fontFamily: 'Arial', fill: '#88aacc',
       }).setOrigin(0, 0.5);
     });

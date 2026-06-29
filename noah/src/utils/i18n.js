@@ -18,6 +18,12 @@ const STRINGS = {
     screenshotTt: '📸  ¡Haz captura y súbela a TikTok!',
     gameOver: 'FIN DEL JUEGO', reachedLevel: n => `Llegaste al Nivel ${n}`, newRecord: '🏆 ¡NUEVO RÉCORD!',
     tryAgain: '↺  Reintentar',
+    jump: 'SALTAR', lvAbbr: 'Niv.',
+    shareTextWin: (a, l, s) => `🦁 ¡Rescaté ${a} animales y superé el nivel ${l} con ${s} puntos en Don't Drown, Noah! ¿Puedes superarme?`,
+    shareTextGO: (s, l) => `🌊 ¡Hice ${s} puntos y llegué al nivel ${l} en Don't Drown, Noah! ¿Puedes superarme?`,
+    linkCopied: '¡Enlace copiado! 📋  Haz captura de la tarjeta y súbela a TikTok',
+    imgSaved: '¡Imagen guardada! 📁  Súbela a TikTok con #DontDrownNoah',
+    themes: { Sunny: 'Soleado', Sunset: 'Atardecer', Dusk: 'Anochecer', Night: 'Noche', Storm: 'Tormenta', Aurora: 'Aurora', Dawn: 'Amanecer' },
   },
   en: {
     play: '▶  PLAY',
@@ -37,6 +43,12 @@ const STRINGS = {
     screenshotTt: '📸  Screenshot this to post on TikTok!',
     gameOver: 'GAME OVER', reachedLevel: n => `You reached Level ${n}`, newRecord: '🏆 NEW RECORD!',
     tryAgain: '↺  Try Again',
+    jump: 'JUMP', lvAbbr: 'Lv.',
+    shareTextWin: (a, l, s) => `🦁 I rescued ${a} animals and beat level ${l} with ${s} pts in Don't Drown, Noah! Can you beat me?`,
+    shareTextGO: (s, l) => `🌊 I scored ${s} pts and reached level ${l} in Don't Drown, Noah! Can you beat me?`,
+    linkCopied: 'Link copied! 📋  Screenshot the card to post on TikTok!',
+    imgSaved: 'Image saved! 📁  Post it on TikTok with #DontDrownNoah',
+    themes: { Sunny: 'Sunny', Sunset: 'Sunset', Dusk: 'Dusk', Night: 'Night', Storm: 'Storm', Aurora: 'Aurora', Dawn: 'Dawn' },
   },
 };
 

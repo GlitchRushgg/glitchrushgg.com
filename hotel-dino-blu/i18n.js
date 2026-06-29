@@ -104,6 +104,8 @@ const DICTS = {
     luciaBad: (num, g, w) => `👩‍💼 Lucía: «¡Sofía! Las toallas de la ${num} NO están bien. ${g} huéspedes: ${g} grandes, ${g} de bidet, ${g} pequeñas y 1 alfombrín.» (fallo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: «La ${num} está perfecta, brava Sofía.» (+30)`,
     luciaInspect: num => `👀 Lucía está inspeccionando la habitación ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucía: «¡La salida ${num} sigue sin hacer y es tardísimo! Espabila, Sofía.» (fallo ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucía: «Se hace tarde y quedan salidas sin hacer… ¡date prisa antes de que las revise!»',
 
     towelDlgTitle: num => `🧺 Reponer toallas — Hab. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — ¿cuántas dejas de cada?`,
@@ -296,6 +298,8 @@ const DICTS = {
     luciaBad: (num, g, w) => `👩‍💼 Lucía: "Sofía! The towels in ${num} are NOT right. ${g} guests: ${g} bath, ${g} bidet, ${g} hand towels and 1 bath mat." (strike ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: "Room ${num} is perfect, brava Sofía." (+30)`,
     luciaInspect: num => `👀 Lucía is inspecting room ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucía: "Check-out ${num} still isn't done and it's getting late! Hurry up, Sofía." (strike ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucía: "It\'s getting late and there are check-outs still to do… hurry before I inspect them!"',
 
     towelDlgTitle: num => `🧺 Restock towels — Room ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — how many of each do you leave?`,
@@ -488,6 +492,8 @@ const DICTS = {
     luciaBad: (num, g, w) => `👩‍💼 Lucia: «Sofia! Gli asciugamani della ${num} NON vanno bene. ${g} ospiti: ${g} grandi, ${g} bidet, ${g} piccoli e 1 tappetino.» (richiamo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucia: «La ${num} è perfetta, brava Sofia.» (+30)`,
     luciaInspect: num => `👀 Lucia sta ispezionando la camera ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucia: «La partenza ${num} non è ancora fatta ed è tardissimo! Sbrigati, Sofia.» (richiamo ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucia: «Si fa tardi e ci sono ancora partenze da fare… sbrigati prima che le ispezioni!»',
 
     towelDlgTitle: num => `🧺 Rifornire asciugamani — Cam. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — quanti ne lasci di ognuno?`,

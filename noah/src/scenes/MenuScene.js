@@ -101,7 +101,7 @@ export default class MenuScene extends Phaser.Scene {
         const col = MEDAL[i];
         this.add.text(W / 2 - 130, y, `#${i + 1}`, { fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(0, 0.5).setDepth(6);
         this.add.text(W / 2 + 70, y, `${score}`, { fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(1, 0.5).setDepth(6);
-        this.add.text(W / 2 + 90, y, `Lv.${level}`, { fontSize: '13px', fontFamily: 'Arial', fill: '#88aacc' }).setOrigin(0, 0.5).setDepth(6);
+        this.add.text(W / 2 + 90, y, `${T.lvAbbr}${level}`, { fontSize: '13px', fontFamily: 'Arial', fill: '#88aacc' }).setOrigin(0, 0.5).setDepth(6);
       });
     }
 

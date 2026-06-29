@@ -15,7 +15,7 @@ detecta el idioma del navegador automáticamente).
 
 Eres **Sofía**, camarera de pisos del **2º piso**. Tu jornada va de las **6:00** a las
 **14:00** (hora de entrada de los nuevos huéspedes): la gobernanta **Lucía** acaba de
-repartir el parte de trabajo y tienes que dejar perfectas tus **12 habitaciones**.
+repartir el parte de trabajo y tienes que dejar perfectas las **11 habitaciones** ocupadas de tu piso.
 
 El hotel tiene **4 pisos de habitaciones** y un equipo de **5 empleadas de limpieza
 más la gobernanta**:

@@ -122,7 +122,7 @@ export default class GameScene extends Phaser.Scene {
     this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7).setTint(theme.water);
 
     // Cartel de nivel + bioma (que cada nivel se sienta distinto); en tormenta, aviso especial
-    const bannerTxt = this._storm ? `${T.level} ${this.level}\n${T.storm}` : `${T.level} ${this.level}\n${theme.name}`;
+    const bannerTxt = this._storm ? `${T.level} ${this.level}\n${T.storm}` : `${T.level} ${this.level}\n${(T.themes && T.themes[theme.name]) || theme.name}`;
     const banner = this.add.text(195, 250, bannerTxt, {
       fontSize: this._storm ? '30px' : '26px', fontFamily: 'Arial', fontStyle: 'bold',
       color: this._storm ? '#ffe066' : '#ffffff',
@@ -405,12 +405,16 @@ export default class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: p, angle: 360, duration: 1800, repeat: -1, ease: 'Linear' });
     };
     let stars = 0, shields = 0, springs = 0;
-    const maxStars = this._storm ? 5 : 3;            // en tormenta hay más estrellas de calma
+    // Las ayudas se REDUCEN al subir de nivel: colchón para principiantes (niveles 1-3)
+    // y tensión real en las rachas profundas. La tormenta mantiene más estrellas de calma.
+    const maxStars   = this._storm ? 3 : (this.level <= 4 ? 3 : 2);  // la tormenta es el pico de tensión, no de calma
+    const maxShields = this.level <= 3 ? 2 : this.level <= 6 ? 1 : 0;
+    const maxSprings = this.level <= 5 ? 2 : 1;
     for (let i = 0; i < statics.length; i++) {
       if (i === 0) continue;
       if (i % 6 === 4 && stars < maxStars) { make(statics[i], 'star', 'calm', 0x8fe7ff); stars++; }
-      else if (i % 7 === 3 && shields < 2) { make(statics[i], 'bubble', 'shield', null); shields++; }
-      else if (i % 5 === 2 && springs < 2) { make(statics[i], 'spring', 'spring', null); springs++; }
+      else if (i % 7 === 3 && shields < maxShields) { make(statics[i], 'bubble', 'shield', null); shields++; }
+      else if (i % 5 === 2 && springs < maxSprings) { make(statics[i], 'spring', 'spring', null); springs++; }
     }
   }
 
@@ -632,7 +636,7 @@ export default class GameScene extends Phaser.Scene {
     ico( 68, BY - 1, '←');
     ico(182, BY - 1, '→');
     ico(316, BY - 6, '↑', '48px');
-    this.add.text(316, BY + 32, 'JUMP', {
+    this.add.text(316, BY + 32, T.jump, {
       fontSize: '12px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: 'rgba(255,215,130,0.85)',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(32);

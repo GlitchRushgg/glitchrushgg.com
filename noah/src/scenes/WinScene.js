@@ -167,10 +167,10 @@ export default class WinScene extends Phaser.Scene {
     this.tweens.add({ targets: card,  alpha: 1, y: H / 2 - 40, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
-    const text = `🦁 I rescued ${this.animalsCollected} animals and beat level ${this.level} with ${this.finalScore} pts in Don't Drown, Noah! Can you beat me?`;
+    const text = T.shareTextWin(this.animalsCollected, this.level, this.finalScore);
     shareCard(cv, text).then(result => {
-      if (result === 'copied')     hint.setText('Link copied! 📋  Screenshot the card to post on TikTok!');
-      if (result === 'downloaded') hint.setText('Image saved! 📁  Post it on TikTok with #DontDrownNoah');
+      if (result === 'copied')     hint.setText(T.linkCopied);
+      if (result === 'downloaded') hint.setText(T.imgSaved);
     });
   }
 

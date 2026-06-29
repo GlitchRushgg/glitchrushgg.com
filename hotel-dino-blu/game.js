@@ -1,7 +1,7 @@
 // ============================================================================
 //  HOTEL DINO BLU — Turno de Limpieza 3D
 //  Praia a Mare · Calabria · frente a la Isola di Dino
-//  Eres Sofía, camarera del 2º piso: 12 habitaciones antes de las 14:00.
+//  Eres Sofía, camarera del 2º piso: 11 habitaciones a limpiar antes de las 14:00.
 // ============================================================================
 import * as THREE from 'three';
 import { S, LANG, LANGS, setLang } from './i18n.js';
@@ -243,7 +243,7 @@ function textPlane(lines, pw, ph, { bg = null, fg = '#fff', size = 90, stroke = 
 }
 
 // ----------------------------------------------------------------------------
-// Parte de trabajo: generación de las 12 habitaciones del piso de Sofía
+// Parte de trabajo: genera 12 habitaciones del piso (1 LIBRE → 11 a limpiar)
 // ----------------------------------------------------------------------------
 function genRooms() {
   const statuses = G.mode === 'express'
@@ -257,7 +257,7 @@ function genRooms() {
       idx: i, num: PLAYER_FLOOR * 100 + i + 1, status: st,
       guests: st === 'L' ? 0 : pick([1, 1, 2, 2, 2, 2]),   // máx 2 (1 cama doble = 2 personas)
       stay: 0, sheetChange: false,
-      tasks: [], done: false, inspected: false, mistakes: 0, vis: {},
+      tasks: [], done: false, inspected: false, lateFlagged: false, mistakes: 0, vis: {},
     };
     if (st === 'F') { r.stay = stays[si++ % stays.length]; r.sheetChange = r.stay % 3 === 0; }
     if (st === 'P') {
@@ -2203,7 +2203,44 @@ function travelTo(f) {
 // Inspección de la gobernanta
 // ----------------------------------------------------------------------------
 function checkInspection() {
+  const lateThreshold = SHIFT_START + (SHIFT_END - SHIFT_START) * 0.7;  // ~11:36
+
+  // Aviso preventivo ÚNICO ~30 min de juego antes del umbral: si aún queda una SALIDA
+  // sin tocar, Lucía avisa ANTES de penalizar, para que el −50 no sea una emboscada
+  // (sobre todo en Express a 3x). No gasta inspección ni gatea con el cooldown.
+  if (!G._lateWarned && G.time > lateThreshold - 30 && G.rooms.some(r => r.status === 'P' && !r.done)) {
+    G._lateWarned = true;
+    toast(S.luciaWarnSoon, 4200);
+    beep(520, 0.14, 'triangle', 0.12);
+  }
+
   if (G.time - G.lastInspect < 45) return;
+
+  // Motivo 2 (tensión para el jugador rápido): una SALIDA (PARTENZA) sin terminar
+  // ya entrada la tarde es un fallo de ritmo → amonestación. Solo después del 70%
+  // del turno y una vez por habitación, así el que va a buen paso nunca la sufre.
+  if (G.time > lateThreshold) {
+    const late = G.rooms.find(r => r.status === 'P' && !r.done && !r.lateFlagged);
+    if (late) {
+      G.lastInspect = G.time;
+      late.lateFlagged = true;
+      const rc = roomRect(late.idx);
+      if (lucia) {
+        lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+        lucia.rotation.y = Math.PI;
+        lucia.visible = true;
+      }
+      luciaState = { mode: 'inspect', t: 8 };
+      G.warnings++;
+      G.score = Math.max(0, G.score - 50);
+      toast(S.luciaLate(late.num, G.warnings), 5200);
+      dingBad();
+      updateHUD();
+      if (G.warnings >= 3) setTimeout(() => endShift('despido'), 1500);
+      return;
+    }
+  }
+
   const candidates = G.rooms.filter(r => r.done && !r.inspected);
   if (!candidates.length) return;
   G.lastInspect = G.time;
