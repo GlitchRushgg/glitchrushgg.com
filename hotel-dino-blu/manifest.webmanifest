@@ -1,0 +1,25 @@
+{
+  "name": "Hotel Dino Blu — Turno de Limpieza 3D",
+  "short_name": "Hotel Dino Blu",
+  "description": "Eres Sofía, camarera de pisos: deja perfectas las 11 habitaciones de tu piso antes de las 14:00, con la gobernanta vigilando.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0d2a3f",
+  "theme_color": "#1773b0",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
