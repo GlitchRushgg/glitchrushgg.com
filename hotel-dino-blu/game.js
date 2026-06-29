@@ -550,8 +550,13 @@ function buildRoomShell(g, f, rc, i, isOpen) {
   const vm = seaSide ? (VIEW.sea ||= viewMat(true)) : (VIEW.town ||= viewMat(false));
   const view = add(g, new THREE.Mesh(new THREE.PlaneGeometry(13, 8), vm), rc.x0 + 2.05, 2.4, wz + rc.dir * 9);
   view.rotation.y = seaSide ? Math.PI : 0;
-  // marco de aluminio + cristal limpio (SIN panel opaco detrás → se ve la vista al mar)
-  add(g, bx(2.12, 1.85, 0.05), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.02).material = MAT.steel;
+  // marco de aluminio = SOLO 4 barras finas alrededor del cristal (antes era un panel SÓLIDO
+  // de acero que tapaba la vista y se veía gris — feedback de Cristian). El cristal queda despejado.
+  { const fx = rc.x0 + 2.05, fy = 1.62, fz = wz + rc.dir * 0.02;
+    add(g, bx(2.12, 0.1, 0.05), fx, fy + 0.92, fz).material = MAT.steel;   // marco arriba
+    add(g, bx(2.12, 0.1, 0.05), fx, fy - 0.92, fz).material = MAT.steel;   // marco abajo
+    add(g, bx(0.1, 1.85, 0.05), fx - 1.0, fy, fz).material = MAT.steel;    // marco izquierda
+    add(g, bx(0.1, 1.85, 0.05), fx + 1.0, fy, fz).material = MAT.steel; }  // marco derecha
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.7), MAT.steel), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03); // montante central
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.66), MAT.glass), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03);
   // alféizar de mármol como en las fotos
@@ -855,11 +860,12 @@ function buildLobby() {
   add(g, textPlane('ENTRATA', 1.7, 0.34, { bg: '#c96f4a', fg: '#fff', size: 72 }), dX, 2.18, dZ + 0.2, 0); // rótulo hacia el lobby
   HOTSPOTS.push({
     floor: f, x: 2, z: -BZ + 1.1, r: 1.6, type: 'press',
-    label: S.exitDoor, action: () => toast(S.exitMsg),
+    label: S.exitDoor, action: () => toast(G.freeRoam ? S.freeRoamExit : S.exitMsg),
   });
 
-  // columnas
+  // columnas (se omite la de x=10,z=3.4: tapaba el letrero "HOTEL DINO BLU" de recepción — feedback de Cristian)
   for (const x of [-8, -2, 4, 10]) for (const z of [-3.4, 3.4]) {
+    if (x === 10 && z === 3.4) continue;
     add(g, cyl(0.28, 0.32, FH, MAT.wall, 12), x, FH / 2, z);
     addSolid(f, x - 0.35, x + 0.35, z - 0.35, z + 0.35);
   }
@@ -989,8 +995,8 @@ function buildLobby() {
   spawnStatic(g, makePerson({ shirt: 0xe07a98, skirt: 0xe07a98, skin: 0xe0b48a, hair: 0x6b3b1f }), 8.0, 0.7, 0);
   add(g, bx(0.5, 0.62, 0.34), 7.3, 0.31, 0.7).material = lamb(0x7a4a2a);   // maleta
   add(g, cyl(0.02, 0.02, 0.4, MAT.steel, 6), 7.3, 0.72, 0.7).rotation.z = Math.PI / 2;
-  // huésped de pie junto a los sofás
-  spawnStatic(g, makePerson({ shirt: 0x4caf7d, pants: 0x55607a, skin: 0xb07a50, hair: 0x33240f }), -9, -0.1, 0);
+  // huésped de pie junto a los sofás (antes en x=-9,z=-0.1 → ¡encima de la mesa de centro! — feedback de Cristian)
+  spawnStatic(g, makePerson({ shirt: 0x4caf7d, pants: 0x55607a, skin: 0xb07a50, hair: 0x33240f }), -7, 0.5, -Math.PI / 2);
 
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
@@ -1097,10 +1103,10 @@ function buildLaundry() {
   add(g, textPlane(S.signDirty, 1.0, 0.22, { bg: '#a85454', fg: '#fff', size: 60 }), 4.2, 1.5, -Z + 0.5, 0);
   addSolid(f, 3.6, 4.8, -Z, -Z + 1.4);
 
-  // tendedero con sábanas
-  add(g, bx(0.05, 1.7, 2.4), 5.6, 0.85, 4.6).material = MAT.steel;
-  add(g, bx(0.04, 1.1, 2.2), 5.62, 0.95, 4.6).material = MAT.towel;
-  addSolid(f, 5.3, 5.9, 3.3, 5.9);
+  // tendedero con sábanas (movido al noreste despejado: antes en x=5.6 atravesaba una lavadora — feedback de Cristian)
+  add(g, bx(0.05, 1.7, 2.4), 12.5, 0.85, 2.8).material = MAT.steel;
+  add(g, bx(0.04, 1.1, 2.2), 12.52, 0.95, 2.8).material = MAT.towel;
+  addSolid(f, 12.2, 12.8, 1.6, 4.0);
 
   buildElevator(g, f);
   add(g, textPlane(S.signBasement, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 60 }), X1 - 0.18, 2.5, 0, -Math.PI / 2);
@@ -2149,7 +2155,7 @@ function closeDialog() {
   $('dialog').classList.add('hidden');
   $('dialog').innerHTML = '';
   G.dialogOpen = false;
-  if (!IS_TOUCH && G.started && !G.over) canvas.requestPointerLock?.();
+  if (!IS_TOUCH && G.started && (!G.over || G.freeRoam)) canvas.requestPointerLock?.();
 }
 
 // ----------------------------------------------------------------------------
@@ -2331,10 +2337,43 @@ function endShift(outcome, minutesLeft = 0) {
       <tr><td>${S.endRows[5]}</td><td>${G.score}</td></tr>
     </table>
     <button class="bigbtn" id="btnShare">${S.shareBtn}</button>
+    ${outcome !== 'despido' ? `<button class="bigbtn" id="btnRoam">${S.freeRoamBtn}</button>` : ''}
     <button class="bigbtn alt" onclick="location.reload()">${S.again}</button>
   </div>`;
   $('end').classList.remove('hidden');
   $('btnShare').onclick = () => shareResult(stars);
+  const roamBtn = document.getElementById('btnRoam');
+  if (roamBtn) roamBtn.onclick = startFreeRoam;
+}
+
+// Modo libre: al terminar el turno (no despido) puedes pasear por el hotel y las
+// zonas abiertas (piscina, terraza…) sin reloj ni objetivos. Petición de Cristian.
+function startFreeRoam() {
+  $('end').classList.add('hidden');
+  G.freeRoam = true; G.uiOpen = false; G.dialogOpen = false;
+  // ocultar TODO el HUD del turno (incl. carro y checklist, que antes quedaban visibles)
+  ['topbar', 'objective', 'combo', 'inv', 'checklist'].forEach(id => $(id)?.classList.add('hidden'));
+  // las zonas abiertas vuelven a tener tareas que limpiar (antes solo se reseteaban al recargar)
+  for (const z of ZONES) if (z.done) z.done = [false, false, false];
+  // rótulo permanente "modo paseo" + botón verde para reiniciar
+  let bar = document.getElementById('roamBar');
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'roamBar';
+    bar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:8px;align-items:center;font:bold 14px sans-serif';
+    const tag = document.createElement('span');
+    tag.style.cssText = 'background:rgba(13,58,92,.78);color:#fff;padding:7px 13px;border-radius:18px';
+    tag.textContent = '🏖️';
+    const b = document.createElement('button'); b.id = 'btnEndRoam';
+    b.style.cssText = 'padding:8px 16px;border:0;border-radius:18px;background:#1aa84f;color:#fff;font:bold 14px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer';
+    b.onclick = () => location.reload();
+    bar.append(tag, b); document.body.appendChild(bar);
+  }
+  document.getElementById('roamBar').querySelector('span').textContent = '🏖️ ' + S.freeRoamMode;
+  document.getElementById('btnEndRoam').textContent = S.freeRoamEnd;
+  bar.style.display = 'flex';
+  // el aviso solo promete la piscina/zonas si hay alguna ABIERTA (si no, mensaje honesto)
+  toast(ZONES.some(zoneUnlocked) ? S.freeRoamHint : S.freeRoamHintBasic, 5500);
+  if (!IS_TOUCH) canvas.requestPointerLock?.();
 }
 
 // genera una tarjeta-resultado (PNG) para compartir: estrellas, puntuación,
@@ -2994,15 +3033,16 @@ function loop() {
     }
     if (G.time >= SHIFT_END) endShift('fin');
     if (G.combo > 0 && t - G.lastTaskAt > COMBO_WINDOW) breakCombo();  // se enfría la cadena
-    if (!G.uiOpen && !G.dialogOpen) {
-      movePlayer(dt);
-      updateInteraction(dt);
-    }
     hudTimer += dt;
     if (hudTimer > 0.4) {
       hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD();
       if (!G.dialogOpen) checkInspection();   // Lucía inspecta habitaciones terminadas (cooldown 45 min)
     }
+  }
+  // Movimiento e interacción: durante el turno O en MODO LIBRE (paseo tras terminar)
+  if (G.started && (!G.over || G.freeRoam) && !G.uiOpen && !G.dialogOpen) {
+    movePlayer(dt);
+    updateInteraction(dt);
   }
   updateNPCs(dt, t);
   updateFX(dt);

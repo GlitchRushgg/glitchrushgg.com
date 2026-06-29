@@ -90,6 +90,12 @@ const DICTS = {
     callLift: 'Llamar al ascensor',
     exitDoor: 'Salir a la calle',
     exitMsg: '🚪 ¡No puedes irte en mitad del turno! Lucía te está mirando… 👀',
+    freeRoamBtn: '🏖️ Pasear por el hotel',
+    freeRoamHint: '🎉 ¡Turno terminado! El hotel es tuyo: sube al ascensor 🛗 y visita la piscina y las zonas abiertas. 🏊',
+    freeRoamExit: '🚪 El mar está ahí fuera… ¡pero hoy disfruta del hotel! Usa el ascensor para ir a la piscina y las zonas. 🏖️',
+    freeRoamEnd: '🏠 Empezar otro turno',
+    freeRoamMode: 'Modo paseo',
+    freeRoamHintBasic: '🎉 ¡Turno terminado! Pasea a tu aire por el hotel 🛗 (recepción, lavandería…). La piscina y las zonas se abren al completar días. 🏊',
 
     liftTitle: '🛗 Ascensor de servicio', liftMeta: '¿A qué planta vas?', close: 'Cerrar',
     floors: {
@@ -284,6 +290,12 @@ const DICTS = {
     callLift: 'Call the lift',
     exitDoor: 'Step outside',
     exitMsg: `🚪 You can't leave mid-shift! Lucía is watching you… 👀`,
+    freeRoamBtn: '🏖️ Explore the hotel',
+    freeRoamHint: '🎉 Shift over! The hotel is yours: take the elevator 🛗 and visit the pool and the open areas. 🏊',
+    freeRoamExit: '🚪 The sea is right outside… but today, enjoy the hotel! Use the elevator to reach the pool and the open areas. 🏖️',
+    freeRoamEnd: '🏠 Start another shift',
+    freeRoamMode: 'Free roam',
+    freeRoamHintBasic: '🎉 Shift over! Wander the hotel freely 🛗 (reception, laundry…). The pool and other areas open as you complete days. 🏊',
 
     liftTitle: '🛗 Service lift', liftMeta: 'Which floor?', close: 'Close',
     floors: {
@@ -478,6 +490,12 @@ const DICTS = {
     callLift: `Chiamare l'ascensore`,
     exitDoor: 'Uscire in strada',
     exitMsg: '🚪 Non puoi andartene a metà turno! Lucia ti sta guardando… 👀',
+    freeRoamBtn: `🏖️ Esplora l'hotel`,
+    freeRoamHint: `🎉 Turno finito! L'hotel è tuo: prendi l'ascensore 🛗 e visita la piscina e le aree aperte. 🏊`,
+    freeRoamExit: `🚪 Il mare è proprio lì fuori… ma oggi goditi l'hotel! Usa l'ascensore per la piscina e le aree. 🏖️`,
+    freeRoamEnd: '🏠 Inizia un altro turno',
+    freeRoamMode: 'Modalità libera',
+    freeRoamHintBasic: `🎉 Turno finito! Gironzola per l'hotel 🛗 (reception, lavanderia…). La piscina e le aree si aprono completando i giorni. 🏊`,
 
     liftTitle: '🛗 Ascensore di servizio', liftMeta: 'A che piano vai?', close: 'Chiudi',
     floors: {

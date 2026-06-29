@@ -28,8 +28,8 @@ const ANIMALS = ['elephant', 'giraffe', 'lion', 'zebra', 'monkey', 'rabbit', 'pe
 const THEMES = [
   { name: 'Sunny',  sky: '#87CEEB', bg: 0xffffff, water: 0x0d47a1 },
   { name: 'Sunset', sky: '#ffb27a', bg: 0xffd9b0, water: 0x8a3b6b },
-  { name: 'Dusk',   sky: '#7a78c0', bg: 0xcfc8f2, water: 0x2a2a7a },
-  { name: 'Night',  sky: '#1b2a4a', bg: 0x8aa0d8, water: 0x07173a },
+  { name: 'Dusk',   sky: '#4a4880', bg: 0x8a82bc, water: 0x2a2a7a },
+  { name: 'Night',  sky: '#0d1530', bg: 0x2c3760, water: 0x07173a },
   { name: 'Storm',  sky: '#5a6470', bg: 0xb9c2cc, water: 0x274050 },
   { name: 'Aurora', sky: '#123a3a', bg: 0x9af0d0, water: 0x0a3550 },
   { name: 'Dawn',   sky: '#ffd0d8', bg: 0xffe0e6, water: 0x6a4a8a },
@@ -91,6 +91,16 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(theme.sky);
     for (let i = 0; i < 4; i++) {
       this.add.image(195, 422 + i * 844, 'background').setDepth(0).setTint(theme.bg);
+    }
+    // Estrellas en los temas oscuros para que la "noche" se sienta de verdad (feedback de Cristian)
+    if (['Night', 'Dusk', 'Aurora'].includes(theme.name)) {
+      for (let i = 0; i < 40; i++) {
+        const star = this.add.circle(
+          Phaser.Math.Between(8, 382), Phaser.Math.Between(0, WORLD_H),
+          Math.random() < 0.3 ? 2 : 1, 0xffffff, Phaser.Math.FloatBetween(0.45, 1),
+        ).setDepth(1);
+        this.tweens.add({ targets: star, alpha: 0.2, duration: Phaser.Math.Between(900, 2200), yoyo: true, repeat: -1, delay: Math.random() * 1500 });
+      }
     }
 
     this._animalsCollected = 0;
