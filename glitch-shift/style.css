@@ -1,0 +1,26 @@
+/* GLITCH SHIFT — el canvas de Phaser (Scale.FIT) se centra sobre un fondo
+   degradado a juego, para que el letterbox en móviles/retrato se vea intencional. */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #070a1a 0%, #14082e 100%);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+canvas {
+  display: block;
+}
