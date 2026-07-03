@@ -14,6 +14,7 @@ When working on a specific game, read that game's own `CLAUDE.md` for its archit
 - **[hotel-dino-blu/](hotel-dino-blu/)** — *"Hotel Dino Blu"*. A 3D mobile-first housekeeping simulator set in an Italian beach hotel. See [hotel-dino-blu/CLAUDE.md](hotel-dino-blu/CLAUDE.md).
 - **[glitch-shift/](glitch-shift/)** — *"GLITCH SHIFT"*. A one-tap neon arcade: shift between two parallel realities (cyan/magenta lanes) to dodge blocks, drones and lasers; hold to overclock time. Phaser 3, 100% procedural art/audio. See [glitch-shift/CLAUDE.md](glitch-shift/CLAUDE.md).
 - **[ricochet-rush/](ricochet-rush/)** — *"RICOCHET RUSH"*. A survivor-arena where every bullet ricochets and charges up with each bounce; level-up cards, permanent perks shop. Phaser 3, 100% procedural art/audio. See [ricochet-rush/CLAUDE.md](ricochet-rush/CLAUDE.md).
+- **[hop-and-run/](hop-and-run/)** — *"Hop & Run"*. A one-button rooftop runner starring Cristian: energy drains and fruit refills it (Adventure Island recipe), rescue animals, skateboard power-up and the GUITAR SOLO super power. Phaser 3, Replicate-generated art. See [hop-and-run/CLAUDE.md](hop-and-run/CLAUDE.md).
 
 ## Other top-level content
 

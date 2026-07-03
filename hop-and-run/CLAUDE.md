@@ -60,8 +60,8 @@ No build step. **Phaser 3.88 via CDN**, ES modules, landscape **1280×720**
 
 ## Status / pending
 
-- **PRIVATE**: don't publish (push to `main`) until the founder approves.
-- On publish: landing card + root `CLAUDE.md` entry.
+- **PUBLISHED** (founder-approved, jul 2026) at `https://glitchrushgg.com/hop-and-run/`, with landing card and root `CLAUDE.md` entry.
+
 - CrazyGames package: vendor Phaser, strip share URL, 3 covers + 2 videos
   (pipeline in `C:\Users\Rosselyn\Documents\crazygames\tools\`).
 - Pending idea (checklist): light meta-progression (coins → skins) before
