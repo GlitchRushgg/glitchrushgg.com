@@ -19,6 +19,11 @@ export class GameOverScene extends Phaser.Scene {
     this.snd = new Sound();
     const isRecord = Save.saveBest(this._meters);
     Save.saveAnimals(this._animals);
+    const prevTotal = Save.totalAnimals();
+    const total = Save.addAnimals(this._animals);
+    const next = Save.nextMilestone(total);
+    // ¿Cruzó un hito en esta run?
+    const hitMilestone = Save.nextMilestone(prevTotal) !== next && prevTotal !== total;
 
     const g = this.add.graphics();
     g.fillGradientStyle(0x23324a, 0x23324a, 0x0e1626, 0x0e1626, 1);
@@ -43,11 +48,21 @@ export class GameOverScene extends Phaser.Scene {
     this.add.text(W / 2 + 60, 310, `${this._meters} m`, f("76px", { color: "#ffe066" })).setOrigin(0.5);
     this.add.text(W / 2 + 60, 380, `🐾 ${this._animals} animals rescued`, f("26px")).setOrigin(0.5);
 
+    // Progreso de por vida: cada run —buena o mala— acerca a la siguiente insignia.
+    if (hitMilestone) {
+      const mi = this.add.text(W / 2 + 60, 418, `🎖 MILESTONE! ${total} animals saved!`, f("22px", { color: "#ffe066" })).setOrigin(0.5);
+      this.tweens.add({ targets: mi, scale: 1.08, duration: 420, yoyo: true, repeat: -1 });
+    } else if (next) {
+      this.add.text(W / 2 + 60, 418, `🎖 ${total}/${next} to next badge`, f("18px", { color: "#cfe4ff", fontStyle: "normal" })).setOrigin(0.5);
+    } else {
+      this.add.text(W / 2 + 60, 418, `🎖 ${total} animals saved — all badges earned!`, f("18px", { color: "#ffe066", fontStyle: "normal" })).setOrigin(0.5);
+    }
+
     if (isRecord) {
-      const rec = this.add.text(W / 2 + 60, 432, "🏆 NEW RECORD!", f("26px", { color: "#7cd94e" })).setOrigin(0.5);
+      const rec = this.add.text(W / 2 + 60, 458, "🏆 NEW RECORD!", f("26px", { color: "#7cd94e" })).setOrigin(0.5);
       this.tweens.add({ targets: rec, scale: 1.1, duration: 480, yoyo: true, repeat: -1 });
     } else {
-      this.add.text(W / 2 + 60, 432, `🏆 Best: ${Save.best()} m`, f("20px", { color: "#cfe4ff" })).setOrigin(0.5);
+      this.add.text(W / 2 + 60, 458, `🏆 Best: ${Save.best()} m`, f("20px", { color: "#cfe4ff" })).setOrigin(0.5);
     }
 
     const again = this.add.text(W / 2 + 60, 512, "▶  RETRY", f("30px", {

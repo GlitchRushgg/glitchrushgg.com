@@ -1,7 +1,7 @@
 // Menu: key art hero, title, best, PLAY (one click to gameplay), mute.
 
 import { W, H } from "../const.js";
-import { Save } from "../utils/Save.js";
+import { Save, MILESTONES } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
 
 export class MenuScene extends Phaser.Scene {
@@ -34,7 +34,11 @@ export class MenuScene extends Phaser.Scene {
 
     const best = Save.best();
     if (best > 0) {
-      this.add.text(W / 2, H - 148, `🏆 Best: ${best} m · 🐾 ${Save.bestAnimals()}`, f("20px")).setOrigin(0.5);
+      const total = Save.totalAnimals();
+      const badges = MILESTONES.filter((m) => total >= m).length;
+      const badgeTxt = badges > 0 ? ` · 🎖 ${"★".repeat(badges)}` : "";
+      this.add.text(W / 2, H - 148,
+        `🏆 Best: ${best} m · 🐾 ${total} saved${badgeTxt}`, f("20px")).setOrigin(0.5);
     }
 
     const play = this.add.text(W / 2, H - 84, "▶  PLAY", f("34px", {

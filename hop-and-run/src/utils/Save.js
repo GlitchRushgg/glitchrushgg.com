@@ -4,9 +4,13 @@
 const K = {
   best: "harBest",
   animals: "harAnimals",
+  totalAnimals: "harTotalAnimals",
   mute: "harMute",
   tutorial: "harTutorial",
 };
+
+// Lifetime rescue milestones (retention: every run adds progress).
+export const MILESTONES = [25, 100, 250, 500, 1000];
 
 function get(key, fallback) {
   try {
@@ -27,6 +31,17 @@ export const Save = {
   },
   bestAnimals() { return parseInt(get(K.animals, "0"), 10) || 0; },
   saveAnimals(n) { if (n > this.bestAnimals()) set(K.animals, n); },
+  totalAnimals() { return parseInt(get(K.totalAnimals, "0"), 10) || 0; },
+  // Suma los rescates de la run al total de por vida; devuelve el nuevo total.
+  addAnimals(n) {
+    const total = this.totalAnimals() + (n || 0);
+    set(K.totalAnimals, total);
+    return total;
+  },
+  // Próximo hito pendiente (null si están todos).
+  nextMilestone(total) {
+    return MILESTONES.find((m) => total < m) || null;
+  },
   muted() { return get(K.mute, "0") === "1"; },
   setMuted(b) { set(K.mute, b ? "1" : "0"); },
   tutorialDone() { return get(K.tutorial, "0") === "1"; },

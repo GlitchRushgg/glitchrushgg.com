@@ -32,7 +32,7 @@ export class GameScene extends Phaser.Scene {
     this.dist = 0;
     this.speed = 300;
     this.speedPenalty = 0;
-    this.energy = 100;
+    this.energy = 60;   // arranca a medias: la primera línea de fruta ya importa
     this.animals = 0;
     this.combo = 0;
     this.comboT = 0;
@@ -45,9 +45,10 @@ export class GameScene extends Phaser.Scene {
     this._wasAir = false;
     this._lowBeepT = 0;
     this._hurtT = 0;
+    this._barFlashT = 0;
     this.sectorIx = 0;
     this._nextSkateAt = 380;   // meters
-    this._nextGuitarAt = 650;
+    this._nextGuitarAt = 180;  // primera guitarra a ~26s: el clip viral entra en la primera run
 
     this.physics.world.gravity.y = GRAVITY;
 
@@ -269,9 +270,16 @@ export class GameScene extends Phaser.Scene {
 
   _spawnNext() {
     const width = Phaser.Math.Between(280, 540);
-    const gap = Phaser.Math.Between(100, Math.round(120 + this._speedNow() * 0.55));
-    const left = this.lastRight + gap;
+    // El hueco se genera con la velocidad BASE (sin el ×1.38 del skate ni la
+    // ralentización del tropiezo): un hueco creado durante el skate se cruza
+    // después a velocidad normal y sería una trampa mortal.
+    const base = Math.min(640, 300 + this.dist * 0.01);
     const dy = Phaser.Math.Between(-90, 80);
+    // Subir recorta el tiempo de vuelo: si la siguiente plataforma queda alta,
+    // el hueco se capa para que el salto SIEMPRE sea posible.
+    const gapMax = dy < -40 ? 100 + base * 0.4 : 120 + base * 0.55;
+    const gap = Phaser.Math.Between(100, Math.round(gapMax));
+    const left = this.lastRight + gap;
     const top = Phaser.Math.Clamp(this.lastTop + dy, 400, 610);
     this._spawnPlatform(left, top, width);
 
@@ -303,9 +311,11 @@ export class GameScene extends Phaser.Scene {
       c.setData("kind", "crate");
     }
 
-    // Pigeon at jump-arc height — from 350 m.
+    // Pigeon overhead — from 350 m. A top−210 pasa con holgura si NO saltas y
+    // te golpea si saltas: regla legible para un juego de un botón (a −165
+    // solapaba 13px con Cristian de pie = daño por lotería).
     if (meters > 350 && Math.random() < 0.3) {
-      const p = this.hazards.create(left + width / 2, top - 165, "obstacle-pigeon");
+      const p = this.hazards.create(left + width / 2, top - 210, "obstacle-pigeon");
       p.setDisplaySize(72, 56).setDepth(6);
       p.body.setVelocityX(-this._speedNow() * 1.22);
       p.setData("kind", "pigeon");
@@ -347,10 +357,11 @@ export class GameScene extends Phaser.Scene {
     if (!p.active) return;
     const kind = p.getData("kind");
     if (kind === "fruit") {
-      this.energy = Math.min(100, this.energy + 22);
+      this.energy = Math.min(100, this.energy + 14);
       this.snd.fruit();
       this._burst(p.x, p.y, 6, 0xffe066);
-      this._float(p.x, p.y, "+ENERGY", "#7cd94e");
+      this._float(p.x, p.y, "+14", "#7cd94e");
+      this._barFlashT = 0.16;   // flash de la barra: conecta fruta → energía
     } else if (kind === "animal") {
       this.animals += 1;
       this.combo += 1;
@@ -439,8 +450,10 @@ export class GameScene extends Phaser.Scene {
     this.dist += this.speed * dt;
     const meters = Math.floor(this.dist / 50);
 
-    // Energy drain — the clock that keeps you hungry.
-    this.energy -= 4.5 * dt;
+    // Energy drain — the clock that keeps you hungry. Proporcional a la
+    // velocidad (4.5/s a 300 → 9.6/s a 640): a más velocidad pasan más
+    // plataformas (más fruta/s), así la presión no se invierte en el late game.
+    this.energy -= 0.015 * this.speed * dt;
     if (this.energy <= 25) {
       this._lowBeepT -= dt;
       if (this._lowBeepT <= 0) { this._lowBeepT = 1.6; this.snd.lowEnergy(); }
@@ -575,7 +588,12 @@ export class GameScene extends Phaser.Scene {
     this.hudAnimals.setText(`🐾 ${this.animals}`);
     this.hudCombo.setText(this.combo >= 2 ? `COMBO x${this.combo}` : "");
     this.energyFill.width = 2.2 * Math.max(0, this.energy);
-    this.energyFill.fillColor = this.energy > 45 ? 0x7cd94e : this.energy > 22 ? 0xffe066 : 0xff5e5e;
+    if (this._barFlashT > 0) {
+      this._barFlashT -= dt;
+      this.energyFill.fillColor = 0xd6ffb0;
+    } else {
+      this.energyFill.fillColor = this.energy > 45 ? 0x7cd94e : this.energy > 22 ? 0xffe066 : 0xff5e5e;
+    }
     if (this.soloT > 0) this.hudPower.setText(`🎸 GUITAR SOLO ${this.soloT.toFixed(1)}s`);
     else if (this.skateT > 0) this.hudPower.setText(`🛹 ${this.skateT.toFixed(1)}s`);
     else this.hudPower.setText("");
