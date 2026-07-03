@@ -31,6 +31,7 @@ const DICTS = {
     touchHelp: `Joystick izquierdo para moverte · arrastra la pantalla para mirar ·
         mantén pulsado el botón ✋ para realizar tareas`,
     start: '🧹 Empezar el turno',
+    tweakHint: 'o baja para personalizar tu personaje y ver el mapa ↓',
     luciaWelcome: [
       'Buenos días, Sofía. Aquí tienes tu carro: sábanas, toallas, alfombrines y cortesías.',
       'Empieza por las habitaciones de SALIDA. Vuelvo a las 14:00 a revisar cómo quedó todo. ¡Mucho ánimo! 🧹',
@@ -62,6 +63,7 @@ const DICTS = {
     cartTitle: '🛒 TU CARRO',
     dirtyLabel: '🧺 Ropa sucia', heavy: ' (¡pesa!)',
     paceOk: 'Ritmo ✅', paceBad: 'Ritmo ⚠️ ¡date prisa!',
+    rushWarn: '⏰ ¡Hora punta! Cierra el turno antes de las 14:00',
 
     partenza: 'SALIDA', fermata: 'ESTANCIA', libre: 'LIBRE', hecha: '✔ HECHA',
     roomTitle: n => `Habitación ${n}`,
@@ -88,11 +90,17 @@ const DICTS = {
     callLift: 'Llamar al ascensor',
     exitDoor: 'Salir a la calle',
     exitMsg: '🚪 ¡No puedes irte en mitad del turno! Lucía te está mirando… 👀',
+    freeRoamBtn: '🏖️ Pasear por el hotel',
+    freeRoamHint: '🎉 ¡Turno terminado! El hotel es tuyo: sube al ascensor 🛗 y visita la piscina y las zonas abiertas. 🏊',
+    freeRoamExit: '🚪 El mar está ahí fuera… ¡pero hoy disfruta del hotel! Usa el ascensor para ir a la piscina y las zonas. 🏖️',
+    freeRoamEnd: '🏠 Empezar otro turno',
+    freeRoamMode: 'Modo paseo',
+    freeRoamHintBasic: '🎉 ¡Turno terminado! Pasea a tu aire por el hotel 🛗 (recepción, lavandería…). La piscina y las zonas se abren al completar días. 🏊',
 
     liftTitle: '🛗 Ascensor de servicio', liftMeta: '¿A qué planta vas?', close: 'Cerrar',
     floors: {
       '-1': 'P-1 · Lavandería 🧺', 0: 'PB · Recepción 🛎', 1: 'Piso 1 · Anna',
-      2: 'Piso 2 · TU PISO 🧹', 3: 'Piso 3 · Giulia', 4: 'Piso 4 · Martina',
+      2: 'Piso 2 · TU PISO 🧹', 3: 'Piso 3 · Giulia', 4: 'Piso 4 · Marco',
     },
     toastLaundry: '🧺 Lavandería: 5 lavadoras y 2 secadoras a pleno rendimiento.',
     toastLobby: '🛎 Recepción del Hotel Dino Blu. ¡La piazzetta y el mar están ahí fuera!',
@@ -101,6 +109,9 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: «¡Sofía! Las toallas de la ${num} NO están bien. ${g} huéspedes: ${g} grandes, ${g} de bidet, ${g} pequeñas y 1 alfombrín.» (fallo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: «La ${num} está perfecta, brava Sofía.» (+30)`,
+    luciaInspect: num => `👀 Lucía está inspeccionando la habitación ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucía: «¡La salida ${num} sigue sin hacer y es tardísimo! Espabila, Sofía.» (fallo ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucía: «Se hace tarde y quedan salidas sin hacer… ¡date prisa antes de que las revise!»',
 
     towelDlgTitle: num => `🧺 Reponer toallas — Hab. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — ¿cuántas dejas de cada?`,
@@ -220,6 +231,7 @@ const DICTS = {
     touchHelp: `Left joystick to move · drag the screen to look ·
         press and hold the ✋ button to do tasks`,
     start: '🧹 Start the shift',
+    tweakHint: 'or scroll down to customize your character and see the map ↓',
     luciaWelcome: [
       "Good morning, Sofía. Here's your cart: sheets, towels, bath mats and amenities.",
       "Start with the CHECK-OUT rooms. I'll be back at 14:00 to see how it all turned out. Good luck! 🧹",
@@ -251,6 +263,7 @@ const DICTS = {
     cartTitle: '🛒 YOUR CART',
     dirtyLabel: '🧺 Dirty linen', heavy: ' (heavy!)',
     paceOk: 'Pace ✅', paceBad: 'Pace ⚠️ hurry up!',
+    rushWarn: '⏰ Crunch time! Finish your shift before 14:00',
 
     partenza: 'CHECK-OUT', fermata: 'STAY-OVER', libre: 'VACANT', hecha: '✔ DONE',
     roomTitle: n => `Room ${n}`,
@@ -277,11 +290,17 @@ const DICTS = {
     callLift: 'Call the lift',
     exitDoor: 'Step outside',
     exitMsg: `🚪 You can't leave mid-shift! Lucía is watching you… 👀`,
+    freeRoamBtn: '🏖️ Explore the hotel',
+    freeRoamHint: '🎉 Shift over! The hotel is yours: take the elevator 🛗 and visit the pool and the open areas. 🏊',
+    freeRoamExit: '🚪 The sea is right outside… but today, enjoy the hotel! Use the elevator to reach the pool and the open areas. 🏖️',
+    freeRoamEnd: '🏠 Start another shift',
+    freeRoamMode: 'Free roam',
+    freeRoamHintBasic: '🎉 Shift over! Wander the hotel freely 🛗 (reception, laundry…). The pool and other areas open as you complete days. 🏊',
 
     liftTitle: '🛗 Service lift', liftMeta: 'Which floor?', close: 'Close',
     floors: {
       '-1': 'B1 · Laundry 🧺', 0: 'GF · Reception 🛎', 1: 'Floor 1 · Anna',
-      2: 'Floor 2 · YOUR FLOOR 🧹', 3: 'Floor 3 · Giulia', 4: 'Floor 4 · Martina',
+      2: 'Floor 2 · YOUR FLOOR 🧹', 3: 'Floor 3 · Giulia', 4: 'Floor 4 · Marco',
     },
     toastLaundry: '🧺 Laundry: 5 washers and 2 dryers running at full steam.',
     toastLobby: '🛎 Hotel Dino Blu reception. The piazzetta and the sea are right outside!',
@@ -290,6 +309,9 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucía: "Sofía! The towels in ${num} are NOT right. ${g} guests: ${g} bath, ${g} bidet, ${g} hand towels and 1 bath mat." (strike ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucía: "Room ${num} is perfect, brava Sofía." (+30)`,
+    luciaInspect: num => `👀 Lucía is inspecting room ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucía: "Check-out ${num} still isn't done and it's getting late! Hurry up, Sofía." (strike ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucía: "It\'s getting late and there are check-outs still to do… hurry before I inspect them!"',
 
     towelDlgTitle: num => `🧺 Restock towels — Room ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — how many of each do you leave?`,
@@ -409,6 +431,7 @@ const DICTS = {
     touchHelp: `Joystick sinistro per muoverti · trascina lo schermo per guardare ·
         tieni premuto il pulsante ✋ per le attività`,
     start: '🧹 Inizia il turno',
+    tweakHint: 'oppure scorri giù per personalizzare il personaggio e vedere la mappa ↓',
     luciaWelcome: [
       'Buongiorno, Sofia. Ecco il tuo carrello: lenzuola, asciugamani, tappetini e cortesie.',
       "Comincia dalle camere in PARTENZA. Torno alle 14:00 a controllare com'è andata. In bocca al lupo! 🧹",
@@ -440,6 +463,7 @@ const DICTS = {
     cartTitle: '🛒 IL TUO CARRELLO',
     dirtyLabel: '🧺 Biancheria sporca', heavy: ' (pesa!)',
     paceOk: 'Ritmo ✅', paceBad: 'Ritmo ⚠️ sbrigati!',
+    rushWarn: '⏰ Ora di punta! Chiudi il turno prima delle 14:00',
 
     partenza: 'PARTENZA', fermata: 'FERMATA', libre: 'LIBERA', hecha: '✔ FATTA',
     roomTitle: n => `Camera ${n}`,
@@ -466,11 +490,17 @@ const DICTS = {
     callLift: `Chiamare l'ascensore`,
     exitDoor: 'Uscire in strada',
     exitMsg: '🚪 Non puoi andartene a metà turno! Lucia ti sta guardando… 👀',
+    freeRoamBtn: `🏖️ Esplora l'hotel`,
+    freeRoamHint: `🎉 Turno finito! L'hotel è tuo: prendi l'ascensore 🛗 e visita la piscina e le aree aperte. 🏊`,
+    freeRoamExit: `🚪 Il mare è proprio lì fuori… ma oggi goditi l'hotel! Usa l'ascensore per la piscina e le aree. 🏖️`,
+    freeRoamEnd: '🏠 Inizia un altro turno',
+    freeRoamMode: 'Modalità libera',
+    freeRoamHintBasic: `🎉 Turno finito! Gironzola per l'hotel 🛗 (reception, lavanderia…). La piscina e le aree si aprono completando i giorni. 🏊`,
 
     liftTitle: '🛗 Ascensore di servizio', liftMeta: 'A che piano vai?', close: 'Chiudi',
     floors: {
       '-1': 'P-1 · Lavanderia 🧺', 0: 'PT · Reception 🛎', 1: '1º piano · Anna',
-      2: '2º piano · IL TUO PIANO 🧹', 3: '3º piano · Giulia', 4: '4º piano · Martina',
+      2: '2º piano · IL TUO PIANO 🧹', 3: '3º piano · Giulia', 4: '4º piano · Marco',
     },
     toastLaundry: '🧺 Lavanderia: 5 lavatrici e 2 asciugatrici a pieno regime.',
     toastLobby: `🛎 Reception dell'Hotel Dino Blu. La piazzetta e il mare sono lì fuori!`,
@@ -479,6 +509,9 @@ const DICTS = {
 
     luciaBad: (num, g, w) => `👩‍💼 Lucia: «Sofia! Gli asciugamani della ${num} NON vanno bene. ${g} ospiti: ${g} grandi, ${g} bidet, ${g} piccoli e 1 tappetino.» (richiamo ${w}/3)`,
     luciaGood: num => `👩‍💼 Lucia: «La ${num} è perfetta, brava Sofia.» (+30)`,
+    luciaInspect: num => `👀 Lucia sta ispezionando la camera ${num}…`,
+    luciaLate: (num, w) => `👩‍💼 Lucia: «La partenza ${num} non è ancora fatta ed è tardissimo! Sbrigati, Sofia.» (richiamo ${w}/3, −50)`,
+    luciaWarnSoon: '⏰ Lucia: «Si fa tardi e ci sono ancora partenze da fare… sbrigati prima che le ispezioni!»',
 
     towelDlgTitle: num => `🧺 Rifornire asciugamani — Cam. ${num}`,
     towelDlgMeta: (g, st) => `${g} · ${st} — quanti ne lasci di ognuno?`,

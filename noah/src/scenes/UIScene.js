@@ -1,3 +1,5 @@
+import { T } from '../utils/i18n.js';
+
 export default class UIScene extends Phaser.Scene {
   constructor() {
     super({ key: 'UI', active: false });
@@ -14,16 +16,22 @@ export default class UIScene extends Phaser.Scene {
     this.add.rectangle(width / 2, 28, width, 56, 0x000000, 0.45).setDepth(50);
 
     // Level label — read directly from gameScene so level 2+ shows the right number
-    this.levelLabel = this.add.text(16, 14, `Level ${this.gameScene.level}`, {
+    this.levelLabel = this.add.text(16, 14, `${T.level} ${this.gameScene.level}`, {
       fontSize: '20px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffe066', stroke: '#333', strokeThickness: 3,
     }).setDepth(51);
 
     // Score — read directly from gameScene so a carried-over score shows correctly
-    this.scoreLabel = this.add.text(16, 38, `Score: ${this.gameScene.score}`, {
+    this.scoreLabel = this.add.text(16, 38, `${T.score}: ${this.gameScene.score}`, {
       fontSize: '15px', fontFamily: 'Arial',
       fill: '#aaffaa', stroke: '#222', strokeThickness: 2,
     }).setDepth(51);
+
+    // Animales rescatados X/Y (centro del HUD)
+    this.animalsLabel = this.add.text(width / 2, 28, `🐾 ${T.animals}: ${this.gameScene._animalsCollected || 0}/${this.gameScene._totalAnimals || 0}`, {
+      fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold',
+      fill: '#ffe7a8', stroke: '#222', strokeThickness: 2,
+    }).setDepth(51).setOrigin(0.5);
 
     // Hearts — top right
     this.hearts = [];
@@ -46,7 +54,7 @@ export default class UIScene extends Phaser.Scene {
     this.add.image(barX, barTop - 12, 'ark').setScale(0.38).setDepth(51);
 
     // Instruction (fades out)
-    const inst = this.add.text(width / 2, 80, 'Jump up to reach the Ark!', {
+    const inst = this.add.text(width / 2, 80, T.jumpHint, {
       fontSize: '15px', fontFamily: 'Arial',
       fill: '#fffde7', stroke: '#1a5a90', strokeThickness: 3,
       wordWrap: { width: 360 }, align: 'center',
@@ -54,7 +62,7 @@ export default class UIScene extends Phaser.Scene {
     this.tweens.add({ targets: inst, alpha: 0, delay: 4000, duration: 1500 });
 
     // Water warning — bottom of screen, hidden by default
-    this.waterWarning = this.add.text(width / 2, height - 170, '~ WATER RISING! ~', {
+    this.waterWarning = this.add.text(width / 2, height - 170, T.waterRising, {
       fontSize: '22px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#00e5ff', stroke: '#003060', strokeThickness: 4,
     }).setDepth(55).setOrigin(0.5).setAlpha(0);
@@ -62,12 +70,17 @@ export default class UIScene extends Phaser.Scene {
     // ── Event listeners ──────────────────────────────────────────────
 
     this.gameScene.events.on('levelUpdate', (lvl) => {
-      this.levelLabel.setText(`Level ${lvl}`);
+      this.levelLabel.setText(`${T.level} ${lvl}`);
     });
 
     this.gameScene.events.on('scoreUpdate', (score) => {
-      this.scoreLabel.setText(`Score: ${score}`);
+      this.scoreLabel.setText(`${T.score}: ${score}`);
       this.tweens.add({ targets: this.scoreLabel, scaleX: 1.2, scaleY: 1.2, duration: 100, yoyo: true });
+    });
+
+    this.gameScene.events.on('animalsUpdate', (got, total) => {
+      this.animalsLabel.setText(`🐾 ${T.animals}: ${got}/${total}`);
+      this.tweens.add({ targets: this.animalsLabel, scaleX: 1.25, scaleY: 1.25, duration: 110, yoyo: true });
     });
 
     this.gameScene.events.on('livesUpdate', (lives) => {
@@ -100,7 +113,7 @@ export default class UIScene extends Phaser.Scene {
     });
 
     this.events.once('shutdown', () => {
-      ['levelUpdate', 'scoreUpdate', 'livesUpdate', 'heightUpdate', 'waterUpdate']
+      ['levelUpdate', 'scoreUpdate', 'livesUpdate', 'heightUpdate', 'waterUpdate', 'animalsUpdate']
         .forEach(evt => this.gameScene.events.off(evt));
     });
   }

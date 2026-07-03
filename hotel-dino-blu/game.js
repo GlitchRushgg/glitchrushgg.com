@@ -1,7 +1,7 @@
 // ============================================================================
 //  HOTEL DINO BLU — Turno de Limpieza 3D
 //  Praia a Mare · Calabria · frente a la Isola di Dino
-//  Eres Sofía, camarera del 2º piso: 12 habitaciones antes de las 14:00.
+//  Eres Sofía, camarera del 2º piso: 11 habitaciones a limpiar antes de las 14:00.
 // ============================================================================
 import * as THREE from 'three';
 import { S, LANG, LANGS, setLang } from './i18n.js';
@@ -100,7 +100,7 @@ const G = {
   // mini-tutorial (0 = moverse, 1 = mirar, 2 = hecho) y objetivo guiado
   tut: localStorage.getItem('hg-tut') ? 2 : 0, tutDist: 0, tutLookAcc: 0, objective: null,
   lastInspect: SHIFT_START - 10,
-  keys: {}, joy: { x: 0, y: 0, on: false },
+  keys: {}, joy: { x: 0, y: 0, on: false, run: false },
 };
 
 const SOLID = {};   // colisiones por planta: SOLID[f] = [{x0,x1,z0,z1},...]
@@ -110,6 +110,11 @@ const NPCS = [];
 const DRUMS = [];   // tambores de lavadoras que giran
 const ELEV_MARK = {}; // flecha dorada sobre el ascensor, por planta
 const VIEW = {};      // materiales de vista (mar / pueblo) compartidos entre habitaciones
+const AREAS = {};     // grupo Three por planta/zona (para mostrar solo la que visitas → +FPS)
+// muestra solo el área actual (el resto se oculta para no renderizar plantas que no se ven)
+function setAreaVisibility(cur) {
+  for (const k in AREAS) AREAS[k].visible = (+k === cur);
+}
 
 function addSolid(f, x0, x1, z0, z1) {
   (SOLID[f] ||= []).push({ x0, x1, z0, z1 });
@@ -238,7 +243,7 @@ function textPlane(lines, pw, ph, { bg = null, fg = '#fff', size = 90, stroke = 
 }
 
 // ----------------------------------------------------------------------------
-// Parte de trabajo: generación de las 12 habitaciones del piso de Sofía
+// Parte de trabajo: genera 12 habitaciones del piso (1 LIBRE → 11 a limpiar)
 // ----------------------------------------------------------------------------
 function genRooms() {
   const statuses = G.mode === 'express'
@@ -250,9 +255,9 @@ function genRooms() {
     const st = statuses[i];
     const r = {
       idx: i, num: PLAYER_FLOOR * 100 + i + 1, status: st,
-      guests: st === 'L' ? 0 : pick([1, 2, 2, 2, 3, 3, 4]),
+      guests: st === 'L' ? 0 : pick([1, 1, 2, 2, 2, 2]),   // máx 2 (1 cama doble = 2 personas)
       stay: 0, sheetChange: false,
-      tasks: [], done: false, inspected: false, mistakes: 0, vis: {},
+      tasks: [], done: false, inspected: false, lateFlagged: false, mistakes: 0, vis: {},
     };
     if (st === 'F') { r.stay = stays[si++ % stays.length]; r.sheetChange = r.stay % 3 === 0; }
     if (st === 'P') {
@@ -291,6 +296,7 @@ function buildGuestFloor(f) {
   const g = new THREE.Group();
   g.position.y = f * FH;
   scene.add(g);
+  AREAS[f] = g;
   const full = f === PLAYER_FLOOR;
   BOUNDS[f] = { x0: BX0 + 0.3, x1: BX1 - 0.3, z0: -BZ + 0.3, z1: BZ - 0.3 };
 
@@ -544,14 +550,22 @@ function buildRoomShell(g, f, rc, i, isOpen) {
   const vm = seaSide ? (VIEW.sea ||= viewMat(true)) : (VIEW.town ||= viewMat(false));
   const view = add(g, new THREE.Mesh(new THREE.PlaneGeometry(13, 8), vm), rc.x0 + 2.05, 2.4, wz + rc.dir * 9);
   view.rotation.y = seaSide ? Math.PI : 0;
-  // marco de aluminio + cristal limpio
-  add(g, bx(2.12, 1.85, 0.05), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.02).material = MAT.steel;
-  add(g, bx(1.94, 1.7, 0.04), rc.x0 + 2.05, 1.62, wz - rc.dir * 0.01).material = MAT.wallIn;
+  // marco de aluminio = SOLO 4 barras finas alrededor del cristal (antes era un panel SÓLIDO
+  // de acero que tapaba la vista y se veía gris — feedback de Cristian). El cristal queda despejado.
+  { const fx = rc.x0 + 2.05, fy = 1.62, fz = wz + rc.dir * 0.02;
+    add(g, bx(2.12, 0.1, 0.05), fx, fy + 0.92, fz).material = MAT.steel;   // marco arriba
+    add(g, bx(2.12, 0.1, 0.05), fx, fy - 0.92, fz).material = MAT.steel;   // marco abajo
+    add(g, bx(0.1, 1.85, 0.05), fx - 1.0, fy, fz).material = MAT.steel;    // marco izquierda
+    add(g, bx(0.1, 1.85, 0.05), fx + 1.0, fy, fz).material = MAT.steel; }  // marco derecha
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.7), MAT.steel), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03); // montante central
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.66), MAT.glass), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03);
   // alféizar de mármol como en las fotos
   add(g, bx(2.2, 0.08, 0.3), rc.x0 + 2.05, 0.74, wz - rc.dir * 0.12).material = MAT.marble;
 }
+
+// color del lector de la puerta según estado (como en los hoteles reales):
+// 🟡 SALIDA (se fue el huésped) · 🔵 ESTANCIA (libre para limpiar) · 🟢 hecha · 🟣 libre
+const doorColor = r => r.done ? 0x46d17a : r.status === 'P' ? 0xffcc33 : r.status === 'F' ? 0x2e9bff : 0x9b59ff;
 
 // tarjeta de estado en la puerta (piso del jugador, se actualiza)
 function buildRoomCard(g, rc, room) {
@@ -567,6 +581,13 @@ function buildRoomCard(g, rc, room) {
   mesh.position.set(p.x, 1.62, rc.zIn - rc.dir * 0.085);
   mesh.rotation.y = rc.dir > 0 ? Math.PI : 0;
   g.add(mesh);
+
+  // lector de tarjeta junto a la puerta, con luz de color que indica si se puede entrar
+  const dp = lpos(rc, 2.62, 0), zc = rc.zIn - rc.dir * 0.075, ry = rc.dir > 0 ? Math.PI : 0;
+  add(g, bx(0.16, 0.24, 0.03), dp.x, 1.32, zc).material = MAT.black;          // panel negro
+  room.doorLightMat = new THREE.MeshBasicMaterial({ color: doorColor(room) });
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.055), room.doorLightMat), dp.x, 1.39, zc - rc.dir * 0.018, ry); // luz
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.06), MAT.steel), dp.x, 1.26, zc - rc.dir * 0.018, ry);          // ranura de la tarjeta
 }
 function drawRoomCard(room) {
   const ctx = room.cardCtx, W = 256, H = 170;
@@ -589,6 +610,7 @@ function drawRoomCard(room) {
     if (room.sheetChange) { ctx.fillStyle = '#c0392b'; ctx.font = 'bold 20px sans-serif'; ctx.fillText(S.sheetChangeCard, W / 2, 148); }
   }
   room.cardTex.needsUpdate = true;
+  if (room.doorLightMat) room.doorLightMat.color.setHex(doorColor(room));   // la luz pasa a verde al terminar
 }
 // tarjeta decorativa en otros pisos
 function buildOtherCard(g, f, rc, i) {
@@ -811,6 +833,7 @@ function buildLobby() {
   const f = 0;
   const g = new THREE.Group();
   scene.add(g);
+  AREAS[f] = g;
   BOUNDS[f] = { x0: BX0 + 0.35, x1: BX1 - 0.35, z0: -BZ + 0.35, z1: BZ - 0.35 };
 
   add(g, bx(BX1 - BX0, 0.14, BZ * 2), (BX0 + BX1) / 2, -0.07, 0).material = MAT.marble;
@@ -837,11 +860,12 @@ function buildLobby() {
   add(g, textPlane('ENTRATA', 1.7, 0.34, { bg: '#c96f4a', fg: '#fff', size: 72 }), dX, 2.18, dZ + 0.2, 0); // rótulo hacia el lobby
   HOTSPOTS.push({
     floor: f, x: 2, z: -BZ + 1.1, r: 1.6, type: 'press',
-    label: S.exitDoor, action: () => toast(S.exitMsg),
+    label: S.exitDoor, action: () => toast(G.freeRoam ? S.freeRoamExit : S.exitMsg),
   });
 
-  // columnas
+  // columnas (se omite la de x=10,z=3.4: tapaba el letrero "HOTEL DINO BLU" de recepción — feedback de Cristian)
   for (const x of [-8, -2, 4, 10]) for (const z of [-3.4, 3.4]) {
+    if (x === 10 && z === 3.4) continue;
     add(g, cyl(0.28, 0.32, FH, MAT.wall, 12), x, FH / 2, z);
     addSolid(f, x - 0.35, x + 0.35, z - 0.35, z + 0.35);
   }
@@ -971,8 +995,8 @@ function buildLobby() {
   spawnStatic(g, makePerson({ shirt: 0xe07a98, skirt: 0xe07a98, skin: 0xe0b48a, hair: 0x6b3b1f }), 8.0, 0.7, 0);
   add(g, bx(0.5, 0.62, 0.34), 7.3, 0.31, 0.7).material = lamb(0x7a4a2a);   // maleta
   add(g, cyl(0.02, 0.02, 0.4, MAT.steel, 6), 7.3, 0.72, 0.7).rotation.z = Math.PI / 2;
-  // huésped de pie junto a los sofás
-  spawnStatic(g, makePerson({ shirt: 0x4caf7d, pants: 0x55607a, skin: 0xb07a50, hair: 0x33240f }), -9, -0.1, 0);
+  // huésped de pie junto a los sofás (antes en x=-9,z=-0.1 → ¡encima de la mesa de centro! — feedback de Cristian)
+  spawnStatic(g, makePerson({ shirt: 0x4caf7d, pants: 0x55607a, skin: 0xb07a50, hair: 0x33240f }), -7, 0.5, -Math.PI / 2);
 
   buildElevator(g, f);
   add(g, textPlane(S.signLobby, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 64 }), BX1 - 0.18, 2.5, 0, -Math.PI / 2);
@@ -986,6 +1010,7 @@ function buildLaundry() {
   const g = new THREE.Group();
   g.position.y = -FH;
   scene.add(g);
+  AREAS[f] = g;
   const X0 = 2, X1 = BX1, Z = 6.2;
   BOUNDS[f] = { x0: X0 + 0.35, x1: X1 - 0.35, z0: -Z + 0.35, z1: Z - 0.35 };
 
@@ -1078,10 +1103,10 @@ function buildLaundry() {
   add(g, textPlane(S.signDirty, 1.0, 0.22, { bg: '#a85454', fg: '#fff', size: 60 }), 4.2, 1.5, -Z + 0.5, 0);
   addSolid(f, 3.6, 4.8, -Z, -Z + 1.4);
 
-  // tendedero con sábanas
-  add(g, bx(0.05, 1.7, 2.4), 5.6, 0.85, 4.6).material = MAT.steel;
-  add(g, bx(0.04, 1.1, 2.2), 5.62, 0.95, 4.6).material = MAT.towel;
-  addSolid(f, 5.3, 5.9, 3.3, 5.9);
+  // tendedero con sábanas (movido al noreste despejado: antes en x=5.6 atravesaba una lavadora — feedback de Cristian)
+  add(g, bx(0.05, 1.7, 2.4), 12.5, 0.85, 2.8).material = MAT.steel;
+  add(g, bx(0.04, 1.1, 2.2), 12.52, 0.95, 2.8).material = MAT.towel;
+  addSolid(f, 12.2, 12.8, 1.6, 4.0);
 
   buildElevator(g, f);
   add(g, textPlane(S.signBasement, 1.6, 0.3, { bg: '#1773b0', fg: '#fff', size: 60 }), X1 - 0.18, 2.5, 0, -Math.PI / 2);
@@ -1135,6 +1160,7 @@ function buildZone(z) {
   zoneByFloor[f] = z;
   z.done = [false, false, false];
   const g = new THREE.Group(); g.position.y = f * FH; scene.add(g);
+  AREAS[f] = g;
   const X0 = -8, X1 = BX1, Z = 6.5, CX = (X0 + X1) / 2;
   BOUNDS[f] = { x0: X0 + 0.5, x1: X1 - 0.6, z0: -Z + 0.5, z1: Z - 0.5 };
 
@@ -1788,7 +1814,10 @@ function fmtTime(min) {
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 function updateHUD() {
-  $('clock').textContent = `🕐 ${fmtTime(G.time)}`;
+  const left = SHIFT_END - G.time;            // minutos de juego que quedan
+  const urgent = G.started && left <= 90 && left > 0;
+  $('clock').textContent = `${urgent ? '⏰' : '🕐'} ${fmtTime(G.time)}`;
+  $('clock').classList.toggle('urgent', urgent);
   $('roomsDone').textContent = `🛏 ${G.done}/${G.totalToClean}`;
   $('score').textContent = `⭐ ${G.score}`;
   $('hearts').textContent = '❤'.repeat(3 - G.warnings) + '🖤'.repeat(G.warnings);
@@ -2126,7 +2155,7 @@ function closeDialog() {
   $('dialog').classList.add('hidden');
   $('dialog').innerHTML = '';
   G.dialogOpen = false;
-  if (!IS_TOUCH && G.started && !G.over) canvas.requestPointerLock?.();
+  if (!IS_TOUCH && G.started && (!G.over || G.freeRoam)) canvas.requestPointerLock?.();
 }
 
 // ----------------------------------------------------------------------------
@@ -2165,6 +2194,7 @@ function travelTo(f) {
   dingLift();
   setTimeout(() => {
     G.floor = f;
+    setAreaVisibility(f);   // solo se renderiza la planta/zona actual (+FPS)
     G.px = ELEV.x - 0.6; G.pz = ELEV.z;
     G.yaw = Math.PI / 2; G.pitch = 0;
     fade.style.opacity = 0;
@@ -2179,15 +2209,58 @@ function travelTo(f) {
 // Inspección de la gobernanta
 // ----------------------------------------------------------------------------
 function checkInspection() {
+  const lateThreshold = SHIFT_START + (SHIFT_END - SHIFT_START) * 0.7;  // ~11:36
+
+  // Aviso preventivo ÚNICO ~30 min de juego antes del umbral: si aún queda una SALIDA
+  // sin tocar, Lucía avisa ANTES de penalizar, para que el −50 no sea una emboscada
+  // (sobre todo en Express a 3x). No gasta inspección ni gatea con el cooldown.
+  if (!G._lateWarned && G.time > lateThreshold - 30 && G.rooms.some(r => r.status === 'P' && !r.done)) {
+    G._lateWarned = true;
+    toast(S.luciaWarnSoon, 4200);
+    beep(520, 0.14, 'triangle', 0.12);
+  }
+
   if (G.time - G.lastInspect < 45) return;
+
+  // Motivo 2 (tensión para el jugador rápido): una SALIDA (PARTENZA) sin terminar
+  // ya entrada la tarde es un fallo de ritmo → amonestación. Solo después del 70%
+  // del turno y una vez por habitación, así el que va a buen paso nunca la sufre.
+  if (G.time > lateThreshold) {
+    const late = G.rooms.find(r => r.status === 'P' && !r.done && !r.lateFlagged);
+    if (late) {
+      G.lastInspect = G.time;
+      late.lateFlagged = true;
+      const rc = roomRect(late.idx);
+      if (lucia) {
+        lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+        lucia.rotation.y = Math.PI;
+        lucia.visible = true;
+      }
+      luciaState = { mode: 'inspect', t: 8 };
+      G.warnings++;
+      G.score = Math.max(0, G.score - 50);
+      toast(S.luciaLate(late.num, G.warnings), 5200);
+      dingBad();
+      updateHUD();
+      if (G.warnings >= 3) setTimeout(() => endShift('despido'), 1500);
+      return;
+    }
+  }
+
   const candidates = G.rooms.filter(r => r.done && !r.inspected);
   if (!candidates.length) return;
   G.lastInspect = G.time;
   const room = pick(candidates);
   room.inspected = true;
   const rc = roomRect(room.idx);
-  lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+  if (lucia) {
+    lucia.position.set(rc.x0 + 2, 0, rc.zIn - rc.dir * 0.7);
+    lucia.rotation.y = Math.PI;
+    lucia.visible = true;
+  }
   luciaState = { mode: 'inspect', t: 8 };
+  toast(S.luciaInspect(room.num), 2600);   // aviso: ¡la gobernanta está revisando!
+  beep(440, 0.16, 'triangle', 0.12);
   if (room.mistakes > 0) {
     G.warnings++;
     G.score = Math.max(0, G.score - 60);
@@ -2264,10 +2337,43 @@ function endShift(outcome, minutesLeft = 0) {
       <tr><td>${S.endRows[5]}</td><td>${G.score}</td></tr>
     </table>
     <button class="bigbtn" id="btnShare">${S.shareBtn}</button>
+    ${outcome !== 'despido' ? `<button class="bigbtn" id="btnRoam">${S.freeRoamBtn}</button>` : ''}
     <button class="bigbtn alt" onclick="location.reload()">${S.again}</button>
   </div>`;
   $('end').classList.remove('hidden');
   $('btnShare').onclick = () => shareResult(stars);
+  const roamBtn = document.getElementById('btnRoam');
+  if (roamBtn) roamBtn.onclick = startFreeRoam;
+}
+
+// Modo libre: al terminar el turno (no despido) puedes pasear por el hotel y las
+// zonas abiertas (piscina, terraza…) sin reloj ni objetivos. Petición de Cristian.
+function startFreeRoam() {
+  $('end').classList.add('hidden');
+  G.freeRoam = true; G.uiOpen = false; G.dialogOpen = false;
+  // ocultar TODO el HUD del turno (incl. carro y checklist, que antes quedaban visibles)
+  ['topbar', 'objective', 'combo', 'inv', 'checklist'].forEach(id => $(id)?.classList.add('hidden'));
+  // las zonas abiertas vuelven a tener tareas que limpiar (antes solo se reseteaban al recargar)
+  for (const z of ZONES) if (z.done) z.done = [false, false, false];
+  // rótulo permanente "modo paseo" + botón verde para reiniciar
+  let bar = document.getElementById('roamBar');
+  if (!bar) {
+    bar = document.createElement('div'); bar.id = 'roamBar';
+    bar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:8px;align-items:center;font:bold 14px sans-serif';
+    const tag = document.createElement('span');
+    tag.style.cssText = 'background:rgba(13,58,92,.78);color:#fff;padding:7px 13px;border-radius:18px';
+    tag.textContent = '🏖️';
+    const b = document.createElement('button'); b.id = 'btnEndRoam';
+    b.style.cssText = 'padding:8px 16px;border:0;border-radius:18px;background:#1aa84f;color:#fff;font:bold 14px sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.35);cursor:pointer';
+    b.onclick = () => location.reload();
+    bar.append(tag, b); document.body.appendChild(bar);
+  }
+  document.getElementById('roamBar').querySelector('span').textContent = '🏖️ ' + S.freeRoamMode;
+  document.getElementById('btnEndRoam').textContent = S.freeRoamEnd;
+  bar.style.display = 'flex';
+  // el aviso solo promete la piscina/zonas si hay alguna ABIERTA (si no, mensaje honesto)
+  toast(ZONES.some(zoneUnlocked) ? S.freeRoamHint : S.freeRoamHintBasic, 5500);
+  if (!IS_TOUCH) canvas.requestPointerLock?.();
 }
 
 // genera una tarjeta-resultado (PNG) para compartir: estrellas, puntuación,
@@ -2393,8 +2499,11 @@ if (IS_TOUCH) {
         G.joy.x = Math.abs(dx) > 1 ? dx / len : dx;
         G.joy.y = Math.abs(dy) > 1 ? dy / len : dy;
         G.joy.on = true;
-        stick.style.left = `${35 + G.joy.x * 30}px`;
-        stick.style.top = `${35 + G.joy.y * 30}px`;
+        // empujar el stick al borde = correr (en móvil no hay tecla Shift)
+        G.joy.run = Math.hypot(G.joy.x, G.joy.y) > 0.82;
+        joy.classList.toggle('run', G.joy.run);
+        stick.style.left = `${41 + G.joy.x * 38}px`;
+        stick.style.top = `${41 + G.joy.y * 38}px`;
       } else if (t.identifier === lookId) {
         if (G.tut === 1) {
           G.tutLookAcc += Math.abs((t.clientX - lx) * 0.005);
@@ -2409,8 +2518,9 @@ if (IS_TOUCH) {
   addEventListener('touchend', e => {
     for (const t of e.changedTouches) {
       if (t.identifier === joyId) {
-        joyId = null; G.joy.on = false; G.joy.x = G.joy.y = 0;
-        stick.style.left = '35px'; stick.style.top = '35px';
+        joyId = null; G.joy.on = false; G.joy.x = G.joy.y = 0; G.joy.run = false;
+        joy.classList.remove('run');
+        stick.style.left = '41px'; stick.style.top = '41px';
       }
       if (t.identifier === lookId) lookId = null;
     }
@@ -2454,7 +2564,7 @@ function movePlayer(dt) {
   const len = Math.hypot(ix, iz);
   if (len < 0.01) return;
   ix /= Math.max(1, len); iz /= Math.max(1, len);
-  const run = G.keys.ShiftLeft || G.keys.ShiftRight;
+  const run = G.keys.ShiftLeft || G.keys.ShiftRight || (G.joy.on && G.joy.run);
   let speed = (run ? 4.6 : 3.1) * (G.dirty > 20 ? 0.85 : 1);
   const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw);
   const rx = Math.cos(G.yaw), rz = -Math.sin(G.yaw);
@@ -2526,7 +2636,7 @@ function updateNPCs(dt, t) {
     const limbs = m.userData.limbs;
     if (n.isBoss && luciaState.mode === 'inspect') {
       luciaState.t -= dt;
-      if (luciaState.t <= 0) luciaState.mode = 'patrol';
+      if (luciaState.t <= 0) { luciaState.mode = 'patrol'; if (lucia) lucia.visible = false; }
     }
     if (G.celebrating) {                                  // tarantela: saltos + giros + brazos arriba
       m.position.y = Math.abs(Math.sin(t * 8 + n.x0)) * 0.22;
@@ -2709,6 +2819,8 @@ function applyIntroTexts() {
   $('deskHelp').innerHTML = S.desktopHelp;
   $('touchHelp').innerHTML = S.touchHelp;
   $('btnStart').textContent = S.start;
+  $('btnStartTop').textContent = S.start;
+  $('tweakHint').textContent = S.tweakHint;
   $('disclaimer').textContent = S.disclaimer;
   buildCustomizer();   // personalización: vista previa 3D + selectores
   // día actual + mapa de zonas del hotel (progresión)
@@ -2758,7 +2870,10 @@ for (let f = 1; f <= 4; f++) {
 // zonas ya abiertas según el día actual (terraza, restaurante, piscina, jardín);
 // con try/catch para que un fallo en una zona nunca rompa el juego entero
 ZONES.forEach(z => { if (zoneUnlocked(z)) { try { buildZone(z); } catch (e) { console.warn('[zona]', z.id, e); } } });
-// Lucía ya no ronda el pasillo: aparece solo en el saludo inicial y el veredicto final
+setAreaVisibility(PLAYER_FLOOR);   // al arrancar solo se ve el piso del jugador (el resto oculto → +FPS)
+// Lucía existe en el piso pero oculta: aparece en el saludo, en las INSPECCIONES y en el veredicto.
+// No patrulla el pasillo (su entrada en NPCS no tiene `walk`); checkInspection la muestra y la coloca.
+if (floor2Group) { spawnLucia(floor2Group); if (lucia) lucia.visible = false; }
 updateHUD();
 
 // ----------------------------------------------------------------------------
@@ -2810,14 +2925,16 @@ async function loadDecorModels() {
 }
 loadDecorModels();
 
-$('btnStart').addEventListener('click', () => {
+function beginShift() {
   $('intro').classList.add('hidden');
   $('hud').classList.remove('hidden');
   if (pvRAF) cancelAnimationFrame(pvRAF);   // detener la vista previa 3D
   G.uiOpen = false;
   G.started = true;
   luciaHandover();   // Lucía te recibe y te entrega el carro antes de la ronda
-});
+}
+$('btnStart').addEventListener('click', beginShift);
+$('btnStartTop').addEventListener('click', beginShift);
 
 // Lucía te saluda y te entrega el carro; al cerrar, empieza la ronda (ella se va)
 function luciaHandover() {
@@ -2896,21 +3013,36 @@ function updateHands(dt, t) {
 }
 
 const clock = new THREE.Clock();
-let hudTimer = 0;
+let hudTimer = 0, rushTick = 0;
 function loop() {
   requestAnimationFrame(loop);
   const dt = Math.min(0.05, clock.getDelta());
   const t = clock.elapsedTime;
   if (G.started && !G.over) {
     G.time = Math.min(G.time + dt * TIME_RATE, SHIFT_END); // minutos de juego
+    // recta final: aviso único + tic-tac que se acelera = tensión
+    const left = SHIFT_END - G.time;
+    if (left <= 90 && !G._rushNotified) {
+      G._rushNotified = true;
+      toast(S.rushWarn, 3600); beep(880, 0.18, 'square', 0.16);
+    }
+    if (left <= 90 && left > 0) {
+      rushTick += dt;
+      const interval = 0.4 + (left / 90) * 1.0;   // de ~1.4s a ~0.4s al acercarse el cierre
+      if (rushTick >= interval) { rushTick = 0; beep(left <= 30 ? 1100 : 760, 0.06, 'square', 0.09); }
+    }
     if (G.time >= SHIFT_END) endShift('fin');
     if (G.combo > 0 && t - G.lastTaskAt > COMBO_WINDOW) breakCombo();  // se enfría la cadena
-    if (!G.uiOpen && !G.dialogOpen) {
-      movePlayer(dt);
-      updateInteraction(dt);
-    }
     hudTimer += dt;
-    if (hudTimer > 0.4) { hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD(); }
+    if (hudTimer > 0.4) {
+      hudTimer = 0; updateHUD(); refreshChecklist(); updateObjectiveHUD();
+      if (!G.dialogOpen) checkInspection();   // Lucía inspecta habitaciones terminadas (cooldown 45 min)
+    }
+  }
+  // Movimiento e interacción: durante el turno O en MODO LIBRE (paseo tras terminar)
+  if (G.started && (!G.over || G.freeRoam) && !G.uiOpen && !G.dialogOpen) {
+    movePlayer(dt);
+    updateInteraction(dt);
   }
   updateNPCs(dt, t);
   updateFX(dt);
