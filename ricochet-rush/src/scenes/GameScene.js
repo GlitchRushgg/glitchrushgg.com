@@ -129,14 +129,15 @@ export class GameScene extends Phaser.Scene {
     this.add.image(24, 96, "coin").setOrigin(0, 0.5).setTint(PAL.coin).setDepth(20);
     this.hudCoins = this.add.text(50, 96, "0", f("18px", { color: "#ffd94e" })).setOrigin(0, 0.5).setDepth(20);
 
-    // Pausa y mute (táctil ≥44px), zona excluida del movimiento en _hudHit.
+    // Pausa y mute. En un móvil apaisado el canvas se reduce ~×0.6: para que
+    // el botón quede ≥44px CSS reales necesita ~72px lógicos.
     const mkBtn = (x, label, cb) => {
-      const b = this.add.text(x, 14, label, f("26px", { backgroundColor: "#2a1f10cc" }))
-        .setOrigin(1, 0).setPadding(16, 12, 16, 12).setDepth(22).setInteractive({ useHandCursor: true });
+      const b = this.add.text(x, 12, label, f("34px", { backgroundColor: "#2a1f10cc" }))
+        .setOrigin(1, 0).setPadding(20, 16, 20, 16).setDepth(22).setInteractive({ useHandCursor: true });
       b.on("pointerdown", cb);
       return b;
     };
-    this.muteBtn = mkBtn(W - 106, this.snd.muted ? "🔇" : "🔊", () => {
+    this.muteBtn = mkBtn(W - 130, this.snd.muted ? "🔇" : "🔊", () => {
       this.snd.setMuted(!this.snd.muted);
       this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
     });
@@ -156,7 +157,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   _hudHit(p) {
-    return p.y < 84 && p.x > W - 210;
+    return p.y < 104 && p.x > W - 250;
   }
 
   _buildInput() {
@@ -174,7 +175,9 @@ export class GameScene extends Phaser.Scene {
       fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "24px",
       color: "#ffffff", fontStyle: "bold", stroke: "#8a5a00", strokeThickness: 5,
     };
-    const t1 = this.add.text(W / 2, H / 2 - 90, t("howtoMove"), f).setOrigin(0.5).setDepth(25);
+    const isTouch = this.sys.game.device.input.touch;
+    const t1 = this.add.text(W / 2, H / 2 - 90, t(isTouch ? "howtoMoveTouch" : "howtoMove"), f)
+      .setOrigin(0.5).setDepth(25);
     const t2 = this.add.text(W / 2, H / 2 + 90, t("howtoShoot"), { ...f, fontSize: "19px" })
       .setOrigin(0.5).setDepth(25);
     this.tweens.add({ targets: t1, scale: 1.08, duration: 480, yoyo: true, repeat: -1, ease: "Sine.inOut" });
@@ -198,9 +201,19 @@ export class GameScene extends Phaser.Scene {
       this.pauseTxt2 = this.add.text(W / 2, H / 2 + 40, t("resume"), {
         fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "20px", color: "#ffe6b0",
       }).setOrigin(0.5).setDepth(31);
+      // Salir al menú desde la pausa (lo valora la QA de CrazyGames).
+      this.pauseMenuBtn = this.add.text(W / 2, H / 2 + 120, t("menu"), {
+        fontFamily: "'Consolas', monospace", fontSize: "22px", color: "#ffffff",
+        fontStyle: "bold", backgroundColor: "#241a0c",
+      }).setOrigin(0.5).setPadding(26, 12, 26, 12).setDepth(31).setInteractive({ useHandCursor: true });
+      this.pauseMenuBtn.on("pointerdown", () => {
+        this.dead = true;               // bloquea el resume del tap y el update
+        this.snd.stopMusic();
+        this.scene.start("Menu");
+      });
     } else {
       this.snd.startMusic();
-      [this.pauseVeil, this.pauseTxt, this.pauseTxt2].forEach((o) => o && o.destroy());
+      [this.pauseVeil, this.pauseTxt, this.pauseTxt2, this.pauseMenuBtn].forEach((o) => o && o.destroy());
     }
   }
 
@@ -212,7 +225,7 @@ export class GameScene extends Phaser.Scene {
     // Slow-mo breve de la carambola (el mundo al 30%; el reloj real sigue).
     if (this._slowT > 0) this._slowT -= dtRaw;
     const dt = this._slowT > 0 ? dtRaw * 0.3 : dtRaw;
-    this.elapsed += dt;
+    this.elapsed += dtRaw;   // el crono (la puntuación) va SIEMPRE a tiempo real
 
     this._movePlayer(dt);
     this._autofire(dt);
@@ -235,7 +248,7 @@ export class GameScene extends Phaser.Scene {
     this.hudKills.setText(`☠ ${this.kills} ${t("kills")}`);
     this.hudLevel.setText(`${t("level")} ${this.level}`);
     this.hudCoins.setText(`${this.runCoins}`);
-    this.xpBar.width = (this.xp / this.xpNeed) * W;
+    this.xpBar.width = Math.min(W, (this.xp / this.xpNeed) * W);
   }
 
   _movePlayer(dt) {
@@ -321,13 +334,14 @@ export class GameScene extends Phaser.Scene {
         b.bounces -= 1;
         if (b.bounces < 0) { this._killBullet(i); continue; }
         this._chargeBullet(b);
+        b.hitIds.clear();   // tras rebotar puede volver a golpear al mismo tank (fantasy de la carambola)
         this.snd.bounce();
         this._burst(b.x, b.y, 3, PAL.bullet);
       }
 
       // Prismas: rebotan la bala (sin gastar sus rebotes — son la recompensa).
       for (const pz of this.prisms) {
-        const rr = pz.r + 7;
+        const rr = pz.r + 7 * b.spr.scaleX;
         const ddx = b.x - pz.x, ddy = b.y - pz.y;
         const d2 = ddx * ddx + ddy * ddy;
         if (d2 < rr * rr) {
@@ -340,6 +354,7 @@ export class GameScene extends Phaser.Scene {
             b.x = pz.x + nx * rr;
             b.y = pz.y + ny * rr;
             this._chargeBullet(b);
+            b.hitIds.clear();
             this.snd.bounce();
             this._burst(b.x, b.y, 4, PAL.player);
           }
@@ -363,7 +378,7 @@ export class GameScene extends Phaser.Scene {
       for (let j = this.enemies.length - 1; j >= 0; j--) {
         const e = this.enemies[j];
         if (b.hitIds.has(e.id)) continue;
-        const rr = e.r + 7;
+        const rr = e.r + 7 * b.spr.scaleX;   // la bala cargada se dibuja (y pega) más grande
         if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < rr * rr) {
           b.hitIds.add(e.id);
           this._damageEnemy(e, j, b.dmg, b);
@@ -396,6 +411,9 @@ export class GameScene extends Phaser.Scene {
   _spawnEnemies(dt) {
     this._spawnT -= dt;
     if (this._spawnT > 0) return;
+    // Tope de enemigos vivos: sin él, en runs largas el spawn (12/s) supera
+    // cualquier DPS y crecen sin límite (medidos 1374 en soak) — riesgo móvil.
+    if (this.enemies.length > 280) { this._spawnT = 0.5; return; }
     // Arranque caliente (1.25s) → suelo 0.5s; tandas cada 90s para que el
     // doblete "tanda×2 + tanks" no caiga junto (muro de t=75-90 del informe).
     const tSec = this.elapsed;
@@ -513,8 +531,8 @@ export class GameScene extends Phaser.Scene {
     // Empujón al enemigo que muerde (para que no te encadene).
     const dx = e.x - this.px, dy = e.y - this.py;
     const d = Math.hypot(dx, dy) || 1;
-    e.x += (dx / d) * 70;
-    e.y += (dy / d) * 70;
+    e.x = Phaser.Math.Clamp(e.x + (dx / d) * 70, WALL + e.r, W - WALL - e.r);
+    e.y = Phaser.Math.Clamp(e.y + (dy / d) * 70, WALL + e.r, H - WALL - e.r);
     if (this.stats.hp <= 0) this._die();
   }
 
@@ -553,6 +571,9 @@ export class GameScene extends Phaser.Scene {
   // --------------------------------------------------------------- niveles
 
   _checkLevel() {
+    // Guardas B2/I3: nunca abrir un choice sobre otro ni sobre la muerte;
+    // el encadenado de niveles pendientes lo hace close() al cerrar.
+    if (this.choosing || this.dead) return;
     if (this.xp < this.xpNeed) return;
     this.xp -= this.xpNeed;
     this.level += 1;
@@ -578,7 +599,15 @@ export class GameScene extends Phaser.Scene {
     const picks = avail.slice(0, 3);
     if (picks.length === 0) picks.push(HEAL_CARD); // todo maxeado: cura SIN subir maxHp
 
-    const close = () => { ui.forEach((o) => o.destroy()); this.choosing = false; };
+    // Los atajos 1/2/3 se registran con .on y se DESREGISTRAN en close():
+    // con .once se acumulaban entre level-ups y aplicaban cartas viejas (B1).
+    const keyHandlers = [];
+    const close = () => {
+      keyHandlers.forEach(([k, h]) => this.input.keyboard.off(k, h));
+      ui.forEach((o) => o.destroy());
+      this.choosing = false;
+      this._checkLevel(); // encadena el siguiente nivel si quedó XP suficiente
+    };
     picks.forEach((u, i) => {
       const x = W / 2 + (i - (picks.length - 1) / 2) * 300;
       const y = 400;
@@ -611,9 +640,10 @@ export class GameScene extends Phaser.Scene {
       panel.on("pointerdown", pick);
       panel.on("pointerover", () => panel.setScale(1.05));
       panel.on("pointerout", () => panel.setScale(1));
-      this.input.keyboard.once("keydown-" + ["ONE", "TWO", "THREE"][i], () => {
-        if (this.choosing) pick();
-      });
+      const keyName = "keydown-" + ["ONE", "TWO", "THREE"][i];
+      const handler = () => { if (this.choosing) pick(); };
+      this.input.keyboard.on(keyName, handler);
+      keyHandlers.push([keyName, handler]);
     });
   }
 
