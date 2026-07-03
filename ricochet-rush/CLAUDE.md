@@ -61,8 +61,9 @@ movimiento, rebotes y colisiones círculo-círculo manuales con `dt` acotado.
 
 ## Estado / pendiente
 
-- **PRIVADO**: no publicar (push a `main`) hasta aprobación de la fundadora.
-- Pendiente al publicar: card en la landing raíz y entrada en el `CLAUDE.md` raíz.
+- **PUBLICADO** (aprobado por la fundadora, jul 2026) en
+  `https://glitchrushgg.com/ricochet-rush/`, con card en la landing y entrada
+  en el `CLAUDE.md` raíz.
 - Paquete CrazyGames (build aparte): Phaser local en `vendor/`, quitar la URL
   de compartir, portadas 3 tamaños sin capturas/UI, vídeos ≤20s.
 

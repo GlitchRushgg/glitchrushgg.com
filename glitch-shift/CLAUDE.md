@@ -56,8 +56,9 @@ generadas en BootScene, cero assets externos → build de ~40KB + Phaser).
 
 ## Estado / pendiente
 
-- **PRIVADO**: no publicar (push a `main`) hasta aprobación de la fundadora.
-- Pendiente al publicar: card en la landing raíz y entrada en el `CLAUDE.md` raíz.
+- **PUBLICADO** (aprobado por la fundadora, jul 2026) en
+  `https://glitchrushgg.com/glitch-shift/`, con card en la landing y entrada
+  en el `CLAUDE.md` raíz.
 - Para el envío a CrazyGames (build aparte, como Noah): Phaser **local** en
   `vendor/`, sin enlaces externos (quitar URL de compartir), portadas 3 tamaños
   sin capturas/UI, vídeos ≤20s. Reglas completas en la memoria
