@@ -1,0 +1,6 @@
+assets/art-src/
+assets/refs/
+tools/.state.json
+tools/node_modules/
+tools/shot-*.png
+tools/rec-tmp/
