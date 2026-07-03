@@ -7,7 +7,7 @@ import { W, H, PAL, ENEMIES } from "../const.js";
 import { t } from "../i18n.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
-import { UPGRADES } from "../items.js";
+import { UPGRADES, HEAL_CARD } from "../items.js";
 
 const WALL = 26;              // grosor visual del marco de la arena
 const PLAYER_R = 16;
@@ -46,13 +46,16 @@ export class GameScene extends Phaser.Scene {
     this.choosing = false;      // congela el mundo durante la elección de carta
     this.elapsed = 0;
     this.kills = 0;
+    this.caramb = 0;            // bajas con bala de ≥2 rebotes (la stat viral)
+    this._slowT = 0;            // cámara lenta breve de la carambola
+    this._lastCarambAt = -9999;
     this.runCoins = 0;
     this.level = 1;
     this.xp = 0;
     this.xpNeed = 8;
     this.invuln = 0;
     this._fireT = 0;
-    this._spawnT = 1.2;
+    this._spawnT = 0.9;
     this._eid = 0;
     this.upTaken = {};          // id → veces cogida
 
@@ -82,6 +85,18 @@ export class GameScene extends Phaser.Scene {
     frame.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
     frame.lineStyle(10, PAL.player, 0.1);
     frame.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+
+    // Prismas rebotadores: mobiliario fijo que rebota BALAS (los enemigos
+    // pasan por debajo). Hacen visible el twist desde el segundo 1.
+    this.prisms = [
+      { x: W * 0.3, y: H / 2, r: 44 },
+      { x: W * 0.7, y: H / 2, r: 44 },
+    ];
+    this.prisms.forEach((p) => {
+      this.add.image(p.x, p.y, "glow").setDepth(2).setScale(2.2).setAlpha(0.25).setTint(PAL.player);
+      const spr = this.add.image(p.x, p.y, "prism").setDepth(3).setTint(PAL.player).setAlpha(0.9);
+      this.tweens.add({ targets: spr, alpha: 0.6, duration: 1100, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    });
   }
 
   _buildPlayer() {
@@ -193,7 +208,10 @@ export class GameScene extends Phaser.Scene {
 
   update(timeNow, dms) {
     if (this.dead || this.paused || this.choosing) return;
-    const dt = Math.min(0.05, dms / 1000);
+    const dtRaw = Math.min(0.05, dms / 1000);
+    // Slow-mo breve de la carambola (el mundo al 30%; el reloj real sigue).
+    if (this._slowT > 0) this._slowT -= dtRaw;
+    const dt = this._slowT > 0 ? dtRaw * 0.3 : dtRaw;
     this.elapsed += dt;
 
     this._movePlayer(dt);
@@ -279,6 +297,7 @@ export class GameScene extends Phaser.Scene {
         vx: Math.cos(a) * this.stats.bulletSpeed, vy: Math.sin(a) * this.stats.bulletSpeed,
         bounces: this.stats.bounces, pierce: this.stats.pierce,
         dmg: this.stats.dmg, life: 6, hitIds: new Set(),
+        charge: 0, trailT: 0,   // rebotes acumulados (cargan daño) + reloj de estela
       });
     }
     this.snd.shoot();
@@ -301,8 +320,42 @@ export class GameScene extends Phaser.Scene {
       if (bounced) {
         b.bounces -= 1;
         if (b.bounces < 0) { this._killBullet(i); continue; }
+        this._chargeBullet(b);
         this.snd.bounce();
         this._burst(b.x, b.y, 3, PAL.bullet);
+      }
+
+      // Prismas: rebotan la bala (sin gastar sus rebotes — son la recompensa).
+      for (const pz of this.prisms) {
+        const rr = pz.r + 7;
+        const ddx = b.x - pz.x, ddy = b.y - pz.y;
+        const d2 = ddx * ddx + ddy * ddy;
+        if (d2 < rr * rr) {
+          const d = Math.sqrt(d2) || 1;
+          const nx = ddx / d, ny = ddy / d;
+          const dot = b.vx * nx + b.vy * ny;
+          if (dot < 0) {                       // solo si entra hacia el prisma
+            b.vx -= 2 * dot * nx;
+            b.vy -= 2 * dot * ny;
+            b.x = pz.x + nx * rr;
+            b.y = pz.y + ny * rr;
+            this._chargeBullet(b);
+            this.snd.bounce();
+            this._burst(b.x, b.y, 4, PAL.player);
+          }
+        }
+      }
+
+      // Estela solo en balas cargadas (se leen como "veteranas" y no cuesta
+      // rendimiento con multishot alto).
+      if (b.charge > 0) {
+        b.trailT -= dt;
+        if (b.trailT <= 0) {
+          b.trailT = 0.045;
+          const gh = this.add.image(b.x, b.y, "bullet").setDepth(6)
+            .setTint(0xffffff).setAlpha(0.35).setScale(b.spr.scaleX);
+          this.tweens.add({ targets: gh, alpha: 0, scale: 0.2, duration: 220, onComplete: () => gh.destroy() });
+        }
       }
 
       // Impactos.
@@ -313,7 +366,7 @@ export class GameScene extends Phaser.Scene {
         const rr = e.r + 7;
         if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < rr * rr) {
           b.hitIds.add(e.id);
-          this._damageEnemy(e, j, b.dmg);
+          this._damageEnemy(e, j, b.dmg, b);
           if (b.pierce > 0) b.pierce -= 1;
           else { dead = true; break; }
         }
@@ -328,15 +381,26 @@ export class GameScene extends Phaser.Scene {
     this.bullets.splice(i, 1);
   }
 
+  // Cada rebote CARGA la bala: +45% daño acumulativo, más grande y más blanca.
+  // Fallar a propósito (o carambolear en un prisma) es estrategia.
+  _chargeBullet(b) {
+    if (b.charge >= 6) return;                 // tope de carga (×9.3 daño)
+    b.charge += 1;
+    b.dmg *= 1.45;
+    b.spr.setScale(1 + b.charge * 0.15);
+    b.spr.setTint(b.charge >= 2 ? 0xffffff : 0xfff2c8);
+  }
+
   // --------------------------------------------------------------- enemigos
 
   _spawnEnemies(dt) {
     this._spawnT -= dt;
     if (this._spawnT > 0) return;
-    // Cadencia 1.6s → 0.5s a los 5 min; tandas de 1 → 4.
+    // Arranque caliente (1.25s) → suelo 0.5s; tandas cada 90s para que el
+    // doblete "tanda×2 + tanks" no caiga junto (muro de t=75-90 del informe).
     const tSec = this.elapsed;
-    this._spawnT = Math.max(0.5, 1.6 - tSec * 0.0037);
-    const batch = 1 + Math.floor(tSec / 75);
+    this._spawnT = Math.max(0.5, 1.25 - tSec * 0.0037);
+    const batch = 1 + Math.floor(tSec / 90);
 
     const pool = Object.entries(ENEMIES).filter(([, d]) => tSec >= d.from);
     for (let i = 0; i < batch; i++) {
@@ -398,17 +462,29 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  _damageEnemy(e, ix, dmg) {
+  _damageEnemy(e, ix, dmg, bullet) {
     e.hp -= dmg;
     this.snd.hitEnemy();
     e.spr.setTintFill(0xffffff);
     this.time.delayedCall(45, () => e.spr && e.spr.setTint(e.elite ? 0xffd94e : ENEMIES[e.kind].tint));
-    if (e.hp <= 0) this._killEnemy(e, ix);
+    if (e.hp <= 0) this._killEnemy(e, ix, bullet);
   }
 
-  _killEnemy(e, ix) {
+  _killEnemy(e, ix, bullet) {
     this.kills += 1;
     this.snd.kill();
+
+    // ¡CARAMBOLA!: baja con bala de ≥2 rebotes — la stat viral del juego.
+    if (bullet && bullet.charge >= 2) {
+      this.caramb += 1;
+      if (this.time.now - this._lastCarambAt > 8000) {
+        this._lastCarambAt = this.time.now;
+        this._slowT = 0.25;
+        this._floatText(e.x, e.y - 44, "🎱 " + t("caramb"), 0xffffff);
+        this.cameras.main.zoomTo(1.06, 120, "Linear", true);
+        this.time.delayedCall(280, () => this.cameras.main.zoomTo(1, 180, "Linear", true));
+      }
+    }
     this._burst(e.x, e.y, e.elite ? 14 : 7, e.elite ? 0xffd94e : ENEMIES[e.kind].tint);
 
     // Drops: gema de XP siempre; moneda a veces (élite: 3 seguras).
@@ -500,7 +576,7 @@ export class GameScene extends Phaser.Scene {
     const avail = UPGRADES.filter((u) => (this.upTaken[u.id] || 0) < u.max);
     Phaser.Utils.Array.Shuffle(avail);
     const picks = avail.slice(0, 3);
-    if (picks.length === 0) picks.push(UPGRADES.find((u) => u.id === "hp")); // todo maxeado: cura
+    if (picks.length === 0) picks.push(HEAL_CARD); // todo maxeado: cura SIN subir maxHp
 
     const close = () => { ui.forEach((o) => o.destroy()); this.choosing = false; };
     picks.forEach((u, i) => {
@@ -527,7 +603,7 @@ export class GameScene extends Phaser.Scene {
       const pick = () => {
         u.apply(this.stats);
         this.upTaken[u.id] = (this.upTaken[u.id] || 0) + 1;
-        if (u.id === "hp") this._refreshHearts();
+        if (u.id === "hp" || u.id === "heal") this._refreshHearts();
         this.snd.pick();
         this._burst(this.px, this.py, 10, PAL.xp);
         close();
@@ -581,7 +657,9 @@ export class GameScene extends Phaser.Scene {
 
     const secs = Math.floor(this.elapsed);
     this.time.delayedCall(1000, () =>
-      this.scene.start("GameOver", { secs, kills: this.kills, level: this.level, coins: this.runCoins })
+      this.scene.start("GameOver", {
+        secs, kills: this.kills, level: this.level, coins: this.runCoins, caramb: this.caramb,
+      })
     );
   }
 }

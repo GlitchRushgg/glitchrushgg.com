@@ -10,8 +10,14 @@ export const UPGRADES = [
   { id: "speed", max: 4, apply: (s) => (s.moveSpeed *= 1.1) },
   { id: "magnet", max: 3, apply: (s) => (s.magnet *= 1.4) },
   { id: "hp", max: 3, apply: (s) => { s.maxHp += 1; s.hp = s.maxHp; } },
-  { id: "bspeed", max: 4, apply: (s) => (s.bulletSpeed *= 1.2) },
 ];
+
+// Fallback cuando todas las cartas están al máximo: cura 1 corazón SIN subir
+// maxHp (subirlo sin tope era una vía de semi-inmortalidad en el late game).
+export const HEAL_CARD = {
+  id: "heal", max: 9,
+  apply: (s) => { s.hp = Math.min(s.maxHp, s.hp + 1); },
+};
 
 // Perks permanentes: 3 niveles, precio por nivel.
 export const PERKS = [

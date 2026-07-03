@@ -2,11 +2,14 @@
 
 **Survivor-arena** pensado para CrazyGames: te mueves (WASD/flechas/mantener
 puntero o dedo), el cañón dispara solo al enemigo más cercano y **todas las
-balas rebotan en las paredes de la arena** (el twist). Enjambre creciente
-(chaser/speeder/tank/splitter + élites), gemas de XP → **cartas de mejora** al
-subir de nivel (9 tipos: daño, cadencia, +rebote, multidisparo, perforación…),
-y **monedas persistentes** → tienda de 4 perks permanentes ×3 niveles.
-Puntuación = tiempo sobrevivido.
+balas rebotan en las paredes** (el twist): **cada rebote CARGA la bala (+45%
+daño acumulativo**, más grande y blanca — fallar es estrategia). Dos **prismas
+rebotadores** fijos en la arena carambolean balas sin gastar rebotes; matar con
+una bala de ≥2 rebotes = **¡CARAMBOLA!** (slow-mo + contador, la stat viral del
+share). Enjambre creciente (chaser/speeder/tank/splitter + élites), gemas de
+XP → **cartas de mejora** al subir de nivel (8 tipos: daño, cadencia, +rebote,
+multidisparo, perforación…), y **monedas persistentes** → tienda de 4 perks
+permanentes ×3 niveles. Puntuación = tiempo sobrevivido.
 
 Forma parte del monorepo `glitchrushgg.com` — ver `CLAUDE.md` raíz. Diseño y
 encaje de mercado en `docs/DISENO.md` (el estudio de mercado completo vive en

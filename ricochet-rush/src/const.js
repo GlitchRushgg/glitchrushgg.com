@@ -19,7 +19,7 @@ export const PAL = {
 // Tipos de enemigo: forma, tamaño, HP, velocidad, XP, desde qué segundo aparecen.
 export const ENEMIES = {
   chaser: { tex: "en-chaser", r: 20, hp: 10, speed: 95, xp: 1, from: 0, tint: 0xff5e8a },
-  speeder: { tex: "en-speeder", r: 13, hp: 6, speed: 175, xp: 1, from: 45, tint: 0x5ecbff },
+  speeder: { tex: "en-speeder", r: 13, hp: 6, speed: 175, xp: 1, from: 30, tint: 0x5ecbff },
   tank: { tex: "en-tank", r: 32, hp: 60, speed: 55, xp: 5, from: 90, tint: 0xb05eff },
   splitter: { tex: "en-splitter", r: 24, hp: 20, speed: 85, xp: 3, from: 150, tint: 0x5eff9a },
   mini: { tex: "en-speeder", r: 10, hp: 4, speed: 145, xp: 1, from: 99999, tint: 0x5eff9a },

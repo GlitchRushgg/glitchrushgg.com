@@ -17,7 +17,25 @@ export class BootScene extends Phaser.Scene {
     this._genGlow();
     this._genSpark();
     this._genGrid();
+    this._genPrism();
     this.scene.start("Menu");
+  }
+
+  // Prisma rebotador de la arena: rombo alto con doble borde (mobiliario fijo
+  // que hace visible el twist del ricochet desde el segundo 1).
+  _genPrism() {
+    const w = 76, h = 104, cx = w / 2, cy = h / 2;
+    const g = this.add.graphics();
+    const rhombus = (rx, ry) => [
+      { x: cx, y: cy - ry }, { x: cx + rx, y: cy },
+      { x: cx, y: cy + ry }, { x: cx - rx, y: cy },
+    ];
+    g.fillStyle(0xffffff, 0.14); g.fillPoints(rhombus(36, 50), true);
+    g.lineStyle(4, 0xffffff, 0.95); g.strokePoints(rhombus(36, 50), true, true);
+    g.lineStyle(2, 0xffffff, 0.5); g.strokePoints(rhombus(24, 34), true, true);
+    g.fillStyle(0xffffff, 0.9); g.fillCircle(cx, cy, 5);
+    g.generateTexture("prism", w, h);
+    g.destroy();
   }
 
   _genGlow() {

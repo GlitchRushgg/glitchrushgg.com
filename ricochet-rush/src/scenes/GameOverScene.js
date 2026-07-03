@@ -16,6 +16,7 @@ export class GameOverScene extends Phaser.Scene {
     this._kills = (data && data.kills) || 0;
     this._level = (data && data.level) || 1;
     this._coins = (data && data.coins) || 0;
+    this._caramb = (data && data.caramb) || 0;
   }
 
   create() {
@@ -43,7 +44,8 @@ export class GameOverScene extends Phaser.Scene {
     const m = Math.floor(this._secs / 60), s = this._secs % 60;
     this.add.text(W / 2, 200, t("survived"), f("20px", { color: "#e8cfa0" })).setOrigin(0.5);
     this.add.text(W / 2, 258, `${m}:${String(s).padStart(2, "0")}`, f("84px")).setOrigin(0.5);
-    this.add.text(W / 2, 330, `☠ ${this._kills} ${t("kills")}   ·   ${t("level")} ${this._level}`,
+    this.add.text(W / 2, 330,
+      `☠ ${this._kills} ${t("kills")}   ·   🎱 ${this._caramb} ${t("carambs")}   ·   ${t("level")} ${this._level}`,
       f("22px", { color: "#e8cfa0" })).setOrigin(0.5);
 
     this.add.image(W / 2 - 66, 382, "coin").setTint(PAL.coin).setScale(1.3);
@@ -90,7 +92,7 @@ export class GameOverScene extends Phaser.Scene {
 
   async _share() {
     const m = Math.floor(this._secs / 60), s = this._secs % 60;
-    const text = t("shareText", { t: `${m}:${String(s).padStart(2, "0")}`, k: this._kills });
+    const text = t("shareText", { t: `${m}:${String(s).padStart(2, "0")}`, k: this._kills, c: this._caramb });
     const url = "https://glitchrushgg.com/ricochet-rush/";
     try {
       if (navigator.share) await navigator.share({ title: t("title"), text, url });
