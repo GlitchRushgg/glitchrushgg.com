@@ -3,13 +3,20 @@
 
 import { Save } from "./Save.js";
 
+// Un ÚNICO AudioContext compartido entre todas las escenas: Safari/iOS limita a
+// ~4 contextos por página y cada escena crea su propio Sound (fuga detectada en QA).
+let sharedCtx = null;
+
 export class Sound {
   constructor() {
-    this.ctx = null;
     this.muted = Save.muted();
     this._musicTimer = null;
     this._step = 0;
     this._nextT = 0;
+  }
+
+  get ctx() {
+    return sharedCtx;
   }
 
   setMuted(b) {
@@ -18,12 +25,12 @@ export class Sound {
   }
 
   _ensure() {
-    if (!this.ctx) {
+    if (!sharedCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) this.ctx = new AC();
+      if (AC) sharedCtx = new AC();
     }
-    if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
-    return this.ctx;
+    if (sharedCtx && sharedCtx.state === "suspended") sharedCtx.resume();
+    return sharedCtx;
   }
 
   // Bip básico. Con "when" (tiempo absoluto del ctx) se puede secuenciar.

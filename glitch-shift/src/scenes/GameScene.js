@@ -22,13 +22,20 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.snd = new Sound();
     this.snd.startMusic();
-    this.events.on("shutdown", () => this.snd.stopMusic());
+    // once: el listener de shutdown no debe acumularse con cada retry.
+    this.events.once("shutdown", () => this.snd.stopMusic());
+
+    // Auto-pausa al perder el foco (clic fuera del iframe = muerte injusta).
+    const onBlur = () => { if (!this.dead && !this.paused) this._togglePause(); };
+    this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
+    this.events.once("shutdown", () => this.game.events.off(Phaser.Core.Events.BLUR, onBlur));
 
     // Estado.
     this.dead = false;
     this.paused = false;
     this.distPx = 0;
-    this.speed = 330;
+    this.speed = 380;
+    this.worldT = 0;               // reloj del MUNDO (avanza al ritmo del timescale)
     this.rail = 1;                 // empieza abajo (magenta)
     this.ts = 1;                   // timescale actual (overclock lo baja)
     this.energy = 100;
@@ -42,6 +49,8 @@ export class GameScene extends Phaser.Scene {
     this.lastSwapFrom = -1;
     this.sectorIx = 0;
     this.spawnGap = 500;           // px hasta el próximo patrón
+    this._seenDrone = false;
+    this._seenLaser = false;
     this.obstacles = [];
     this.pickups = [];
     this.lasers = [];
@@ -120,14 +129,15 @@ export class GameScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H - 24, 306, 14, 0x000000, 0.5).setDepth(20).setStrokeStyle(1, 0x9fb4ff, 0.6);
     this.energyFill = this.add.rectangle(W / 2 - 150, H - 24, 300, 8, 0x27e7ff, 1).setOrigin(0, 0.5).setDepth(21);
 
-    // Botones pausa y mute (arriba derecha) — zonas excluidas del input de juego.
+    // Botones pausa y mute (arriba derecha), tamaño táctil ≥44px — zona
+    // excluida del input de juego en _hudHit.
     const mkBtn = (x, label, cb) => {
-      const b = this.add.text(x, 18, label, f("20px", { backgroundColor: "#1a2a4acc" }))
-        .setOrigin(1, 0).setPadding(12, 8, 12, 8).setDepth(22).setInteractive({ useHandCursor: true });
+      const b = this.add.text(x, 14, label, f("26px", { backgroundColor: "#1a2a4acc" }))
+        .setOrigin(1, 0).setPadding(16, 12, 16, 12).setDepth(22).setInteractive({ useHandCursor: true });
       b.on("pointerdown", cb);
       return b;
     };
-    this.muteBtn = mkBtn(W - 90, this.snd.muted ? "🔇" : "🔊", () => {
+    this.muteBtn = mkBtn(W - 106, this.snd.muted ? "🔇" : "🔊", () => {
       this.snd.setMuted(!this.snd.muted);
       this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
     });
@@ -136,7 +146,7 @@ export class GameScene extends Phaser.Scene {
 
   _hudHit(p) {
     // ¿El puntero cae sobre pausa/mute? (para no disparar un shift accidental)
-    return p.y < 70 && p.x > W - 170;
+    return p.y < 84 && p.x > W - 210;
   }
 
   _buildInput() {
@@ -185,7 +195,7 @@ export class GameScene extends Phaser.Scene {
 
   _swap() {
     this.lastSwapFrom = this.rail;
-    this.lastSwapAt = this.time.now;
+    this.lastSwapAt = this.worldT; // reloj del mundo: el near-miss vale igual en overclock
     this.rail = 1 - this.rail;
     this._swaps++;
     this.snd.shift(this.rail);
@@ -232,7 +242,7 @@ export class GameScene extends Phaser.Scene {
     const s = this.sectorIx;
     // [patrón, peso] — los sectores altos añaden tipos nuevos y suben el picante.
     const table = [
-      ["block", 30], ["double", s >= 0 ? 16 : 0], ["wall", 14], ["bits", 20], ["shield", 3],
+      ["block", 30], ["double", 16], ["wall", 14], ["bits", 20], ["shield", 3],
       ["drone", s >= 1 ? 16 : 0], ["laser", s >= 2 ? 14 : 0],
       ["triple", s >= 2 ? 10 : 0],
     ];
@@ -305,6 +315,7 @@ export class GameScene extends Phaser.Scene {
       sprs: [spr], x: W + 80, type: "drone", rail, w: 58, passed: false, nearDone: false,
       state: "cruise", blinkT: 0,
     });
+    if (!this._seenDrone) { this._seenDrone = true; this._banner(t("hintDrone"), RAIL_COLORS[rail]); }
   }
 
   _addLaser(rail) {
@@ -312,8 +323,9 @@ export class GameScene extends Phaser.Scene {
     const nodeL = this.add.image(16, y, "laser-node").setDepth(6).setTint(0xff4e6a);
     const nodeR = this.add.image(W - 16, y, "laser-node").setDepth(6).setTint(0xff4e6a).setFlipX(true);
     const beam = this.add.rectangle(W / 2, y, W - 60, 6, 0xff4e6a, 0.35).setDepth(5);
-    this.lasers.push({ rail, phase: "warn", tLeft: 1.05, beam, nodeL, nodeR, nearDone: false });
+    this.lasers.push({ rail, phase: "warn", tLeft: 1.05, beam, nodeL, nodeR, nearDone: false, wasOnRail: false });
     this.snd.near(); // aviso audible del telegrafiado
+    if (!this._seenLaser) { this._seenLaser = true; this._banner(t("hintLaser"), 0xff4e6a); }
   }
 
   _addPickup(x, rail, type) {
@@ -338,14 +350,15 @@ export class GameScene extends Phaser.Scene {
       this.energy = Math.max(0, this.energy - OC_DRAIN * dtRaw);
       if (this.energy <= 0) { this.overclocking = false; this.snd.overclockOff(); }
     } else {
-      this.energy = Math.min(100, this.energy + 4 * dtRaw); // regeneración lenta
+      this.energy = Math.min(100, this.energy + 7 * dtRaw); // regeneración lenta
     }
     const target = this.overclocking ? OC_SCALE : 1;
     this.ts += (target - this.ts) * Math.min(1, 10 * dtRaw);
     const dt = dtRaw * this.ts;
+    this.worldT += dt;
 
     // Velocidad y distancia.
-    this.speed = Math.min(760, 330 + this.distPx * 0.011);
+    this.speed = Math.min(760, 380 + this.distPx * 0.011);
     this.distPx += this.speed * dt;
     const meters = Math.floor(this.distPx / 50);
 
@@ -397,7 +410,9 @@ export class GameScene extends Phaser.Scene {
       // Dron: parpadea y cambia de carril cuando se acerca.
       if (o.type === "drone") {
         const spr = o.sprs[0];
-        if (o.state === "cruise" && o.x < PLAYER_X + 460) {
+        // El aviso salta a distancia proporcional a la velocidad: con 460 fijo,
+        // a 760 px/s el cambio se consuma a 0.14s del jugador (irreaccionable).
+        if (o.state === "cruise" && o.x < PLAYER_X + Math.max(460, this.speed * 0.82)) {
           o.state = "blink"; o.blinkT = 0.42;
         } else if (o.state === "blink") {
           o.blinkT -= dt;
@@ -420,7 +435,7 @@ export class GameScene extends Phaser.Scene {
       // Near-miss: cruzó tu x justo después de un shift desde SU carril.
       if (!o.nearDone && o.x < PLAYER_X) {
         o.nearDone = true;
-        if (o.rail === this.lastSwapFrom && this.time.now - this.lastSwapAt < 350) this._nearMiss(o.rail);
+        if (o.rail === this.lastSwapFrom && this.worldT - this.lastSwapAt < 0.35) this._nearMiss(o.rail);
       }
 
       if (o.x < -80 - o.w) { o.sprs.forEach((s) => s.destroy()); this.obstacles.splice(i, 1); }
@@ -432,6 +447,7 @@ export class GameScene extends Phaser.Scene {
       const L = this.lasers[i];
       L.tLeft -= dt;
       if (L.phase === "warn") {
+        if (L.rail === this.rail) L.wasOnRail = true; // hubo riesgo real durante el aviso
         L.beam.setAlpha(Math.sin(this.time.now / 50) > 0 ? 0.4 : 0.1);
         if (L.tLeft <= 0) {
           L.phase = "fire"; L.tLeft = 0.55;
@@ -444,7 +460,9 @@ export class GameScene extends Phaser.Scene {
         if (L.rail === this.rail && this.invuln <= 0) { this._hit({ type: "laser", rail: L.rail, spr: L.beam }, -1); return; }
         if (L.tLeft <= 0) {
           L.phase = "off";
-          if (!L.nearDone) { L.nearDone = true; this._nearMiss(L.rail); }
+          // Premio solo si esquivaste de verdad (estuviste en su carril en el aviso);
+          // si no, cada láser regalaría energía+bits sin riesgo.
+          if (!L.nearDone && L.wasOnRail) { L.nearDone = true; this._nearMiss(L.rail); }
           [L.beam, L.nodeL, L.nodeR].forEach((s) =>
             this.tweens.add({ targets: s, alpha: 0, duration: 250, onComplete: () => s.destroy() }));
           this.lasers.splice(i, 1);
@@ -469,10 +487,14 @@ export class GameScene extends Phaser.Scene {
           this.snd.shield();
           this._floatText(t("shieldOn"), 0x7cffb2);
         }
+        this.tweens.killTweensOf(p.spr); // el tween de flotación es repeat:-1
         p.spr.destroy(); this.pickups.splice(i, 1);
         continue;
       }
-      if (p.spr.x < -40) { p.spr.destroy(); this.pickups.splice(i, 1); }
+      if (p.spr.x < -40) {
+        this.tweens.killTweensOf(p.spr);
+        p.spr.destroy(); this.pickups.splice(i, 1);
+      }
     }
   }
 
@@ -500,7 +522,7 @@ export class GameScene extends Phaser.Scene {
 
   _nearMiss(rail) {
     this.energy = Math.min(100, this.energy + 26);
-    this.runBits += 2;
+    this.runBits += 3; // el riesgo paga: identidad del juego
     this.snd.near();
     this._floatText(t("closeCall"), RAIL_COLORS[rail]);
     this._burst(PLAYER_X, RAIL_Y[this.rail], 6, RAIL_COLORS[rail]);

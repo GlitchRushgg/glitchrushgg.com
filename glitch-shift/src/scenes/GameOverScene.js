@@ -76,8 +76,15 @@ export class GameOverScene extends Phaser.Scene {
       .setOrigin(0.5).setPadding(14, 8, 14, 8).setInteractive({ useHandCursor: true });
     share.on("pointerdown", () => this._share());
 
-    this.input.keyboard.on("keydown-SPACE", () => this.scene.start("Game"));
-    this.input.keyboard.on("keydown-ENTER", () => this.scene.start("Game"));
+    // Carencia + sin auto-repeat: si mueres con ESPACIO mantenido (overclock por
+    // teclado), el repeat reiniciaba la run sin dejarte ver la puntuación.
+    const retry = (e) => {
+      if (e.repeat || this.time.now - this._bornAt < 450) return;
+      this.scene.start("Game");
+    };
+    this._bornAt = this.time.now;
+    this.input.keyboard.on("keydown-SPACE", retry);
+    this.input.keyboard.on("keydown-ENTER", retry);
   }
 
   async _share() {
