@@ -609,8 +609,18 @@ const DICTS = {
 
 export const LANGS = [['es', 'Español'], ['en', 'English'], ['it', 'Italiano']];
 
+// Acceso tolerante a localStorage: en iframes de terceros (CrazyGames) o en
+// modo privacidad, tocar localStorage lanza SecurityError. Sin este envoltorio
+// una sola excepción abortaba la carga del módulo → pantalla muerta.
+export function lsGet(key) {
+  try { return localStorage.getItem(key); } catch (e) { return null; }
+}
+export function lsSet(key, val) {
+  try { localStorage.setItem(key, val); } catch (e) { /* storage bloqueado */ }
+}
+
 function detectLang() {
-  const saved = localStorage.getItem('hg-lang');
+  const saved = lsGet('hg-lang');
   if (saved && DICTS[saved]) return saved;
   const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
   return DICTS[nav] ? nav : 'en';
@@ -620,6 +630,6 @@ export const LANG = detectLang();
 export const S = DICTS[LANG];
 
 export function setLang(code) {
-  localStorage.setItem('hg-lang', code);
+  lsSet('hg-lang', code);
   location.reload(); // los textos 3D se hornean en texturas al cargar
 }

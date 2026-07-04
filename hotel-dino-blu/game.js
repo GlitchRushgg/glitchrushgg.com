@@ -4,7 +4,7 @@
 //  Eres Sofía, camarera del 2º piso: 11 habitaciones a limpiar antes de las 14:00.
 // ============================================================================
 import * as THREE from 'three';
-import { S, LANG, LANGS, setLang } from './i18n.js';
+import { S, LANG, LANGS, setLang, lsGet, lsSet } from './i18n.js';
 
 // ----------------------------------------------------------------------------
 // Utilidades
@@ -54,19 +54,19 @@ const TASK_DEFS = {
 // Estado global
 // ----------------------------------------------------------------------------
 // modo de juego: 'full' (turno completo, 11 habitaciones) o 'express' (4, contrarreloj)
-const MODE = localStorage.getItem('hg-mode') === 'express' ? 'express' : 'full';
+const MODE = lsGet('hg-mode') === 'express' ? 'express' : 'full';
 if (MODE === 'express') TIME_RATE = 3.0;   // turno corto y tenso (~2,5 min reales)
 
 // récords persistentes (localStorage) — la razón para volver a jugar
 const REC = {
-  best:   +localStorage.getItem('hg-best')   || 0,
-  stars:  +localStorage.getItem('hg-stars')  || 0,
-  streak: +localStorage.getItem('hg-streak') || 0,
-  rooms:  +localStorage.getItem('hg-rooms')  || 0,
+  best:   +lsGet('hg-best')   || 0,
+  stars:  +lsGet('hg-stars')  || 0,
+  streak: +lsGet('hg-streak') || 0,
+  rooms:  +lsGet('hg-rooms')  || 0,
 };
 
 // progresión por DÍAS: cada turno completado avanza un día y abre zonas nuevas
-const DAY = Math.max(1, parseInt(localStorage.getItem('hg-day'), 10) || 1);
+const DAY = Math.max(1, parseInt(lsGet('hg-day'), 10) || 1);
 const ZONES = [
   { id: 'terrace',    f: 11, unlockDay: 2, floorCol: 0xd8c08a, icons: ['🧹', '🧽', '⛱'] },
   { id: 'restaurant', f: 12, unlockDay: 3, floorCol: 0xb0875a, icons: ['🍽', '🧹', '🍴'] },
@@ -82,9 +82,9 @@ const SKINS    = ['#f1c9a5', '#d2a074', '#a9744a', '#7a4e2e'];
 const HAIRS    = ['#2a1c12', '#7a4a2a', '#caa15a', '#b8b3ad', '#3d2817'];
 const UNIFORMS = ['#9fc3e0', '#7ec4b8', '#e3a3b5', '#a8d8a0', '#c9a24a'];
 const CUSTOM = {
-  skin:    localStorage.getItem('hg-skin')    || SKINS[1],
-  hair:    localStorage.getItem('hg-hair')    || HAIRS[0],
-  uniform: localStorage.getItem('hg-uniform') || UNIFORMS[0],
+  skin:    lsGet('hg-skin')    || SKINS[1],
+  hair:    lsGet('hg-hair')    || HAIRS[0],
+  uniform: lsGet('hg-uniform') || UNIFORMS[0],
 };
 
 const G = {
@@ -98,7 +98,7 @@ const G = {
   uiOpen: true, dialogOpen: false,
   hotspot: null, holdT: 0, eHeld: false,
   // mini-tutorial (0 = moverse, 1 = mirar, 2 = hecho) y objetivo guiado
-  tut: localStorage.getItem('hg-tut') ? 2 : 0, tutDist: 0, tutLookAcc: 0, objective: null,
+  tut: lsGet('hg-tut') ? 2 : 0, tutDist: 0, tutLookAcc: 0, objective: null,
   lastInspect: SHIFT_START - 10,
   keys: {}, joy: { x: 0, y: 0, on: false, run: false },
 };
@@ -1741,7 +1741,7 @@ const dingLift = () => { beep(660, 0.12); setTimeout(() => beep(880, 0.2), 140);
 // ----------------------------------------------------------------------------
 // Música — TODO sintetizado con Web Audio ⇒ 100% libre de derechos (sin ficheros)
 // ----------------------------------------------------------------------------
-let musicGain = null, musicOn = (localStorage.getItem('hg-music') !== 'off');
+let musicGain = null, musicOn = (lsGet('hg-music') !== 'off');
 let ambientTimer = null, ambientBar = 0;
 const midi = m => 440 * Math.pow(2, (m - 69) / 12);
 function ensureAudio() {
@@ -1776,7 +1776,7 @@ function startAmbient() {
   ambientTimer = setInterval(ambientBarPlay, 4000);
 }
 function setMusic(on) {
-  musicOn = on; localStorage.setItem('hg-music', on ? 'on' : 'off');
+  musicOn = on; lsSet('hg-music', on ? 'on' : 'off');
   if (musicGain && actx) musicGain.gain.setTargetAtTime(on ? 1 : 0, actx.currentTime, 0.1);
   const b = $('btnMusic'); if (b) b.textContent = on ? '🔊' : '🔇';
   if (on) startAmbient();
@@ -2300,14 +2300,14 @@ function endShift(outcome, minutesLeft = 0) {
   REC.best = Math.max(REC.best, G.score);
   REC.stars = Math.max(REC.stars, stars);
   REC.rooms += G.done;
-  localStorage.setItem('hg-best', REC.best);
-  localStorage.setItem('hg-stars', REC.stars);
-  localStorage.setItem('hg-streak', REC.streak);
-  localStorage.setItem('hg-rooms', REC.rooms);
+  lsSet('hg-best', REC.best);
+  lsSet('hg-stars', REC.stars);
+  lsSet('hg-streak', REC.streak);
+  lsSet('hg-rooms', REC.rooms);
   // avance de DÍA: hacer la mayor parte del turno (≥80%) pasa al día siguiente y abre zonas
   const dayComplete = rate >= 0.8 && outcome !== 'despido';
   const nextDay = dayComplete ? DAY + 1 : DAY;
-  if (dayComplete) localStorage.setItem('hg-day', nextDay);
+  if (dayComplete) lsSet('hg-day', nextDay);
   const unlocking = dayComplete ? ZONES.find(z => z.unlockDay === nextDay) : null;
   const dayLine = dayComplete
     ? `<div class="dayLine">${S.dayComplete(DAY)} ${S.nextDayMsg(nextDay)}${unlocking ? '<br>' + S.zoneUnlockSoon(S.zones[unlocking.id].name) : ''}</div>`
@@ -2468,7 +2468,7 @@ addEventListener('mousemove', e => {
   G.pitch = Math.max(-1.35, Math.min(1.35, G.pitch - my * LOOK_SENS));
   if (G.tut === 1) {
     G.tutLookAcc += Math.abs(mx * LOOK_SENS);
-    if (G.tutLookAcc > 1) { G.tut = 2; localStorage.setItem('hg-tut', '1'); updateObjectiveHUD(); }
+    if (G.tutLookAcc > 1) { G.tut = 2; lsSet('hg-tut', '1'); updateObjectiveHUD(); }
   }
 });
 
@@ -2507,7 +2507,7 @@ if (IS_TOUCH) {
       } else if (t.identifier === lookId) {
         if (G.tut === 1) {
           G.tutLookAcc += Math.abs((t.clientX - lx) * 0.005);
-          if (G.tutLookAcc > 1) { G.tut = 2; localStorage.setItem('hg-tut', '1'); updateObjectiveHUD(); }
+          if (G.tutLookAcc > 1) { G.tut = 2; lsSet('hg-tut', '1'); updateObjectiveHUD(); }
         }
         G.yaw -= (t.clientX - lx) * 0.005;
         G.pitch = Math.max(-1.35, Math.min(1.35, G.pitch - (t.clientY - ly) * 0.005));
@@ -2769,7 +2769,7 @@ function buildCustomizer() {
     `</div></div>`).join('');
   $('custRows').querySelectorAll('.swatch').forEach(b => b.onclick = () => {
     const key = b.dataset.key, c = b.dataset.c;
-    CUSTOM[key] = c; localStorage.setItem('hg-' + key, c);
+    CUSTOM[key] = c; lsSet('hg-' + key, c);
     $('custRows').querySelectorAll(`.swatch[data-key="${key}"]`).forEach(x => x.classList.toggle('on', x === b));
     handSkinMat.color.set(hex(CUSTOM.skin));
     handSleeveMat.color.set(hex(CUSTOM.uniform));
@@ -2849,7 +2849,7 @@ function applyIntroTexts() {
 // cambiar de modo = guardar y recargar (el mundo se construye al cargar, como el idioma)
 function setMode(m) {
   if (m === G.mode) return;
-  localStorage.setItem('hg-mode', m);
+  lsSet('hg-mode', m);
   location.reload();
 }
 
