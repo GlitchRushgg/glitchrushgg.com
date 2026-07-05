@@ -3,7 +3,7 @@
 // — si no, los jugadores instalados verán la versión vieja.
 // Estrategia: precachea solo el SHELL crítico para arrancar; las texturas, modelos
 // 3D y loaders (muchos archivos) se cachean en runtime (stale-while-revalidate).
-const CACHE = 'hotel-dino-blu-v3';
+const CACHE = 'hotel-dino-blu-v4';
 
 const SHELL = [
   './',

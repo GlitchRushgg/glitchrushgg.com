@@ -842,10 +842,23 @@ function buildLobby() {
   add(g, bx(BX1 - BX0, 0.14, BZ * 2), (BX0 + BX1) / 2, FH + 0.07, 0).material = MAT.ceil;
   wallSeg(g, f, BX0, BX0 + 0.15, -BZ, BZ, FH, 0, MAT.wall);
   wallSeg(g, f, BX1 - 0.15, BX1, -BZ, BZ, FH, 0, MAT.wall);
-  // pared norte con ventanales al mar
-  wallSeg(g, f, BX0, BX1, BZ - 0.15, BZ, FH, 0, MAT.wall);
-  for (let x = -10; x < 14; x += 4)
-    add(g, new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.7), MAT.glass), x + 1.2, 1.55, BZ - 0.16, Math.PI);
+  // pared norte: CRISTALERA PANORÁMICA al mar (feedback de la fundadora: "una
+  // pared larga de cristal que deje ver el mar/la piscina"). Antepecho bajo +
+  // gran lámina de cristal + montantes finos + vista al mar horneada detrás.
+  // (El movimiento lo limita BOUNDS a z1 = BZ-0.35, así que no hace falta muro
+  // sólido para contener al jugador.)
+  add(g, bx(BX1 - BX0, 0.5, 0.15), (BX0 + BX1) / 2, 0.25, BZ - 0.08).material = MAT.wall;   // antepecho
+  add(g, bx(BX1 - BX0, 0.28, 0.15), (BX0 + BX1) / 2, FH - 0.14, BZ - 0.08).material = MAT.wall; // dintel
+  {
+    const zc = BZ - 0.12, x0 = BX0 + 0.5, x1 = BX1 - 0.5, wW = x1 - x0, cx = (x0 + x1) / 2;
+    const sea = add(g, new THREE.Mesh(new THREE.PlaneGeometry(wW + 12, 9), (VIEW.sea ||= viewMat(true))), cx, 3.2, BZ + 6);
+    sea.rotation.y = Math.PI;                                   // vista al mar detrás del cristal
+    add(g, new THREE.Mesh(new THREE.PlaneGeometry(wW, 2.4), MAT.glass), cx, 1.75, zc, Math.PI); // lámina de cristal
+    for (let x = x0; x <= x1 + 0.01; x += 2.7)
+      add(g, bx(0.08, 2.5, 0.06), x, 1.75, zc - 0.03).material = MAT.steel; // montantes verticales
+    add(g, bx(wW, 0.1, 0.08), cx, 2.95, zc - 0.03).material = MAT.steel;    // travesaño superior
+    add(g, bx(wW, 0.1, 0.08), cx, 0.55, zc - 0.03).material = MAT.steel;    // travesaño inferior
+  }
   // fachada sur acristalada con puerta (cerrada durante el turno)
   wallSeg(g, f, BX0, BX1, -BZ, -BZ + 0.15, FH, 0, MAT.wall);
   for (let x = -11; x < 15; x += 3.6)
@@ -2962,6 +2975,16 @@ function luciaHandover() {
 // botón de música del HUD
 $('btnMusic').textContent = musicOn ? '🔊' : '🔇';
 $('btnMusic').addEventListener('click', e => { e.stopPropagation(); setMusic(!musicOn); });
+
+// Botón "volver a glitchrushgg.com" — solo en la web propia (no en el iframe
+// de un portal como CrazyGames, donde window.self !== window.top).
+{
+  const bh = $('btnHome');
+  if (bh && window.self === window.top) {
+    bh.style.display = '';
+    bh.addEventListener('click', e => { e.stopPropagation(); window.location.href = '/'; });
+  }
+}
 
 // ----------------------------------------------------------------------------
 // Bucle principal
