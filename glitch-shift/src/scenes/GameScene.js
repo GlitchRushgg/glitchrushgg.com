@@ -36,7 +36,7 @@ export class GameScene extends Phaser.Scene {
     this.distPx = 0;
     this.speed = 380;
     this.worldT = 0;               // reloj del MUNDO (avanza al ritmo del timescale)
-    this.rail = 1;                 // empieza abajo (magenta)
+    this.rail = 1;                 // empieza en el medio (ámbar) de 3 carriles
     this.ts = 1;                   // timescale actual (overclock lo baja)
     this.energy = 100;
     this.runBits = 0;
@@ -96,9 +96,6 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: glow, alpha: 0.22, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
       return line;
     });
-    // Etiquetas sutiles de realidad.
-    this.add.text(16, RAIL_Y[0] - 90, "▲", { fontSize: "16px", color: "#27e7ff" }).setAlpha(0.5).setDepth(2);
-    this.add.text(16, RAIL_Y[1] - 90, "▼", { fontSize: "16px", color: "#ff3ea5" }).setAlpha(0.5).setDepth(2);
   }
 
   _buildPlayer() {
@@ -152,25 +149,31 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildInput() {
-    // Sin esto Phaser solo trackea 1 dedo: en un juego de tapping los taps
-    // rápidos alternando pulgares se perdían ("presionas y no responde" →
-    // no cambias de carril → "muere sin razón"). Con 3 punteros no se pierden.
+    // addPointer(2): en móvil los taps rápidos no se pierden (3 punteros).
     this.input.addPointer(2);
 
+    // Con 3 carriles el control es DIRECCIONAL (feedback de la fundadora: en PC
+    // usar ↑ y ↓ según suba o baje). Móvil: tocar mitad superior = subir,
+    // mitad inferior = bajar.
     this.input.on("pointerdown", (p) => {
-      if (this._hudHit(p)) return;      // pausa/mute no cuentan como toque de juego
-      this._pressFrom("p" + p.id);
+      if (this._hudHit(p)) return;
+      this._pressFrom("p" + p.id, p.y < H / 2 ? -1 : 1);
     });
-    // Cada dedo que se suelta libera SU fuente; el overclock sigue mientras
-    // quede al menos un dedo de juego pulsado (release real solo al llegar a 0).
     const up = (p) => this._releaseFrom("p" + p.id);
     this.input.on("pointerup", up);
     this.input.on("pointerupoutside", up);
 
-    ["SPACE", "UP", "W"].forEach((k) => {
-      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k); });
+    // PC: ↑/W = subir, ↓/S = bajar. SPACE = overclock puro (mantener sin mover).
+    ["UP", "W"].forEach((k) => {
+      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k, -1); });
       this.input.keyboard.on("keyup-" + k, () => this._releaseFrom(k));
     });
+    ["DOWN", "S"].forEach((k) => {
+      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k, 1); });
+      this.input.keyboard.on("keyup-" + k, () => this._releaseFrom(k));
+    });
+    this.input.keyboard.on("keydown-SPACE", (e) => { if (!e.repeat) this._pressFrom("SPACE", 0); });
+    this.input.keyboard.on("keyup-SPACE", () => this._releaseFrom("SPACE"));
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
   }
@@ -188,17 +191,17 @@ export class GameScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------- input
 
-  _pressFrom(id) {
+  _pressFrom(id, dir) {
     if (this.dead) return;
     if (this.paused) { this._togglePause(); return; }
     this._holdSources.add(id);
     this.pressing = true;
     this.pressAt = this.time.now;
-    // Anti doble-swap: dos dedos que caen en el mismo frame (toque accidental
-    // con dos dedos) no deben cancelarse mutuamente dejándote donde chocas.
-    if (this.time.now - this._lastSwapRealAt < 60) return;
+    // dir 0 = solo overclock (Space). Anti-doble-mov: dos dedos en el mismo
+    // frame no se cancelan.
+    if (!dir || this.time.now - this._lastSwapRealAt < 60) return;
     this._lastSwapRealAt = this.time.now;
-    this._swap();
+    this._move(dir);
   }
 
   _releaseFrom(id) {
@@ -211,10 +214,12 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  _swap() {
+  _move(dir) {
+    const target = Phaser.Math.Clamp(this.rail + dir, 0, RAIL_Y.length - 1);
+    if (target === this.rail) return;   // ya en el carril del extremo
     this.lastSwapFrom = this.rail;
     this.lastSwapAt = this.worldT; // reloj del mundo: el near-miss vale igual en overclock
-    this.rail = 1 - this.rail;
+    this.rail = target;
     this._swaps++;
     this.snd.shift(this.rail);
     this._tintPlayer();
@@ -284,7 +289,8 @@ export class GameScene extends Phaser.Scene {
     let r = Math.random() * total, kind = "block";
     for (const [k, w] of table) { r -= w; if (r <= 0) { kind = k; break; } }
 
-    const rail = Phaser.Math.Between(0, 1);
+    const NR = RAIL_Y.length;               // 3 carriles
+    const rail = Phaser.Math.Between(0, NR - 1);
     // Aviso anticipado del carril: un chevron parpadeante en el borde derecho
     // antes de que el obstáculo llegue (el láser ya trae su propio telégrafo).
     if (kind !== "bits" && kind !== "shield" && kind !== "laser") this._railWarn(rail);
@@ -294,23 +300,28 @@ export class GameScene extends Phaser.Scene {
         this._addBlock(W + 60, rail, 1);
         break;
       case "double": {
-        // Dos bloques alternos: el desfase escala con la velocidad (siempre esquivable).
-        const off = Math.max(210, this.speed * 0.36);
-        this._addBlock(W + 60, rail, 1);
-        this._addBlock(W + 60 + off, 1 - rail, 1);
-        extra = off;
+        // DOS carriles bloqueados a la vez (deja 1 libre): elige 2 de 3 railes.
+        const railsShuf = [0, 1, 2].sort(() => Math.random() - 0.5);
+        this._addBlock(W + 60, railsShuf[0], 1);
+        this._addBlock(W + 60, railsShuf[1], 1);
+        this._railWarn(railsShuf[1]);
+        extra = 40;
         break;
       }
       case "triple": {
-        const off = Math.max(230, this.speed * 0.4);
-        this._addBlock(W + 60, rail, 1);
-        this._addBlock(W + 60 + off, 1 - rail, 1);
-        this._addBlock(W + 60 + off * 2, rail, 1);
-        extra = off * 2;
+        // Escalera: bloques en carriles consecutivos escalonados en X, forzando
+        // a bajar/subir de carril en carril (siempre queda 1 libre en cada x).
+        const off = Math.max(230, this.speed * 0.42);
+        const dir = rail === 0 ? 1 : rail === NR - 1 ? -1 : (Math.random() < 0.5 ? 1 : -1);
+        for (let i = 0; i < NR; i++) {
+          const rr = Phaser.Math.Clamp(rail + dir * i, 0, NR - 1);
+          this._addBlock(W + 60 + off * i, rr, 1);
+        }
+        extra = off * (NR - 1);
         break;
       }
       case "wall":
-        this._addBlock(W + 60, rail, Phaser.Math.Between(4, 6)); // muro largo: quédate en el otro carril
+        this._addBlock(W + 60, rail, Phaser.Math.Between(4, 6)); // muro largo: cámbiate de carril
         extra = 200;
         break;
       case "drone":
