@@ -48,7 +48,7 @@ export class Sound {
   }
 
   // Distorted "electric guitar" note: stacked detuned saws through a soft clip.
-  _guitar(freq, dur = 0.22, gain = 0.09, when = 0) {
+  _guitar(freq, dur = 0.22, gain = 0.09, when = 0, bendTo = 0) {
     if (this.muted) return;
     const ctx = this._ensure();
     if (!ctx) return;
@@ -57,17 +57,18 @@ export class Sound {
     const curve = new Float32Array(256);
     for (let i = 0; i < 256; i++) {
       const x = (i / 128) - 1;
-      curve[i] = Math.tanh(3.2 * x);
+      curve[i] = Math.tanh(3.6 * x);   // más saturación = más "crunch" de guitarra
     }
     shaper.curve = curve;
     const g = ctx.createGain();
     g.gain.setValueAtTime(gain, t0);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     shaper.connect(g).connect(ctx.destination);
-    [0, 6, -6].forEach((cents) => {
+    [0, 7, -7].forEach((cents) => {
       const o = ctx.createOscillator();
       o.type = "sawtooth";
       o.frequency.setValueAtTime(freq, t0);
+      if (bendTo) o.frequency.exponentialRampToValueAtTime(bendTo, t0 + dur * 0.85); // bend de solo
       o.detune.setValueAtTime(cents, t0);
       o.connect(shaper);
       o.start(t0);
@@ -132,7 +133,27 @@ export class Sound {
 
   // ---- Music: upbeat rooftop-runner loop; guitar riff during the solo ----
 
-  setSolo(on) { this._solo = on; }
+  setSolo(on) { this._solo = on; if (on) this._soloStep = 0; }
+
+  // Solo de guitarra eléctrica: shred de semicorcheas por la pentatónica de
+  // blues de Mi en octava alta, con bends — "allegro rockero".
+  _shred(barStep, whenBase, stepDur) {
+    // E4 pentatónica blues: E G A Bb B D E5 ...
+    const SOLO = [
+      659.25, 587.33, 493.88, 440, 392, 440, 493.88, 587.33,
+      659.25, 493.88, 440, 493.88, 659.25, 587.33, 493.88, 440,
+      392, 440, 493.88, 587.33, 659.25, 587.33, 493.88, 587.33,
+      659.25, 739.99, 659.25, 587.33, 493.88, 440, 493.88, 587.33,
+    ];
+    const BEND = { 3: 493.88, 11: 659.25, 19: 659.25, 27: 659.25 };
+    for (let h = 0; h < 2; h++) {                       // 2 semicorcheas por corchea
+      const idx = (this._soloStep + h) % SOLO.length;
+      this._guitar(SOLO[idx], stepDur * 0.5 * 0.92, 0.095, whenBase + h * stepDur * 0.5, BEND[idx] || 0);
+    }
+    this._soloStep = (this._soloStep + 2) % SOLO.length;
+    this._beep(82.41, stepDur * 0.9, "triangle", 0.05, whenBase);   // bajo E2 de fondo
+    if (barStep % 2 === 0) this._noise(0.035, 0.06, whenBase);      // batería
+  }
 
   startMusic() {
     const ctx = this._ensure();
@@ -141,7 +162,6 @@ export class Sound {
     this._nextT = ctx.currentTime + 0.06;
     const BASS = [98, 0, 130.8, 98, 146.8, 0, 130.8, 98];        // G2 C3 D3 walk
     const LEAD = [392, 0, 523.3, 0, 587.3, 523.3, 0, 392];       // cheerful pentatonic
-    const RIFF = [164.8, 164.8, 196, 164.8, 220, 196, 164.8, 246.9]; // E-riff for solo
     const STEP = 0.125; // 120 BPM eighths
     this._musicTimer = setInterval(() => {
       if (!sharedCtx) return;
@@ -149,9 +169,7 @@ export class Sound {
         const s = this._step % 8;
         const bar = Math.floor(this._step / 8);
         if (this._solo) {
-          const r = RIFF[s];
-          if (r) this._guitar(r, STEP * 0.95, 0.085, this._nextT);
-          if (s % 2 === 0) this._noise(0.03, 0.05, this._nextT);
+          this._shred(s, this._nextT, STEP);
         } else {
           const b = BASS[s];
           if (b) this._beep(b, STEP * 0.9, "triangle", 0.07, this._nextT);
