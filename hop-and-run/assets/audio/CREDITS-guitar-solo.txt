@@ -1,0 +1,21 @@
+HOP & RUN — audio credits & license
+====================================
+
+IN USE:
+
+guitar-solo.mp3   (GUITAR SOLO power-up, ~10 s, mono 96 kbps)
+  Source  : "Green Sport Trailer" — Pixabay Music (id 164195)
+  License : Pixabay Content License — free for commercial use, NO attribution
+            required.  https://pixabay.com/service/license-summary/
+  Edit    : ~10 s energetic section, mono, fade in/out, loudness-normalized.
+
+super-guitar.mp3  (SUPER GUITAR special power-up, ~14 s, mono 96 kbps)
+  Source  : "Rock" (hg-music-rock) — Pixabay Music (id 275390)
+  License : Pixabay Content License — free for commercial use, NO attribution
+            required.
+  Edit    : ~14 s climax section, mono, fade in/out, loudness-normalized.
+
+Both clips downloaded from Pixabay by the founder. Pixabay's license permits use
+on glitchrushgg.com and in the CrazyGames submission. No attribution is legally
+required. If the audio ever fails to load, the game falls back to a synthesized
+guitar shred (see Sound.js `_shred`).

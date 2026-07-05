@@ -20,7 +20,7 @@ export class GameScene extends Phaser.Scene {
   create() {
     this.snd = new Sound();
     this.snd.startMusic();
-    this.events.once("shutdown", () => this.snd.stopMusic());
+    this.events.once("shutdown", () => { this.snd.stopMusic(); this._stopSoloAudio(); });
 
     const onBlur = () => { if (!this.dead && !this.paused) this._togglePause(); };
     this.game.events.on(Phaser.Core.Events.BLUR, onBlur);
@@ -49,6 +49,9 @@ export class GameScene extends Phaser.Scene {
     this.sectorIx = 0;
     this._nextSkateAt = 380;   // meters
     this._nextGuitarAt = 180;  // primera guitarra a ~26s: el clip viral entra en la primera run
+    this._nextSuperAt = 1200;  // SUPER GUITARRA (rara, más fuerte) cada ~1500m
+    this.superSolo = false;
+    this.sound.mute = this.snd.muted;   // sincroniza el mute de Phaser (audio real) con el del juego
 
     this.physics.world.gravity.y = GRAVITY;
 
@@ -177,6 +180,7 @@ export class GameScene extends Phaser.Scene {
     };
     this.muteBtn = mkBtn(W - 106, this.snd.muted ? "🔇" : "🔊", () => {
       this.snd.setMuted(!this.snd.muted);
+      this.sound.mute = this.snd.muted;   // silencia también el audio real del solo
       this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
     });
     this.pauseBtn = mkBtn(W - 24, "⏸", () => this._togglePause());
@@ -247,6 +251,7 @@ export class GameScene extends Phaser.Scene {
       this.physics.pause();
       this.anims.pauseAll();
       this.snd.stopMusic();
+      if (this._soloAudio) this._soloAudio.pause();
       this.pauseUI = [
         this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.62).setDepth(30),
         this.add.text(W / 2, H / 2 - 40, "⏸  PAUSED", {
@@ -269,8 +274,8 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.physics.resume();
       this.anims.resumeAll();
-      this.snd.startMusic();
-      this.snd.setSolo(this.soloT > 0);
+      if (this.soloT > 0 && this._soloAudio) this._soloAudio.resume(); // reanuda el solo
+      else this.snd.startMusic();
       this.pauseUI.forEach((o) => o.destroy());
     }
   }
@@ -279,6 +284,13 @@ export class GameScene extends Phaser.Scene {
 
   _roofTexture() {
     return SECTORS[this.sectorIx].roof;
+  }
+
+  _mixTint(a, b) {   // multiplica canales (como tint sobre tint)
+    const r = (((a >> 16) & 255) * ((b >> 16) & 255) / 255) | 0;
+    const g = (((a >> 8) & 255) * ((b >> 8) & 255) / 255) | 0;
+    const c = ((a & 255) * (b & 255) / 255) | 0;
+    return (r << 16) | (g << 8) | c;
   }
 
   _spawnPlatform(left, top, width) {
@@ -290,7 +302,11 @@ export class GameScene extends Phaser.Scene {
     const src = this.textures.get(this._roofTexture()).getSourceImage();
     const s = PLAT_H / src.height;   // tileScale de referencia constante (consistencia visual)
     t.setTileScale(s, s);
-    t.setTint(SECTORS[this.sectorIx].tint);   // recolorea el tejado por sector
+    // Variedad: cada edificio recibe un matiz propio (cálido/frío/rosado…) además
+    // del tinte del sector, para que "no sea siempre lo mismo" (feedback fundadora).
+    const BUILDING = [0xffffff, 0xffe6cc, 0xd6e4ff, 0xffd6e0, 0xd8f2d8, 0xfff0cc, 0xe8d8ff, 0xcfeeee];
+    const bt = BUILDING[Phaser.Math.Between(0, BUILDING.length - 1)];
+    t.setTint(this._mixTint(SECTORS[this.sectorIx].tint, bt));
     t.setDepth(4);
     this.platforms.add(t);
     t.body.setAllowGravity(false);
@@ -358,6 +374,10 @@ export class GameScene extends Phaser.Scene {
       this._nextSkateAt += 420;
       this._addPickup(left + width / 2, top - 130, "item-skateboard", "skate", 64);
     }
+    if (meters >= this._nextSuperAt) {
+      this._nextSuperAt += 1500;
+      this._addPickup(left + width / 2, top - 155, "item-guitar", "super-guitar", 90);
+    }
     if (meters >= this._nextGuitarAt) {
       this._nextGuitarAt += 780;
       this._addPickup(left + width / 2 - 80, top - 140, "item-guitar", "guitar", 72);
@@ -373,10 +393,13 @@ export class GameScene extends Phaser.Scene {
     p.setScale(sc).setDepth(6);
     p.body.setVelocityX(-this._speedNow());
     p.setData("kind", kind);
-    if (kind === "skate" || kind === "guitar") {
-      const glow = this.add.image(x, y, "glow").setDepth(5).setScale(1.8).setTint(0xffe066).setAlpha(0.7);
+    if (kind === "super-guitar") p.setTint(0xff77aa);   // guitarra especial roja/rosa
+    if (kind === "skate" || kind === "guitar" || kind === "super-guitar") {
+      const sup = kind === "super-guitar";
+      const glow = this.add.image(x, y, "glow").setDepth(5).setScale(sup ? 2.5 : 1.8)
+        .setTint(sup ? 0xff4488 : 0xffe066).setAlpha(0.78);
       p.setData("glow", glow);
-      this.tweens.add({ targets: glow, alpha: 0.3, duration: 500, yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: glow, alpha: 0.3, duration: sup ? 380 : 500, yoyo: true, repeat: -1 });
     }
     this.tweens.add({ targets: p, y: y - 10, duration: 620, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     return p;
@@ -407,6 +430,8 @@ export class GameScene extends Phaser.Scene {
       this._float(p.x, p.y, "SKATEBOARD!", "#3ec8e8");
     } else if (kind === "guitar") {
       this._startSolo();
+    } else if (kind === "super-guitar") {
+      this._startSuperSolo();
     }
     const glow = p.getData("glow");
     if (glow) { this.tweens.killTweensOf(glow); glow.destroy(); }
@@ -416,17 +441,50 @@ export class GameScene extends Phaser.Scene {
 
   _startSolo() {
     this.soloT = 9;   // más largo (feedback de la fundadora): el poder dura más
+    this.superSolo = false;
     this.snd.soloStart();
-    this.snd.setSolo(true);
-    this.aura.setAlpha(0.85);
+    this._playSoloAudio("guitarSolo", 0.8);   // solo de guitarra REAL (Pixabay)
+    this.aura.setAlpha(0.85).setTint(0xffe066);
     this.cameras.main.flash(280, 255, 224, 102);
     this._float(this.player.x, this.player.y - 190, "GUITAR SOLO!!", "#ffe066");
-    // Freeze-frame rock pose.
+    this._soloPose(600);
+    this.hazards.children.iterate((h) => { if (h && h.x < W + 40) this._smash(h, true); });
+  }
+
+  _startSuperSolo() {
+    this.soloT = 14;   // la super guitarra dura MÁS (feedback de la fundadora)
+    this.superSolo = true;
+    this.snd.soloStart();
+    this._playSoloAudio("superGuitar", 0.85);   // rock potente (Pixabay)
+    this.aura.setAlpha(1).setTint(0xff4488);     // aura roja/rosa más intensa
+    this.cameras.main.flash(420, 255, 90, 150);
+    this.cameras.main.shake(300, 0.006);
+    this._float(this.player.x, this.player.y - 200, "🎸 SUPER GUITAR! 🔥", "#ff5ea0");
+    this._soloPose(700);
+    this.hazards.children.iterate((h) => { if (h && h.x < W + 40) this._smash(h, true); });
+  }
+
+  _soloPose(back) {
     this.player.anims.stop();
     this.player.setTexture("p-cristian-guitar");
-    this.time.delayedCall(600, () => { if (!this.dead && this.player.body.blocked.down) this.player.play("run"); });
-    // Blast every hazard currently on screen.
-    this.hazards.children.iterate((h) => { if (h && h.x < W + 40) this._smash(h, true); });
+    this.time.delayedCall(back, () => { if (!this.dead && this.player.body.blocked.down) this.player.play("run"); });
+  }
+
+  // Audio real del solo (Phaser sound, aparte del synth): silencia la música
+  // synth de fondo mientras suena, respeta el mute del juego.
+  _playSoloAudio(key, vol) {
+    this.snd.stopMusic();
+    this._stopSoloAudio();
+    this.sound.mute = this.snd.muted;
+    try {
+      this._soloAudio = this.sound.add(key, { volume: vol });
+      this._soloAudio.play();
+    } catch (e) { this.snd.setSolo(true); /* fallback al riff synth si el audio falla */ }
+  }
+
+  _stopSoloAudio() {
+    if (this._soloAudio) { this._soloAudio.stop(); this._soloAudio.destroy(); this._soloAudio = null; }
+    this.snd.setSolo(false);
   }
 
   // ----------------------------------------------------------------- hazards
@@ -496,7 +554,12 @@ export class GameScene extends Phaser.Scene {
     if (this.soloT > 0) {
       this.soloT -= dt;
       this.aura.setAlpha(0.55 + Math.sin(timeNow / 90) * 0.3);
-      if (this.soloT <= 0) { this.snd.setSolo(false); this.aura.setAlpha(0); }
+      if (this.soloT <= 0) {
+        this._stopSoloAudio();
+        this.snd.startMusic();
+        this.aura.setAlpha(0).setTint(0xffe066);
+        this.superSolo = false;
+      }
     }
     if (this._hurtT > 0) {
       this._hurtT -= dt;
@@ -632,7 +695,7 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.energyFill.fillColor = this.energy > 45 ? 0x7cd94e : this.energy > 22 ? 0xffe066 : 0xff5e5e;
     }
-    if (this.soloT > 0) this.hudPower.setText(`🎸 GUITAR SOLO ${this.soloT.toFixed(1)}s`);
+    if (this.soloT > 0) this.hudPower.setText(`${this.superSolo ? "🎸🔥 SUPER GUITAR" : "🎸 GUITAR SOLO"} ${this.soloT.toFixed(1)}s`);
     else if (this.skateT > 0) this.hudPower.setText(`🛹 ${this.skateT.toFixed(1)}s`);
     else this.hudPower.setText("");
 
@@ -674,6 +737,7 @@ export class GameScene extends Phaser.Scene {
     if (this.dead) return;
     this.dead = true;
     this.snd.stopMusic();
+    this._stopSoloAudio();
     this.snd.gameOver();
     this.physics.pause();
     this.player.anims.stop();
