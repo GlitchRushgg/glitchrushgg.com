@@ -557,8 +557,10 @@ function buildRoomShell(g, f, rc, i, isOpen) {
     add(g, bx(2.12, 0.1, 0.05), fx, fy - 0.92, fz).material = MAT.steel;   // marco abajo
     add(g, bx(0.1, 1.85, 0.05), fx - 1.0, fy, fz).material = MAT.steel;    // marco izquierda
     add(g, bx(0.1, 1.85, 0.05), fx + 1.0, fy, fz).material = MAT.steel; }  // marco derecha
-  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.7), MAT.steel), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03); // montante central
+  // El montante y el cristal estaban en el MISMO z (0.03) → dos planos coplanares
+  // que parpadeaban (z-fighting = "ventanas glitchy" de Cristian). Se separan.
   add(g, new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.66), MAT.glass), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.03);
+  add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.05, 1.7), MAT.steel), rc.x0 + 2.05, 1.62, wz + rc.dir * 0.055); // montante, por delante del cristal
   // alféizar de mármol como en las fotos
   add(g, bx(2.2, 0.08, 0.3), rc.x0 + 2.05, 0.74, wz - rc.dir * 0.12).material = MAT.marble;
 }
@@ -2979,11 +2981,16 @@ HANDS.visible = false;
   const skin = handSkinMat, sleeve = handSleeveMat, cloth = lamb(0xfff2b0);
   const buildArm = (s) => {                // s = -1 izquierda, +1 derecha
     const a = new THREE.Group();
-    add(a, bx(0.12, 0.12, 0.34, sleeve), 0, 0, 0.04);        // manga del uniforme (antebrazo)
-    add(a, bx(0.115, 0.115, 0.2, skin), 0, 0, -0.2);         // muñeca/antebrazo (piel)
-    add(a, bx(0.13, 0.075, 0.16, skin), 0, 0, -0.36);        // mano
-    add(a, bx(0.045, 0.06, 0.08, skin), -s * 0.08, 0, -0.33); // pulgar
-    if (s > 0) add(a, bx(0.17, 0.03, 0.17, cloth), 0, -0.06, -0.4); // trapo amarillo en la mano derecha
+    add(a, bx(0.13, 0.13, 0.36, sleeve), 0, 0, 0.04);         // manga del uniforme (antebrazo)
+    add(a, bx(0.1, 0.1, 0.14, skin), 0, 0, -0.19);            // muñeca (piel, más fina)
+    add(a, bx(0.13, 0.062, 0.15, skin), 0, 0, -0.33);         // palma
+    // 4 dedos (cajitas al frente de la palma) → mano reconocible, no un bloque
+    for (let i = 0; i < 4; i++) {
+      add(a, bx(0.026, 0.046, 0.12, skin), -0.045 + i * 0.03, 0, -0.45);
+    }
+    const th = add(a, bx(0.036, 0.05, 0.1, skin), -s * 0.078, 0, -0.35); // pulgar
+    th.rotation.y = s * 0.5;
+    if (s > 0) add(a, bx(0.18, 0.03, 0.17, cloth), 0, -0.055, -0.43); // trapo amarillo en la mano derecha
     a.position.set(s * 0.27, -0.36, -0.6);
     a.rotation.set(-0.55, s * 0.16, s * 0.12);
     a.userData.base = { pos: a.position.clone(), rot: a.rotation.clone() };
