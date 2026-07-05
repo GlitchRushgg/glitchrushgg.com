@@ -44,6 +44,8 @@ export class GameScene extends Phaser.Scene {
     this.invuln = 0;
     this.pressing = false;
     this.pressAt = 0;
+    this._holdSources = new Set();   // dedos/teclas manteniendo (multitouch robusto)
+    this._lastSwapRealAt = -9999;    // anti doble-swap por dos dedos en el mismo frame
     this.overclocking = false;
     this.lastSwapAt = -9999;
     this.lastSwapFrom = -1;
@@ -150,15 +152,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildInput() {
+    // Sin esto Phaser solo trackea 1 dedo: en un juego de tapping los taps
+    // rápidos alternando pulgares se perdían ("presionas y no responde" →
+    // no cambias de carril → "muere sin razón"). Con 3 punteros no se pierden.
+    this.input.addPointer(2);
+
     this.input.on("pointerdown", (p) => {
-      if (this._hudHit(p)) return;
-      this._press();
+      if (this._hudHit(p)) return;      // pausa/mute no cuentan como toque de juego
+      this._pressFrom("p" + p.id);
     });
-    this.input.on("pointerup", () => this._release());
-    const kd = (e) => { if (!e.repeat) this._press(); };
+    // Cada dedo que se suelta libera SU fuente; el overclock sigue mientras
+    // quede al menos un dedo de juego pulsado (release real solo al llegar a 0).
+    const up = (p) => this._releaseFrom("p" + p.id);
+    this.input.on("pointerup", up);
+    this.input.on("pointerupoutside", up);
+
     ["SPACE", "UP", "W"].forEach((k) => {
-      this.input.keyboard.on("keydown-" + k, kd);
-      this.input.keyboard.on("keyup-" + k, () => this._release());
+      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k); });
+      this.input.keyboard.on("keyup-" + k, () => this._releaseFrom(k));
     });
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
@@ -177,15 +188,22 @@ export class GameScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------- input
 
-  _press() {
+  _pressFrom(id) {
     if (this.dead) return;
     if (this.paused) { this._togglePause(); return; }
+    this._holdSources.add(id);
     this.pressing = true;
     this.pressAt = this.time.now;
+    // Anti doble-swap: dos dedos que caen en el mismo frame (toque accidental
+    // con dos dedos) no deben cancelarse mutuamente dejándote donde chocas.
+    if (this.time.now - this._lastSwapRealAt < 60) return;
+    this._lastSwapRealAt = this.time.now;
     this._swap();
   }
 
-  _release() {
+  _releaseFrom(id) {
+    this._holdSources.delete(id);
+    if (this._holdSources.size > 0) return; // aún hay un dedo pulsado
     this.pressing = false;
     if (this.overclocking) {
       this.overclocking = false;
@@ -202,13 +220,18 @@ export class GameScene extends Phaser.Scene {
     this._tintPlayer();
 
     // Efecto glitch: fantasmas cromáticos en la posición vieja + salto rápido.
-    const oldY = RAIL_Y[this.lastSwapFrom];
+    const oldY = RAIL_Y[this.lastSwapFrom], newY = RAIL_Y[this.rail];
     [[-6, 0x27e7ff], [6, 0xff3ea5]].forEach(([dx, c]) => {
       const gh = this.add.image(PLAYER_X + dx, oldY, this.skin.tex).setDepth(9).setTint(c).setAlpha(0.6);
-      this.tweens.add({ targets: gh, alpha: 0, scale: 1.3, duration: 200, onComplete: () => gh.destroy() });
+      this.tweens.add({ targets: gh, alpha: 0, scale: 1.4, duration: 240, onComplete: () => gh.destroy() });
     });
-    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: RAIL_Y[this.rail], duration: 85, ease: "Quad.out" });
-    this.tweens.add({ targets: this.orb, scaleX: 0.7, duration: 60, yoyo: true });
+    // Estela vertical entre los dos railes: el cambio de carril se LEE mucho mejor.
+    const streak = this.add.rectangle(PLAYER_X, (oldY + newY) / 2, 14, Math.abs(newY - oldY), RAIL_COLORS[this.rail], 0.55)
+      .setDepth(8);
+    this.tweens.add({ targets: streak, alpha: 0, scaleX: 0.2, duration: 260, onComplete: () => streak.destroy() });
+    // Salto un poco más marcado (120ms) + squash para dar peso al movimiento.
+    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: newY, duration: 120, ease: "Cubic.out" });
+    this.tweens.add({ targets: this.orb, scaleX: 0.6, duration: 80, yoyo: true });
 
     if (this._tutorial && this._swaps >= 3) {
       this._tutorial = false;
@@ -222,6 +245,11 @@ export class GameScene extends Phaser.Scene {
     if (this.dead) return;
     this.paused = !this.paused;
     if (this.paused) {
+      // Suelta cualquier dedo/tecla: tras pausa (o blur) el pointerup puede
+      // perderse y dejaría el overclock pegado al reanudar.
+      this._holdSources.clear();
+      this.pressing = false;
+      if (this.overclocking) { this.overclocking = false; this.snd.overclockOff(); }
       this.snd.stopMusic();
       this.pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.66).setDepth(30);
       this.pauseTxt = this.add.text(W / 2, H / 2 - 20, "⏸  " + t("paused"), {
@@ -251,6 +279,9 @@ export class GameScene extends Phaser.Scene {
     for (const [k, w] of table) { r -= w; if (r <= 0) { kind = k; break; } }
 
     const rail = Phaser.Math.Between(0, 1);
+    // Aviso anticipado del carril: un chevron parpadeante en el borde derecho
+    // antes de que el obstáculo llegue (el láser ya trae su propio telégrafo).
+    if (kind !== "bits" && kind !== "shield" && kind !== "laser") this._railWarn(rail);
     let extra = 0;
     switch (kind) {
       case "block":
@@ -412,8 +443,8 @@ export class GameScene extends Phaser.Scene {
         const spr = o.sprs[0];
         // El aviso salta a distancia proporcional a la velocidad: con 460 fijo,
         // a 760 px/s el cambio se consuma a 0.14s del jugador (irreaccionable).
-        if (o.state === "cruise" && o.x < PLAYER_X + Math.max(460, this.speed * 0.82)) {
-          o.state = "blink"; o.blinkT = 0.42;
+        if (o.state === "cruise" && o.x < PLAYER_X + Math.max(500, this.speed * 0.92)) {
+          o.state = "blink"; o.blinkT = 0.55;
         } else if (o.state === "blink") {
           o.blinkT -= dt;
           spr.setAlpha(Math.sin(this.time.now / 35) > 0 ? 1 : 0.3);
@@ -537,6 +568,14 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: tx, y: tx.y - 40, alpha: 0, duration: 700, onComplete: () => tx.destroy() });
   }
 
+  _railWarn(rail) {
+    const y = RAIL_Y[rail], c = RAIL_COLORS[rail];
+    // Chevron con punta hacia el jugador, en el rail donde viene el obstáculo.
+    const warn = this.add.triangle(W - 30, y, 26, -18, 26, 18, 0, 0, c).setDepth(15).setAlpha(0);
+    this.tweens.add({ targets: warn, alpha: 0.95, duration: 150, yoyo: true, repeat: 3, onComplete: () => warn.destroy() });
+    this.tweens.add({ targets: warn, x: W - 54, duration: 900, ease: "Quad.out" });
+  }
+
   _banner(msg, color) {
     const tx = this.add.text(W / 2, H / 2 - 120, msg, {
       fontFamily: "'Consolas', monospace", fontSize: "54px",
@@ -581,19 +620,30 @@ export class GameScene extends Phaser.Scene {
     this.snd.stopMusic();
     this.snd.death();
     this.pressing = false;
+    this._holdSources.clear();
 
     Save.addBits(this.runBits);
     const meters = Math.floor(this.distPx / 50);
 
-    // Explosión del orbe + flash glitch + shake.
-    this._burst(this.orb.x, this.orb.y, 22, RAIL_COLORS[this.rail]);
-    this._burst(this.orb.x, this.orb.y, 12, 0xffffff);
-    this.orb.setVisible(false); this.orbAura.setVisible(false); this.shieldRing.setVisible(false);
-    this.cameras.main.shake(320, 0.014);
+    // Impacto en el sitio, pero el orbe NO desaparece de golpe: se derriba y
+    // CAE fuera de pantalla (Cristian: "visibly drops down and gets killed").
+    this._burst(this.orb.x, this.orb.y, 16, 0xffffff);
+    this.orbAura.setVisible(false); this.shieldRing.setVisible(false);
+    this.cameras.main.shake(220, 0.013);
+    this.tweens.killTweensOf(this.orb);
+    this.orb.setDepth(12);
+    this.tweens.add({
+      targets: this.orb, y: H + 90, angle: 300, alpha: 0.12, scale: 0.55,
+      duration: 800, ease: "Quad.in",
+      onComplete: () => {
+        this._burst(this.orb.x, this.orb.y, 18, RAIL_COLORS[this.rail]);
+        this.orb.setVisible(false);
+      },
+    });
     const veil = this.add.rectangle(W / 2, H / 2, W, H, 0xffffff, 0).setDepth(29);
-    this.tweens.add({ targets: veil, alpha: 0.35, duration: 60, yoyo: true, repeat: 2 });
+    this.tweens.add({ targets: veil, alpha: 0.3, duration: 60, yoyo: true, repeat: 1 });
 
-    this.time.delayedCall(950, () =>
+    this.time.delayedCall(1150, () =>
       this.scene.start("GameOver", { meters, bits: this.runBits, sector: this.sectorIx + 1 })
     );
   }
