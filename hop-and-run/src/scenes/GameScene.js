@@ -119,13 +119,14 @@ export class GameScene extends Phaser.Scene {
       this.anims.create({
         key: "run",
         frames: [1, 2, 3, 4].map((i) => ({ key: `p-cristian-run-${i}` })),
-        frameRate: 10,
+        frameRate: 13,   // ciclo más rápido = carrera más fluida (feedback de Cristian)
         repeat: -1,
       });
     }
+    this._baseScale = 1.15;
     this.player = this.physics.add.sprite(PLAYER_X, 300, "p-cristian-run-1");
     this.player.setOrigin(0.5, 1);
-    this.player.setScale(1.15);
+    this.player.setScale(this._baseScale);
     this.player.body.setSize(70, 150);
     this.player.body.setOffset((this.player.width - 70) / 2, this.player.height - 155);
     this.player.setDepth(10);
@@ -136,6 +137,16 @@ export class GameScene extends Phaser.Scene {
     // Golden aura shown during the guitar solo.
     this.aura = this.add.image(PLAYER_X, 400, "glow").setDepth(9).setScale(3.4)
       .setTint(0xffe066).setAlpha(0);
+  }
+
+  // Squash & stretch: da peso al salto/aterrizaje (yoyo vuelve a la escala base).
+  _squash(sy, sx, dur) {
+    this.tweens.killTweensOf(this.player);
+    this.player.setScale(this._baseScale);
+    this.tweens.add({
+      targets: this.player, scaleY: this._baseScale * sy, scaleX: this._baseScale * sx,
+      duration: dur, yoyo: true, ease: "Quad.out",
+    });
   }
 
   _buildHUD() {
@@ -176,15 +187,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildInput() {
+    // Multitouch robusto (mismo patrón que GLITCH SHIFT): sin addPointer, Phaser
+    // trackea 1 dedo y pierde toques rápidos en móvil.
+    this.input.addPointer(2);
+    this._holdSrc = new Set();
+
     this.input.on("pointerdown", (p) => {
       if (this._hudHit(p)) return;
-      this._press();
+      this._pressFrom("p" + p.id);
     });
-    this.input.on("pointerup", () => (this.holding = false));
-    this.input.keyboard.on("keydown-SPACE", (e) => { if (!e.repeat) this._press(); });
-    this.input.keyboard.on("keyup-SPACE", () => (this.holding = false));
-    this.input.keyboard.on("keydown-UP", (e) => { if (!e.repeat) this._press(); });
-    this.input.keyboard.on("keyup-UP", () => (this.holding = false));
+    const up = (p) => this._releaseFrom("p" + p.id);
+    this.input.on("pointerup", up);
+    this.input.on("pointerupoutside", up);
+
+    ["SPACE", "UP", "W"].forEach((k) => {
+      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k); });
+      this.input.keyboard.on("keyup-" + k, () => this._releaseFrom(k));
+    });
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
   }
@@ -207,17 +226,24 @@ export class GameScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------- input
 
-  _press() {
+  _pressFrom(id) {
     if (this.dead) return;
     if (this.paused) { this._togglePause(); return; }
+    this._holdSrc.add(id);
     this.holding = true;
     this._jumpBuffer = 0.12;
+  }
+
+  _releaseFrom(id) {
+    this._holdSrc.delete(id);
+    if (this._holdSrc.size === 0) this.holding = false; // el hold sigue si queda otro dedo
   }
 
   _togglePause() {
     if (this.dead) return;
     this.paused = !this.paused;
     if (this.paused) {
+      this._holdSrc.clear(); this.holding = false; // el pointerup puede perderse tras pausa/blur
       this.physics.pause();
       this.anims.pauseAll();
       this.snd.stopMusic();
@@ -256,9 +282,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   _spawnPlatform(left, top, width) {
-    const t = this.add.tileSprite(left + width / 2, top + PLAT_H / 2, width, PLAT_H, this._roofTexture());
+    // Altura dinámica: el tejado llega SIEMPRE hasta pasar el fondo de pantalla
+    // (feedback de Cristian: "los edificios parecen flotar"). Con PLAT_H fijo,
+    // un tejado alto (top=400) terminaba en y=700 dejando aire hasta H=720.
+    const h = H + 80 - top;
+    const t = this.add.tileSprite(left + width / 2, top + h / 2, width, h, this._roofTexture());
     const src = this.textures.get(this._roofTexture()).getSourceImage();
-    const s = PLAT_H / src.height;
+    const s = PLAT_H / src.height;   // tileScale de referencia constante (consistencia visual)
     t.setTileScale(s, s);
     t.setDepth(4);
     this.platforms.add(t);
@@ -509,6 +539,11 @@ export class GameScene extends Phaser.Scene {
       }
     });
     this.hazards.children.iterate((h) => { if (h && h.x < -60) { this.tweens.killTweensOf(h); h.destroy(); } });
+    // BUG CRÍTICO (feedback de Cristian: "a los ~20 pasos no hay más edificios y
+    // caes"): lastRight es la x-mundo del borde de la última plataforma, pero las
+    // plataformas se desplazan por physics y lastRight NO seguía el scroll → tras
+    // los spawns iniciales quedaba en ~4000 y el while no volvía a generar nunca.
+    this.lastRight -= this.speed * dt;
     while (this.lastRight < W + 400) this._spawnNext();
 
     // Jump: coyote + buffer + variable height (release cuts the rise).
@@ -518,6 +553,7 @@ export class GameScene extends Phaser.Scene {
     if (grounded && this._wasAir) {
       this.snd.land();
       if (this._hurtT <= 0) this.player.play("run");
+      this._squash(0.82, 1.16, 110);   // aplasta al aterrizar (juiciness)
       for (let i = 0; i < 4; i++) {
         const d = this.add.image(PLAYER_X + Phaser.Math.Between(-16, 16), this.player.body.bottom, "dust")
           .setDepth(5).setAlpha(0.8).setScale(Phaser.Math.FloatBetween(0.5, 1.1));
@@ -531,6 +567,7 @@ export class GameScene extends Phaser.Scene {
       this._jumpBuffer = 0;
       this._coyote = 0;
       this.snd.jump();
+      this._squash(1.18, 0.86, 130);   // estira al despegar
     }
     if (!this.holding && this.player.body.velocity.y < -320) this.player.body.velocity.y = -320;
 
