@@ -44,6 +44,8 @@ export class GameScene extends Phaser.Scene {
     this.invuln = 0;
     this.pressing = false;
     this.pressAt = 0;
+    this._holdSources = new Set();   // dedos/teclas manteniendo (multitouch robusto)
+    this._lastSwapRealAt = -9999;    // anti doble-swap por dos dedos en el mismo frame
     this.overclocking = false;
     this.lastSwapAt = -9999;
     this.lastSwapFrom = -1;
@@ -150,15 +152,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildInput() {
+    // Sin esto Phaser solo trackea 1 dedo: en un juego de tapping los taps
+    // rápidos alternando pulgares se perdían ("presionas y no responde" →
+    // no cambias de carril → "muere sin razón"). Con 3 punteros no se pierden.
+    this.input.addPointer(2);
+
     this.input.on("pointerdown", (p) => {
-      if (this._hudHit(p)) return;
-      this._press();
+      if (this._hudHit(p)) return;      // pausa/mute no cuentan como toque de juego
+      this._pressFrom("p" + p.id);
     });
-    this.input.on("pointerup", () => this._release());
-    const kd = (e) => { if (!e.repeat) this._press(); };
+    // Cada dedo que se suelta libera SU fuente; el overclock sigue mientras
+    // quede al menos un dedo de juego pulsado (release real solo al llegar a 0).
+    const up = (p) => this._releaseFrom("p" + p.id);
+    this.input.on("pointerup", up);
+    this.input.on("pointerupoutside", up);
+
     ["SPACE", "UP", "W"].forEach((k) => {
-      this.input.keyboard.on("keydown-" + k, kd);
-      this.input.keyboard.on("keyup-" + k, () => this._release());
+      this.input.keyboard.on("keydown-" + k, (e) => { if (!e.repeat) this._pressFrom(k); });
+      this.input.keyboard.on("keyup-" + k, () => this._releaseFrom(k));
     });
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
@@ -177,15 +188,22 @@ export class GameScene extends Phaser.Scene {
 
   // ------------------------------------------------------------------- input
 
-  _press() {
+  _pressFrom(id) {
     if (this.dead) return;
     if (this.paused) { this._togglePause(); return; }
+    this._holdSources.add(id);
     this.pressing = true;
     this.pressAt = this.time.now;
+    // Anti doble-swap: dos dedos que caen en el mismo frame (toque accidental
+    // con dos dedos) no deben cancelarse mutuamente dejándote donde chocas.
+    if (this.time.now - this._lastSwapRealAt < 60) return;
+    this._lastSwapRealAt = this.time.now;
     this._swap();
   }
 
-  _release() {
+  _releaseFrom(id) {
+    this._holdSources.delete(id);
+    if (this._holdSources.size > 0) return; // aún hay un dedo pulsado
     this.pressing = false;
     if (this.overclocking) {
       this.overclocking = false;
@@ -222,6 +240,11 @@ export class GameScene extends Phaser.Scene {
     if (this.dead) return;
     this.paused = !this.paused;
     if (this.paused) {
+      // Suelta cualquier dedo/tecla: tras pausa (o blur) el pointerup puede
+      // perderse y dejaría el overclock pegado al reanudar.
+      this._holdSources.clear();
+      this.pressing = false;
+      if (this.overclocking) { this.overclocking = false; this.snd.overclockOff(); }
       this.snd.stopMusic();
       this.pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.66).setDepth(30);
       this.pauseTxt = this.add.text(W / 2, H / 2 - 20, "⏸  " + t("paused"), {
