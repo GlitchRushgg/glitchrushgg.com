@@ -220,13 +220,18 @@ export class GameScene extends Phaser.Scene {
     this._tintPlayer();
 
     // Efecto glitch: fantasmas cromáticos en la posición vieja + salto rápido.
-    const oldY = RAIL_Y[this.lastSwapFrom];
+    const oldY = RAIL_Y[this.lastSwapFrom], newY = RAIL_Y[this.rail];
     [[-6, 0x27e7ff], [6, 0xff3ea5]].forEach(([dx, c]) => {
       const gh = this.add.image(PLAYER_X + dx, oldY, this.skin.tex).setDepth(9).setTint(c).setAlpha(0.6);
-      this.tweens.add({ targets: gh, alpha: 0, scale: 1.3, duration: 200, onComplete: () => gh.destroy() });
+      this.tweens.add({ targets: gh, alpha: 0, scale: 1.4, duration: 240, onComplete: () => gh.destroy() });
     });
-    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: RAIL_Y[this.rail], duration: 85, ease: "Quad.out" });
-    this.tweens.add({ targets: this.orb, scaleX: 0.7, duration: 60, yoyo: true });
+    // Estela vertical entre los dos railes: el cambio de carril se LEE mucho mejor.
+    const streak = this.add.rectangle(PLAYER_X, (oldY + newY) / 2, 14, Math.abs(newY - oldY), RAIL_COLORS[this.rail], 0.55)
+      .setDepth(8);
+    this.tweens.add({ targets: streak, alpha: 0, scaleX: 0.2, duration: 260, onComplete: () => streak.destroy() });
+    // Salto un poco más marcado (120ms) + squash para dar peso al movimiento.
+    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: newY, duration: 120, ease: "Cubic.out" });
+    this.tweens.add({ targets: this.orb, scaleX: 0.6, duration: 80, yoyo: true });
 
     if (this._tutorial && this._swaps >= 3) {
       this._tutorial = false;
@@ -274,6 +279,9 @@ export class GameScene extends Phaser.Scene {
     for (const [k, w] of table) { r -= w; if (r <= 0) { kind = k; break; } }
 
     const rail = Phaser.Math.Between(0, 1);
+    // Aviso anticipado del carril: un chevron parpadeante en el borde derecho
+    // antes de que el obstáculo llegue (el láser ya trae su propio telégrafo).
+    if (kind !== "bits" && kind !== "shield" && kind !== "laser") this._railWarn(rail);
     let extra = 0;
     switch (kind) {
       case "block":
@@ -435,8 +443,8 @@ export class GameScene extends Phaser.Scene {
         const spr = o.sprs[0];
         // El aviso salta a distancia proporcional a la velocidad: con 460 fijo,
         // a 760 px/s el cambio se consuma a 0.14s del jugador (irreaccionable).
-        if (o.state === "cruise" && o.x < PLAYER_X + Math.max(460, this.speed * 0.82)) {
-          o.state = "blink"; o.blinkT = 0.42;
+        if (o.state === "cruise" && o.x < PLAYER_X + Math.max(500, this.speed * 0.92)) {
+          o.state = "blink"; o.blinkT = 0.55;
         } else if (o.state === "blink") {
           o.blinkT -= dt;
           spr.setAlpha(Math.sin(this.time.now / 35) > 0 ? 1 : 0.3);
@@ -560,6 +568,14 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: tx, y: tx.y - 40, alpha: 0, duration: 700, onComplete: () => tx.destroy() });
   }
 
+  _railWarn(rail) {
+    const y = RAIL_Y[rail], c = RAIL_COLORS[rail];
+    // Chevron con punta hacia el jugador, en el rail donde viene el obstáculo.
+    const warn = this.add.triangle(W - 30, y, 26, -18, 26, 18, 0, 0, c).setDepth(15).setAlpha(0);
+    this.tweens.add({ targets: warn, alpha: 0.95, duration: 150, yoyo: true, repeat: 3, onComplete: () => warn.destroy() });
+    this.tweens.add({ targets: warn, x: W - 54, duration: 900, ease: "Quad.out" });
+  }
+
   _banner(msg, color) {
     const tx = this.add.text(W / 2, H / 2 - 120, msg, {
       fontFamily: "'Consolas', monospace", fontSize: "54px",
@@ -604,19 +620,30 @@ export class GameScene extends Phaser.Scene {
     this.snd.stopMusic();
     this.snd.death();
     this.pressing = false;
+    this._holdSources.clear();
 
     Save.addBits(this.runBits);
     const meters = Math.floor(this.distPx / 50);
 
-    // Explosión del orbe + flash glitch + shake.
-    this._burst(this.orb.x, this.orb.y, 22, RAIL_COLORS[this.rail]);
-    this._burst(this.orb.x, this.orb.y, 12, 0xffffff);
-    this.orb.setVisible(false); this.orbAura.setVisible(false); this.shieldRing.setVisible(false);
-    this.cameras.main.shake(320, 0.014);
+    // Impacto en el sitio, pero el orbe NO desaparece de golpe: se derriba y
+    // CAE fuera de pantalla (Cristian: "visibly drops down and gets killed").
+    this._burst(this.orb.x, this.orb.y, 16, 0xffffff);
+    this.orbAura.setVisible(false); this.shieldRing.setVisible(false);
+    this.cameras.main.shake(220, 0.013);
+    this.tweens.killTweensOf(this.orb);
+    this.orb.setDepth(12);
+    this.tweens.add({
+      targets: this.orb, y: H + 90, angle: 300, alpha: 0.12, scale: 0.55,
+      duration: 800, ease: "Quad.in",
+      onComplete: () => {
+        this._burst(this.orb.x, this.orb.y, 18, RAIL_COLORS[this.rail]);
+        this.orb.setVisible(false);
+      },
+    });
     const veil = this.add.rectangle(W / 2, H / 2, W, H, 0xffffff, 0).setDepth(29);
-    this.tweens.add({ targets: veil, alpha: 0.35, duration: 60, yoyo: true, repeat: 2 });
+    this.tweens.add({ targets: veil, alpha: 0.3, duration: 60, yoyo: true, repeat: 1 });
 
-    this.time.delayedCall(950, () =>
+    this.time.delayedCall(1150, () =>
       this.scene.start("GameOver", { meters, bits: this.runBits, sector: this.sectorIx + 1 })
     );
   }
