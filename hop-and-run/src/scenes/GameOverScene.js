@@ -26,58 +26,85 @@ export class GameOverScene extends Phaser.Scene {
     const hitMilestone = Save.nextMilestone(prevTotal) !== next && prevTotal !== total;
 
     const g = this.add.graphics();
-    g.fillGradientStyle(0x23324a, 0x23324a, 0x0e1626, 0x0e1626, 1);
+    g.fillGradientStyle(0x2a3b57, 0x2a3b57, 0x0b1220, 0x0b1220, 1);
     g.fillRect(0, 0, W, H);
+    // Rayos suaves de fondo para dar profundidad.
+    for (let i = 0; i < 5; i++) {
+      this.add.image(Phaser.Math.Between(0, W), Phaser.Math.Between(0, H), "cloud")
+        .setAlpha(0.05).setScale(Phaser.Math.FloatBetween(1.5, 3)).setTint(0x8fd6ff);
+    }
 
     const f = (size, extra = {}) => ({
       fontFamily: "'Segoe UI', system-ui, sans-serif",
       fontSize: size, color: "#ffffff", fontStyle: "bold", ...extra,
     });
 
+    // Panel-tarjeta central.
+    const PX = W / 2 + 70, PW = 620, PH = 470, PY = 384;
+    const panel = this.add.graphics();
+    panel.fillStyle(0x0e1830, 0.82); panel.fillRoundedRect(PX - PW / 2, PY - PH / 2, PW, PH, 26);
+    panel.lineStyle(3, 0xe8622c, 0.9); panel.strokeRoundedRect(PX - PW / 2, PY - PH / 2, PW, PH, 26);
+
     const title = this._reason === "energy" ? "OUT OF ENERGY!" : "YOU FELL!";
     const hint = this._reason === "energy" ? "Grab more fruit next time 🍎" : "Watch those gaps!";
-    this.add.text(W / 2, 96, title, f("56px", { color: "#ff8a5e", stroke: "#0e1626", strokeThickness: 8 })).setOrigin(0.5);
-    this.add.text(W / 2, 150, hint, f("20px", { color: "#cfe4ff", fontStyle: "normal" })).setOrigin(0.5);
+    const titleTx = this.add.text(W / 2, 88, title, f("58px", { color: "#ff8a5e", stroke: "#0b1220", strokeThickness: 8 })).setOrigin(0.5);
+    this.add.text(W / 2, 142, hint, f("20px", { color: "#cfe4ff", fontStyle: "normal" })).setOrigin(0.5);
 
     // Cristian celebrating (it's still a great run!).
-    const c = this.add.image(W / 2 - 300, H / 2 + 60, "cristian-celebrate");
-    c.setScale(300 / c.height);
-    this.tweens.add({ targets: c, angle: 3, duration: 800, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    const c = this.add.image(W / 2 - 340, H / 2 + 70, "cristian-celebrate");
+    c.setScale(320 / c.height);
+    this.tweens.add({ targets: c, y: c.y - 16, angle: 3, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
 
-    this.add.text(W / 2 + 60, 250, "DISTANCE", f("20px", { color: "#cfe4ff" })).setOrigin(0.5);
-    this.add.text(W / 2 + 60, 310, `${this._meters} m`, f("76px", { color: "#ffe066" })).setOrigin(0.5);
-    this.add.text(W / 2 + 60, 380, `🐾 ${this._animals} animals rescued`, f("26px")).setOrigin(0.5);
+    // Distancia (métrica principal, dentro del panel).
+    this.add.text(PX, 208, "DISTANCE", f("20px", { color: "#9fb8d8", fontStyle: "normal" })).setOrigin(0.5);
+    const distTx = this.add.text(PX, 268, `${this._meters} m`, f("82px", { color: "#ffe066" })).setOrigin(0.5);
+    // Fila de stats: animales + insignia.
+    this.add.text(PX, 344, `🐾 ${this._animals} rescued`, f("24px")).setOrigin(0.5);
 
-    // Progreso de por vida: cada run —buena o mala— acerca a la siguiente insignia.
     if (hitMilestone) {
-      const mi = this.add.text(W / 2 + 60, 418, `🎖 MILESTONE! ${total} animals saved!`, f("22px", { color: "#ffe066" })).setOrigin(0.5);
+      const mi = this.add.text(PX, 388, `🎖 MILESTONE! ${total} saved!`, f("22px", { color: "#ffe066" })).setOrigin(0.5);
       this.tweens.add({ targets: mi, scale: 1.08, duration: 420, yoyo: true, repeat: -1 });
+      this._confetti();
     } else if (next) {
-      this.add.text(W / 2 + 60, 418, `🎖 ${total}/${next} to next badge`, f("18px", { color: "#cfe4ff", fontStyle: "normal" })).setOrigin(0.5);
+      this.add.text(PX, 388, `🎖 ${total}/${next} to next badge`, f("18px", { color: "#9fb8d8", fontStyle: "normal" })).setOrigin(0.5);
     } else {
-      this.add.text(W / 2 + 60, 418, `🎖 ${total} animals saved — all badges earned!`, f("18px", { color: "#ffe066", fontStyle: "normal" })).setOrigin(0.5);
+      this.add.text(PX, 388, `🎖 ${total} saved — all badges!`, f("18px", { color: "#ffe066", fontStyle: "normal" })).setOrigin(0.5);
     }
 
     if (isRecord) {
-      const rec = this.add.text(W / 2 + 60, 458, "🏆 NEW RECORD!", f("26px", { color: "#7cd94e" })).setOrigin(0.5);
-      this.tweens.add({ targets: rec, scale: 1.1, duration: 480, yoyo: true, repeat: -1 });
+      const rec = this.add.text(PX, 432, "🏆 NEW RECORD!", f("26px", { color: "#7cd94e" })).setOrigin(0.5);
+      this.tweens.add({ targets: rec, scale: 1.12, duration: 480, yoyo: true, repeat: -1 });
+      this._confetti();
     } else {
-      this.add.text(W / 2 + 60, 458, `🏆 Best: ${Save.best()} m`, f("20px", { color: "#cfe4ff" })).setOrigin(0.5);
+      this.add.text(PX, 432, `🏆 Best: ${Save.best()} m`, f("20px", { color: "#9fb8d8" })).setOrigin(0.5);
     }
 
-    const again = this.add.text(W / 2 + 60, 512, "▶  RETRY", f("30px", {
-      backgroundColor: "#e8622c",
-    })).setOrigin(0.5).setPadding(40, 14, 40, 14).setInteractive({ useHandCursor: true });
+    // Botones.
+    const again = this.add.text(PX, 502, "▶  RETRY", f("30px", { backgroundColor: "#e8622c" }))
+      .setOrigin(0.5).setPadding(44, 15, 44, 15).setInteractive({ useHandCursor: true });
     this.tweens.add({ targets: again, scale: 1.05, duration: 560, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     again.on("pointerdown", () => { this.snd.ui(); this.scene.start("Game"); });
 
-    const menu = this.add.text(W / 2 + 60, 584, "MENU", f("20px", { backgroundColor: "#23324a" }))
-      .setOrigin(0.5).setPadding(24, 10, 24, 10).setInteractive({ useHandCursor: true });
+    const menu = this.add.text(PX - 70, 572, "MENU", f("19px", { backgroundColor: "#24344e" }))
+      .setOrigin(0.5).setPadding(22, 10, 22, 10).setInteractive({ useHandCursor: true });
     menu.on("pointerdown", () => { this.snd.ui(); this.scene.start("Menu"); });
 
-    const share = this.add.text(W / 2 + 60, 648, "🔗 SHARE", f("16px", { color: "#cfe4ff" }))
-      .setOrigin(0.5).setPadding(14, 8, 14, 8).setInteractive({ useHandCursor: true });
+    const share = this.add.text(PX + 70, 572, "🔗 SHARE", f("19px", { backgroundColor: "#1aa84f" }))
+      .setOrigin(0.5).setPadding(22, 10, 22, 10).setInteractive({ useHandCursor: true });
     share.on("pointerdown", () => this._share());
+
+    // Botón "volver a la web" — solo en la web propia (no en iframe/CrazyGames).
+    if (window.self === window.top) {
+      const home = this.add.text(24, 24, "🏠", f("24px", { backgroundColor: "#23324acc" }))
+        .setOrigin(0, 0).setPadding(14, 12, 14, 12).setInteractive({ useHandCursor: true });
+      home.on("pointerdown", () => { window.location.href = "/"; });
+    }
+
+    // Entrada animada: título y distancia aparecen con un pop.
+    [titleTx, distTx].forEach((o, i) => {
+      o.setAlpha(0).setScale(0.6);
+      this.tweens.add({ targets: o, scale: 1, alpha: 1, duration: 320, delay: 80 * i, ease: "Back.out" });
+    });
 
     // Grace period + no auto-repeat: dying with SPACE held must not skip this screen.
     const retry = (e) => {
@@ -87,6 +114,22 @@ export class GameOverScene extends Phaser.Scene {
     this._bornAt = this.time.now;
     this.input.keyboard.on("keydown-SPACE", retry);
     this.input.keyboard.on("keydown-ENTER", retry);
+  }
+
+  _confetti() {
+    if (this._confettiDone) return;   // una sola lluvia aunque haya récord + hito
+    this._confettiDone = true;
+    const cols = [0xffe066, 0xff8a5e, 0x7cd94e, 0x8fd6ff, 0xff8fb0];
+    for (let i = 0; i < 60; i++) {
+      const x = Phaser.Math.Between(W / 2, W);
+      const p = this.add.rectangle(x, -20, Phaser.Math.Between(6, 12), Phaser.Math.Between(6, 12),
+        cols[i % cols.length]).setAngle(Phaser.Math.Between(0, 360));
+      this.tweens.add({
+        targets: p, y: H + 30, angle: p.angle + Phaser.Math.Between(180, 540),
+        x: x + Phaser.Math.Between(-60, 60), duration: Phaser.Math.Between(1400, 2600),
+        delay: Phaser.Math.Between(0, 700), ease: "Quad.in", onComplete: () => p.destroy(),
+      });
+    }
   }
 
   async _share() {
