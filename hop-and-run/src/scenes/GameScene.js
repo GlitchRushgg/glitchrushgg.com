@@ -84,8 +84,8 @@ export class GameScene extends Phaser.Scene {
   _buildBackground() {
     const pal = SECTORS[0];
     // Two side-by-side skyline images scrolling left (the art includes the sky).
-    this.bgA = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0);
-    this.bgB = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0);
+    this.bgA = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0).setTint(pal.tint);
+    this.bgB = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0).setTint(pal.tint);
     const sc = Math.max(W / this.bgA.width, H / this.bgA.height);
     [this.bgA, this.bgB].forEach((b) => b.setScale(sc));
     this.bgB.setFlipX(true); // espejo: los bordes casan y no hay costura
@@ -103,8 +103,8 @@ export class GameScene extends Phaser.Scene {
   _swapBackground(pal) {
     // Crossfade to the new sector's skyline.
     const oldA = this.bgA, oldB = this.bgB;
-    this.bgA = this.add.image(oldA.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0);
-    this.bgB = this.add.image(oldB.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0);
+    this.bgA = this.add.image(oldA.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
+    this.bgB = this.add.image(oldB.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
     const sc = Math.max(W / this.bgA.width, H / this.bgA.height);
     [this.bgA, this.bgB].forEach((b) => b.setScale(sc));
     this.bgB.setFlipX(true);
@@ -290,6 +290,7 @@ export class GameScene extends Phaser.Scene {
     const src = this.textures.get(this._roofTexture()).getSourceImage();
     const s = PLAT_H / src.height;   // tileScale de referencia constante (consistencia visual)
     t.setTileScale(s, s);
+    t.setTint(SECTORS[this.sectorIx].tint);   // recolorea el tejado por sector
     t.setDepth(4);
     this.platforms.add(t);
     t.body.setAllowGravity(false);
@@ -414,7 +415,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   _startSolo() {
-    this.soloT = 6.5;
+    this.soloT = 9;   // más largo (feedback de la fundadora): el poder dura más
     this.snd.soloStart();
     this.snd.setSolo(true);
     this.aura.setAlpha(0.85);
