@@ -58,6 +58,8 @@ export class GameScene extends Phaser.Scene {
     this._spawnT = 0.9;
     this._eid = 0;
     this.upTaken = {};          // id → veces cogida
+    this.boss = null;
+    this._nextBossAt = 70;      // primer jefe a los ~70s, luego cada 75s
 
     this.bullets = [];
     this.enemies = [];
@@ -142,6 +144,11 @@ export class GameScene extends Phaser.Scene {
       this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
     });
     this.pauseBtn = mkBtn(W - 24, "⏸", () => this._togglePause());
+
+    // Barra de vida del JEFE (oculta hasta que aparece uno).
+    this.bossLabel = this.add.text(W / 2, 92, "", f("16px", { color: "#ff5e8a" })).setOrigin(0.5).setDepth(21).setVisible(false);
+    this.bossBarBg = this.add.rectangle(W / 2, 116, 440, 16, 0x000000, 0.5).setDepth(20).setStrokeStyle(2, PAL.hurt, 0.8).setVisible(false);
+    this.bossBar = this.add.rectangle(W / 2 - 218, 116, 436, 10, PAL.hurt, 1).setOrigin(0, 0.5).setDepth(21).setVisible(false);
   }
 
   _refreshHearts() {
@@ -161,12 +168,42 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildInput() {
+    this.input.addPointer(2);
     this.keys = this.input.keyboard.addKeys("W,A,S,D,UP,DOWN,LEFT,RIGHT");
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
+
+    // Joystick virtual FIJO en la esquina inferior izquierda (feedback de
+    // Cristian: "un joystick que se quede en esa zona"). Sustituye al steering
+    // absoluto (mover hacia el dedo), que se sentía raro.
+    this._joyEnabled = this.sys.game.device.input.touch;
+    const JX = 160, JY = H - 150, JR = 78;
+    this._joy = { x: JX, y: JY, r: JR, id: null, dx: 0, dy: 0, mag: 0 };
+    this.joyBase = this.add.circle(JX, JY, JR, PAL.ui, 0.06).setStrokeStyle(3, PAL.ui, 0.3).setDepth(24).setVisible(this._joyEnabled);
+    this.joyKnob = this.add.circle(JX, JY, 32, PAL.ui, 0.28).setStrokeStyle(2, PAL.ui, 0.55).setDepth(25).setVisible(this._joyEnabled);
+
     this.input.on("pointerdown", (p) => {
-      if (this.paused && !this._hudHit(p)) this._togglePause();
+      if (this.paused) { if (!this._hudHit(p)) this._togglePause(); return; }
+      if (this._joyEnabled && this._joy.id === null && !this._hudHit(p) && p.x < W * 0.52) {
+        this._joy.id = p.id; this._joyMove(p);
+      }
     });
+    this.input.on("pointermove", (p) => { if (this._joy.id === p.id) this._joyMove(p); });
+    const jup = (p) => {
+      if (this._joy.id !== p.id) return;
+      this._joy.id = null; this._joy.dx = this._joy.dy = this._joy.mag = 0;
+      this.joyKnob.setPosition(this._joy.x, this._joy.y);
+    };
+    this.input.on("pointerup", jup);
+    this.input.on("pointerupoutside", jup);
+  }
+
+  _joyMove(p) {
+    const dx = p.x - this._joy.x, dy = p.y - this._joy.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const cl = Math.min(d, this._joy.r);
+    this._joy.dx = dx / d; this._joy.dy = dy / d; this._joy.mag = cl / this._joy.r;
+    this.joyKnob.setPosition(this._joy.x + this._joy.dx * cl, this._joy.y + this._joy.dy * cl);
   }
 
   _buildTutorial() {
@@ -249,28 +286,26 @@ export class GameScene extends Phaser.Scene {
     this.hudLevel.setText(`${t("level")} ${this.level}`);
     this.hudCoins.setText(`${this.runCoins}`);
     this.xpBar.width = Math.min(W, (this.xp / this.xpNeed) * W);
+    if (this.boss) this.bossBar.width = 436 * Math.max(0, this.boss.hp / this.boss.maxHp);
   }
 
   _movePlayer(dt) {
-    let dx = 0, dy = 0;
+    let dx = 0, dy = 0, mag = 1;
     const k = this.keys;
     if (k.A.isDown || k.LEFT.isDown) dx -= 1;
     if (k.D.isDown || k.RIGHT.isDown) dx += 1;
     if (k.W.isDown || k.UP.isDown) dy -= 1;
     if (k.S.isDown || k.DOWN.isDown) dy += 1;
 
-    const p = this.input.activePointer;
-    if (dx === 0 && dy === 0 && p.isDown && !this._hudHit(p)) {
-      const wx = p.worldX, wy = p.worldY;
-      const ddx = wx - this.px, ddy = wy - this.py;
-      const d = Math.hypot(ddx, ddy);
-      if (d > 14) { dx = ddx / d; dy = ddy / d; }
+    // Joystick virtual (móvil): dirección y magnitud relativas a la base fija.
+    if (dx === 0 && dy === 0 && this._joy.id !== null && this._joy.mag > 0.08) {
+      dx = this._joy.dx; dy = this._joy.dy; mag = this._joy.mag;
     }
 
     if (dx || dy) {
       const n = Math.hypot(dx, dy);
-      this.px += (dx / n) * this.stats.moveSpeed * dt;
-      this.py += (dy / n) * this.stats.moveSpeed * dt;
+      this.px += (dx / n) * this.stats.moveSpeed * mag * dt;
+      this.py += (dy / n) * this.stats.moveSpeed * mag * dt;
       this.px = Phaser.Math.Clamp(this.px, WALL + PLAYER_R + 4, W - WALL - PLAYER_R - 4);
       this.py = Phaser.Math.Clamp(this.py, WALL + PLAYER_R + 4, H - WALL - PLAYER_R - 4);
     }
@@ -409,11 +444,17 @@ export class GameScene extends Phaser.Scene {
   // --------------------------------------------------------------- enemigos
 
   _spawnEnemies(dt) {
+    // Jefe periódico (feedback de Cristian: "tras el nivel 30 no hay nada que
+    // hacer; añade jefes de vez en cuando"). Solo uno vivo a la vez.
+    if (!this.boss && this.elapsed >= this._nextBossAt) {
+      this._nextBossAt += 75;
+      this._spawnBoss();
+    }
     this._spawnT -= dt;
     if (this._spawnT > 0) return;
-    // Tope de enemigos vivos: sin él, en runs largas el spawn (12/s) supera
-    // cualquier DPS y crecen sin límite (medidos 1374 en soak) — riesgo móvil.
-    if (this.enemies.length > 280) { this._spawnT = 0.5; return; }
+    // Tope de enemigos vivos: sin él, en runs largas el spawn supera cualquier
+    // DPS y crecen sin límite (riesgo móvil). 340 con los jefes ya da agobio.
+    if (this.enemies.length > 340) { this._spawnT = 0.5; return; }
     // Arranque caliente (1.25s) → suelo 0.5s; tandas cada 90s para que el
     // doblete "tanda×2 + tanks" no caiga junto (muro de t=75-90 del informe).
     const tSec = this.elapsed;
@@ -463,6 +504,40 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _spawnBoss() {
+    const scale = 1 + this.elapsed / 120;
+    const side = Phaser.Math.Between(0, 3), m = WALL + 60;
+    let x, y;
+    if (side === 0) { x = W / 2; y = m; } else if (side === 1) { x = W / 2; y = H - m; }
+    else if (side === 2) { x = m; y = H / 2; } else { x = W - m; y = H / 2; }
+
+    const spr = this.add.image(x, y, "en-tank").setDepth(6).setTint(0xff3aa0).setScale(2.4);
+    const hp = 800 * scale;
+    const e = {
+      id: this._eid++, kind: "boss", spr, x, y, r: 50,
+      hp, maxHp: hp, speed: 44, xp: 40, elite: false, boss: true,
+    };
+    this.enemies.push(e);
+    this.boss = e;
+    spr.setAlpha(0);
+    this.tweens.add({ targets: spr, alpha: 1, duration: 400 });
+    this.tweens.add({ targets: spr, angle: 360, duration: 9000, repeat: -1 }); // gira, imponente
+    this.snd.elite();
+    this._bossBanner();
+    this.bossLabel.setVisible(true).setText("⚠  BOSS  ⚠");
+    this.bossBarBg.setVisible(true);
+    this.bossBar.setVisible(true).width = 436;
+  }
+
+  _bossBanner() {
+    const b = this.add.text(W / 2, H / 2 - 130, "⚠  BOSS  ⚠", {
+      fontFamily: "'Consolas', monospace", fontSize: "58px", color: "#ff3aa0",
+      fontStyle: "bold", stroke: "#000000", strokeThickness: 7,
+    }).setOrigin(0.5).setDepth(28).setAlpha(0).setScale(0.7);
+    this.tweens.add({ targets: b, alpha: 1, scale: 1, duration: 280, ease: "Back.out" });
+    this.tweens.add({ targets: b, alpha: 0, delay: 1300, duration: 400, onComplete: () => b.destroy() });
+  }
+
   _updateEnemies(dt) {
     for (const e of this.enemies) {
       const dx = this.px - e.x, dy = this.py - e.y;
@@ -470,7 +545,7 @@ export class GameScene extends Phaser.Scene {
       e.x += (dx / d) * e.speed * dt;
       e.y += (dy / d) * e.speed * dt;
       e.spr.setPosition(e.x, e.y);
-      e.spr.setRotation(Math.atan2(dy, dx) + Math.PI / 2);
+      if (!e.boss) e.spr.setRotation(Math.atan2(dy, dx) + Math.PI / 2); // el jefe gira con su propio tween
 
       // Contacto con el jugador.
       const rr = e.r + PLAYER_R;
@@ -484,7 +559,7 @@ export class GameScene extends Phaser.Scene {
     e.hp -= dmg;
     this.snd.hitEnemy();
     e.spr.setTintFill(0xffffff);
-    this.time.delayedCall(45, () => e.spr && e.spr.setTint(e.elite ? 0xffd94e : ENEMIES[e.kind].tint));
+    this.time.delayedCall(45, () => e.spr && e.spr.setTint(e.boss ? 0xff3aa0 : e.elite ? 0xffd94e : ENEMIES[e.kind].tint));
     if (e.hp <= 0) this._killEnemy(e, ix, bullet);
   }
 
@@ -503,13 +578,24 @@ export class GameScene extends Phaser.Scene {
         this.time.delayedCall(280, () => this.cameras.main.zoomTo(1, 180, "Linear", true));
       }
     }
-    this._burst(e.x, e.y, e.elite ? 14 : 7, e.elite ? 0xffd94e : ENEMIES[e.kind].tint);
+    const baseTint = e.boss ? 0xff3aa0 : e.elite ? 0xffd94e : ENEMIES[e.kind].tint;
+    this._burst(e.x, e.y, e.boss ? 30 : e.elite ? 14 : 7, baseTint);
 
     // Drops: gema de XP siempre; moneda a veces (élite: 3 seguras).
     this._addDrop(e.x, e.y, "gem", e.xp);
-    const coinChance = 0.08 * (1 + this.luck * 0.5);
-    if (e.elite) for (let c = 0; c < 3; c++) this._addDrop(e.x + Phaser.Math.Between(-18, 18), e.y + Phaser.Math.Between(-18, 18), "coin", 1);
-    else if (Math.random() < coinChance) this._addDrop(e.x, e.y, "coin", 1);
+    if (e.boss) {
+      // Recompensa gorda + retirar al jefe del HUD.
+      for (let c = 0; c < 18; c++) this._addDrop(e.x + Phaser.Math.Between(-40, 40), e.y + Phaser.Math.Between(-40, 40), "coin", 1);
+      for (let c = 0; c < 3; c++) this._addDrop(e.x + Phaser.Math.Between(-30, 30), e.y + Phaser.Math.Between(-30, 30), "gem", 12);
+      this.boss = null;
+      this.bossLabel.setVisible(false); this.bossBarBg.setVisible(false); this.bossBar.setVisible(false);
+      this._floatText(e.x, e.y - 60, "BOSS DOWN!", 0xffd94e);
+      this.cameras.main.shake(300, 0.012);
+    } else {
+      const coinChance = 0.08 * (1 + this.luck * 0.5);
+      if (e.elite) for (let c = 0; c < 3; c++) this._addDrop(e.x + Phaser.Math.Between(-18, 18), e.y + Phaser.Math.Between(-18, 18), "coin", 1);
+      else if (Math.random() < coinChance) this._addDrop(e.x, e.y, "coin", 1);
+    }
 
     // Splitter: se parte en 2 minis.
     if (e.kind === "splitter") {
