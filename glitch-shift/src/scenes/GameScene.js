@@ -225,13 +225,19 @@ export class GameScene extends Phaser.Scene {
       const gh = this.add.image(PLAYER_X + dx, oldY, this.skin.tex).setDepth(9).setTint(c).setAlpha(0.6);
       this.tweens.add({ targets: gh, alpha: 0, scale: 1.4, duration: 240, onComplete: () => gh.destroy() });
     });
-    // Estela vertical entre los dos railes: el cambio de carril se LEE mucho mejor.
-    const streak = this.add.rectangle(PLAYER_X, (oldY + newY) / 2, 14, Math.abs(newY - oldY), RAIL_COLORS[this.rail], 0.55)
-      .setDepth(8);
-    this.tweens.add({ targets: streak, alpha: 0, scaleX: 0.2, duration: 260, onComplete: () => streak.destroy() });
-    // Salto un poco más marcado (120ms) + squash para dar peso al movimiento.
-    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: newY, duration: 120, ease: "Cubic.out" });
-    this.tweens.add({ targets: this.orb, scaleX: 0.6, duration: 80, yoyo: true });
+    // El ORBE llega primero (rápido), y la estela SALE de él hacia el carril
+    // viejo (Cristian: "el personaje llega al otro carril primero y la línea
+    // después"). La estela está anclada en el orbe (newY) y crece hacia atrás.
+    this.tweens.add({ targets: [this.orb, this.orbAura, this.shieldRing], y: newY, duration: 65, ease: "Quad.out" });
+    this.tweens.add({ targets: this.orb, scaleX: 0.6, duration: 70, yoyo: true });
+    const len = Math.abs(newY - oldY);
+    const streak = this.add.rectangle(PLAYER_X, newY, 12, len, RAIL_COLORS[this.rail], 0.6)
+      .setOrigin(0.5, newY < oldY ? 0 : 1)   // el extremo "cabeza" queda en el orbe
+      .setDepth(8).setScale(1, 0);
+    this.tweens.add({
+      targets: streak, scaleY: 1, duration: 110, delay: 35, ease: "Quad.out",
+      onComplete: () => this.tweens.add({ targets: streak, alpha: 0, scaleY: 0.1, duration: 190, onComplete: () => streak.destroy() }),
+    });
 
     if (this._tutorial && this._swaps >= 3) {
       this._tutorial = false;
@@ -533,7 +539,12 @@ export class GameScene extends Phaser.Scene {
     this.orbAura.setScale(1.5 + Math.sin(timeNow / 220) * 0.15);
     if (this.shielded) this.shieldRing.setScale(1.4 + Math.sin(timeNow / 150) * 0.12).setAngle(timeNow / 8);
 
-    // Estela: copias que se desvanecen.
+    // El orbe RUEDA continuamente al ritmo del avance (feedback de Cristian:
+    // "que rueden todo el tiempo como Geometry Dash"). Escala con el timescale
+    // para que en overclock ruede lento igual que el mundo.
+    this.orb.rotation += this.speed * dtRaw * this.ts * 0.0035;
+
+    // Estela: copias que se desvanecen (heredan el giro del orbe).
     this._trailT -= dtRaw;
     if (this._trailT <= 0) {
       this._trailT = 0.04;
@@ -541,7 +552,7 @@ export class GameScene extends Phaser.Scene {
       if (color === null) color = RAIL_COLORS[this.rail];
       else if (color === "rainbow") color = Phaser.Display.Color.HSVToRGB((timeNow / 900) % 1, 1, 1).color;
       const g = this.add.image(this.orb.x - 8, this.orb.y, this.skin.tex)
-        .setDepth(8).setTint(color).setAlpha(0.4).setScale(0.85);
+        .setDepth(8).setTint(color).setAlpha(0.4).setScale(0.85).setRotation(this.orb.rotation);
       this.tweens.add({
         targets: g, x: g.x - this.speed * 0.12, alpha: 0, scale: 0.3,
         duration: 260, onComplete: () => g.destroy(),
