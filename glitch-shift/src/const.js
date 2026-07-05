@@ -3,11 +3,11 @@
 export const W = 1280;
 export const H = 720;
 
-// Los dos carriles/realidades: 0 = arriba (cian), 1 = abajo (magenta).
-export const RAIL_Y = [240, 480];
+// Tres carriles/realidades: 0 = arriba (cian), 1 = medio (ámbar), 2 = abajo (magenta).
+export const RAIL_Y = [200, 380, 560];
 export const PLAYER_X = 300;
 
-export const RAIL_COLORS = [0x27e7ff, 0xff3ea5];
+export const RAIL_COLORS = [0x27e7ff, 0xffd94e, 0xff3ea5];
 
 // Paleta por sector (fondo degradado + rejilla + acento).
 // Umbrales cercanos a propósito: el jugador medio (runs de 30-60s) debe ver los

@@ -87,6 +87,13 @@ export class MenuScene extends Phaser.Scene {
       this._muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
       this.snd.ui();
     });
+
+    // Volver a glitchrushgg.com — solo en la web propia (no en iframe/CrazyGames).
+    if (window.self === window.top) {
+      const home = this.add.text(24, 20, "🏠", f("18px", { backgroundColor: "#1a2a4a" }))
+        .setOrigin(0, 0).setPadding(12, 8, 12, 8).setInteractive({ useHandCursor: true });
+      home.on("pointerdown", () => { window.location.href = "/"; });
+    }
   }
 
   // Orbe de demo que alterna entre dos raíles cortos, con la skin equipada.

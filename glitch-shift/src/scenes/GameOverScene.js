@@ -32,47 +32,71 @@ export class GameOverScene extends Phaser.Scene {
       fontSize: size, color: "#ffffff", fontStyle: "bold", ...extra,
     });
 
-    // Título glitcheado.
-    const ttl = this.add.text(W / 2, 120, t("gameOver"), f("64px", { color: "#ff4e6a" })).setOrigin(0.5);
+    // Panel-tarjeta central.
+    const PW = 560, PH = 470, PY = 380;
+    const panel = this.add.graphics();
+    panel.fillStyle(0x04101a, 0.72); panel.fillRoundedRect(W / 2 - PW / 2, PY - PH / 2, PW, PH, 26);
+    panel.lineStyle(3, pal.accent, 0.9); panel.strokeRoundedRect(W / 2 - PW / 2, PY - PH / 2, PW, PH, 26);
+
+    // Título glitcheado con fantasmas cromáticos.
+    const mkT = (dx, col, a, d) => this.add.text(W / 2 + dx, 176, t("gameOver"), f("58px", { color: col })).setOrigin(0.5).setAlpha(a).setDepth(d);
+    const gc = mkT(-4, "#27e7ff", 0.7, 4), gm = mkT(4, "#ff3ea5", 0.7, 4);
+    const ttl = mkT(0, "#ff4e6a", 1, 5);
     this.time.addEvent({
-      delay: 120, loop: true, callback: () => {
-        ttl.x = W / 2 + Phaser.Math.Between(-3, 3);
-        ttl.setAlpha(Phaser.Math.FloatBetween(0.85, 1));
+      delay: 110, loop: true, callback: () => {
+        const j = () => Phaser.Math.Between(-4, 4);
+        gc.setPosition(W / 2 - 4 + j(), 176 + j() * 0.4);
+        gm.setPosition(W / 2 + 4 + j(), 176 + j() * 0.4);
+        ttl.setAlpha(Phaser.Math.FloatBetween(0.9, 1));
       },
     });
 
-    // Distancia (métrica principal).
-    this.add.text(W / 2, 240, `${this._meters} ${t("meters")}`, f("96px", { color: "#ffffff" })).setOrigin(0.5);
+    // Distancia (métrica principal, dentro del panel).
+    const distTx = this.add.text(W / 2, 268, `${this._meters} ${t("meters")}`, f("88px", { color: "#ffffff" })).setOrigin(0.5);
 
-    // Bits ganados + total.
-    this.add.image(W / 2 - 60, 330, "bit").setTint(0xffd94e).setScale(1.3);
-    this.add.text(W / 2 - 40, 330, t("earned", { n: this._bits }), f("26px", { color: "#ffd94e" })).setOrigin(0, 0.5);
+    // Bits ganados.
+    this.add.image(W / 2 - 66, 356, "bit").setTint(0xffd94e).setScale(1.3);
+    this.add.text(W / 2 - 46, 356, t("earned", { n: this._bits }), f("26px", { color: "#ffd94e" })).setOrigin(0, 0.5);
 
     if (isRecord) {
-      const rec = this.add.text(W / 2, 388, "🏆 " + t("newRecord"), f("30px", { color: "#7cffb2" })).setOrigin(0.5);
+      const rec = this.add.text(W / 2, 408, "🏆 " + t("newRecord"), f("30px", { color: "#7cffb2" })).setOrigin(0.5);
       this.tweens.add({ targets: rec, scale: 1.12, duration: 450, yoyo: true, repeat: -1 });
+      this._confetti(pal);
     } else {
-      this.add.text(W / 2, 388, `🏆 ${t("best")}: ${Save.best()} ${t("meters")}`, f("22px", { color: "#9fb4ff" })).setOrigin(0.5);
+      this.add.text(W / 2, 408, `🏆 ${t("best")}: ${Save.best()} ${t("meters")}`, f("22px", { color: "#9fb4ff" })).setOrigin(0.5);
+    }
+
+    // Entrada animada del título y la distancia.
+    [ttl, gc, gm, distTx].forEach((o, i) => {
+      o.setAlpha(o.alpha).setScale(0.7);
+      this.tweens.add({ targets: o, scale: 1, duration: 300, delay: 60 * (i > 2 ? 1 : 0), ease: "Back.out" });
+    });
+
+    // Volver a la web propia (no en iframe/CrazyGames).
+    if (window.self === window.top) {
+      const home = this.add.text(24, 24, "🏠", f("24px", { backgroundColor: "#1a2a4acc" }))
+        .setOrigin(0, 0).setPadding(14, 12, 14, 12).setDepth(20).setInteractive({ useHandCursor: true });
+      home.on("pointerdown", () => { window.location.href = "/"; });
     }
 
     // Botones.
-    const again = this.add.text(W / 2, 480, "▶  " + t("playAgain"), f("32px", {
+    const again = this.add.text(W / 2, 478, "▶  " + t("playAgain"), f("32px", {
       backgroundColor: "#27e7ff", color: "#04101a",
     })).setOrigin(0.5).setPadding(40, 14, 40, 14).setInteractive({ useHandCursor: true });
     this.tweens.add({ targets: again, scale: 1.05, duration: 550, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     again.on("pointerdown", () => { this.snd.ui(); this.scene.start("Game"); });
 
-    const shop = this.add.text(W / 2 - 130, 570, "◆ " + t("shop"), f("20px", {
+    const shop = this.add.text(W / 2 - 130, 560, "◆ " + t("shop"), f("20px", {
       backgroundColor: "#2a1846", color: "#ffd94e",
     })).setOrigin(0.5).setPadding(22, 10, 22, 10).setInteractive({ useHandCursor: true });
     shop.on("pointerdown", () => { this.snd.ui(); this.scene.start("Shop"); });
 
-    const menu = this.add.text(W / 2 + 130, 570, t("menu"), f("20px", {
+    const menu = this.add.text(W / 2 + 130, 560, t("menu"), f("20px", {
       backgroundColor: "#1a2a4a",
     })).setOrigin(0.5).setPadding(22, 10, 22, 10).setInteractive({ useHandCursor: true });
     menu.on("pointerdown", () => { this.snd.ui(); this.scene.start("Menu"); });
 
-    const share = this.add.text(W / 2, 646, "🔗 " + t("share"), f("16px", { color: "#9fb4ff" }))
+    const share = this.add.text(W / 2, 636, "🔗 " + t("share"), f("16px", { color: "#9fb4ff" }))
       .setOrigin(0.5).setPadding(14, 8, 14, 8).setInteractive({ useHandCursor: true });
     share.on("pointerdown", () => this._share());
 
@@ -85,6 +109,20 @@ export class GameOverScene extends Phaser.Scene {
     this._bornAt = this.time.now;
     this.input.keyboard.on("keydown-SPACE", retry);
     this.input.keyboard.on("keydown-ENTER", retry);
+  }
+
+  _confetti(pal) {
+    const cols = [0x27e7ff, 0xffd94e, 0xff3ea5, 0x7cffb2, pal.accent];
+    for (let i = 0; i < 55; i++) {
+      const x = Phaser.Math.Between(0, W);
+      const p = this.add.rectangle(x, -20, Phaser.Math.Between(6, 12), Phaser.Math.Between(6, 12),
+        cols[i % cols.length]).setAngle(Phaser.Math.Between(0, 360));
+      this.tweens.add({
+        targets: p, y: H + 30, angle: p.angle + Phaser.Math.Between(180, 540),
+        x: x + Phaser.Math.Between(-60, 60), duration: Phaser.Math.Between(1400, 2600),
+        delay: Phaser.Math.Between(0, 700), ease: "Quad.in", onComplete: () => p.destroy(),
+      });
+    }
   }
 
   async _share() {
