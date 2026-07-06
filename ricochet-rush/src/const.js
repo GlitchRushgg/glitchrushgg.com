@@ -3,6 +3,11 @@
 export const W = 1280;
 export const H = 720;
 
+// Mundo (arena) MÁS GRANDE que la pantalla: la cámara sigue al jugador
+// (feedback de Cristian: "mapa más grande"). La vista sigue siendo 1280×720.
+export const WW = 2240;
+export const WH = 1400;
+
 // Paleta: ámbar/acid sobre oscuro cálido (hermana neón de GLITCH SHIFT, tono propio).
 export const PAL = {
   bgTop: 0x0d0a06,
