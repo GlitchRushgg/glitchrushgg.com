@@ -3,7 +3,7 @@
 // paredes. Enjambre creciente, gemas de XP → cartas de mejora, monedas
 // persistentes. Sin motor de físicas: todo manual (robusto a cualquier Hz).
 
-import { W, H, PAL, ENEMIES } from "../const.js";
+import { W, H, WW, WH, PAL, ENEMIES } from "../const.js";
 import { t } from "../i18n.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
@@ -77,22 +77,25 @@ export class GameScene extends Phaser.Scene {
   // ------------------------------------------------------------ construcción
 
   _buildArena() {
+    // Cámara sigue al jugador dentro del mundo grande (WW×WH).
+    this.cameras.main.setBounds(0, 0, WW, WH);
     const g = this.add.graphics().setDepth(0);
     g.fillGradientStyle(PAL.bgTop, PAL.bgTop, PAL.bgBottom, PAL.bgBottom, 1);
-    g.fillRect(0, 0, W, H);
-    this.add.tileSprite(W / 2, H / 2, W, H, "grid").setTint(PAL.grid).setAlpha(0.22).setDepth(1);
-    // Marco neón de la arena (las balas rebotan aquí).
+    g.fillRect(0, 0, WW, WH);
+    this.add.tileSprite(WW / 2, WH / 2, WW, WH, "grid").setTint(PAL.grid).setAlpha(0.22).setDepth(1);
+    // Marco neón del mundo (las balas rebotan aquí).
     const frame = this.add.graphics().setDepth(2);
     frame.lineStyle(4, PAL.player, 0.55);
-    frame.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+    frame.strokeRect(WALL, WALL, WW - WALL * 2, WH - WALL * 2);
     frame.lineStyle(10, PAL.player, 0.1);
-    frame.strokeRect(WALL, WALL, W - WALL * 2, H - WALL * 2);
+    frame.strokeRect(WALL, WALL, WW - WALL * 2, WH - WALL * 2);
 
     // Prismas rebotadores: mobiliario fijo que rebota BALAS (los enemigos
     // pasan por debajo). Hacen visible el twist desde el segundo 1.
     this.prisms = [
-      { x: W * 0.3, y: H / 2, r: 44 },
-      { x: W * 0.7, y: H / 2, r: 44 },
+      { x: WW * 0.32, y: WH * 0.36, r: 46 },
+      { x: WW * 0.68, y: WH * 0.64, r: 46 },
+      { x: WW * 0.5, y: WH * 0.5, r: 46 },
     ];
     this.prisms.forEach((p) => {
       this.add.image(p.x, p.y, "glow").setDepth(2).setScale(2.2).setAlpha(0.25).setTint(PAL.player);
@@ -102,11 +105,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   _buildPlayer() {
-    this.px = W / 2;
-    this.py = H / 2;
+    this.px = WW / 2;
+    this.py = WH / 2;
     this.orbAura = this.add.image(this.px, this.py, "glow").setDepth(9).setScale(1.7)
       .setAlpha(0.5).setTint(PAL.player);
     this.orb = this.add.image(this.px, this.py, "player").setDepth(10).setTint(PAL.player);
+    this.cameras.main.startFollow(this.orb, true, 0.14, 0.14);   // la cámara sigue al jugador
   }
 
   _buildHUD() {
@@ -114,28 +118,29 @@ export class GameScene extends Phaser.Scene {
       fontFamily: "'Consolas', 'Courier New', monospace",
       fontSize: size, color: "#ffe6b0", fontStyle: "bold", ...extra,
     });
+    // Todo el HUD es FIJO en pantalla (scrollFactor 0), porque la cámara se mueve.
+    const S0 = (o) => o.setScrollFactor(0);
     // Cronómetro (la puntuación) arriba al centro.
-    this.hudTime = this.add.text(W / 2, 34, "0:00", f("36px", { color: "#ffffff" }))
-      .setOrigin(0.5).setDepth(20);
-    this.hudKills = this.add.text(W / 2, 66, "", f("15px")).setOrigin(0.5).setDepth(20);
+    this.hudTime = S0(this.add.text(W / 2, 34, "0:00", f("36px", { color: "#ffffff" }))
+      .setOrigin(0.5).setDepth(20));
+    this.hudKills = S0(this.add.text(W / 2, 66, "", f("15px")).setOrigin(0.5).setDepth(20));
 
     // Barra de XP (borde superior) + nivel.
-    this.xpBar = this.add.rectangle(0, 3, 0, 6, PAL.xp, 1).setOrigin(0, 0.5).setDepth(21);
-    this.hudLevel = this.add.text(24, 18, "", f("18px", { color: "#7cff5e" })).setDepth(20);
+    this.xpBar = S0(this.add.rectangle(0, 3, 0, 6, PAL.xp, 1).setOrigin(0, 0.5).setDepth(21));
+    this.hudLevel = S0(this.add.text(24, 18, "", f("18px", { color: "#7cff5e" })).setDepth(20));
 
     // Corazones (debajo del nivel).
     this.hearts = [];
     this._refreshHearts();
 
     // Monedas.
-    this.add.image(24, 96, "coin").setOrigin(0, 0.5).setTint(PAL.coin).setDepth(20);
-    this.hudCoins = this.add.text(50, 96, "0", f("18px", { color: "#ffd94e" })).setOrigin(0, 0.5).setDepth(20);
+    S0(this.add.image(24, 96, "coin").setOrigin(0, 0.5).setTint(PAL.coin).setDepth(20));
+    this.hudCoins = S0(this.add.text(50, 96, "0", f("18px", { color: "#ffd94e" })).setOrigin(0, 0.5).setDepth(20));
 
-    // Pausa y mute. En un móvil apaisado el canvas se reduce ~×0.6: para que
-    // el botón quede ≥44px CSS reales necesita ~72px lógicos.
+    // Pausa y mute (fijos, tamaño táctil).
     const mkBtn = (x, label, cb) => {
-      const b = this.add.text(x, 12, label, f("34px", { backgroundColor: "#2a1f10cc" }))
-        .setOrigin(1, 0).setPadding(20, 16, 20, 16).setDepth(22).setInteractive({ useHandCursor: true });
+      const b = S0(this.add.text(x, 12, label, f("34px", { backgroundColor: "#2a1f10cc" }))
+        .setOrigin(1, 0).setPadding(20, 16, 20, 16).setDepth(22).setInteractive({ useHandCursor: true }));
       b.on("pointerdown", cb);
       return b;
     };
@@ -145,10 +150,17 @@ export class GameScene extends Phaser.Scene {
     });
     this.pauseBtn = mkBtn(W - 24, "⏸", () => this._togglePause());
 
+    // Botón 🏠 volver a la web (solo si no es iframe/CrazyGames).
+    if (window.self === window.top) {
+      const home = S0(this.add.text(W - 236, 12, "🏠", f("34px", { backgroundColor: "#2a1f10cc" }))
+        .setOrigin(1, 0).setPadding(18, 16, 18, 16).setDepth(22).setInteractive({ useHandCursor: true }));
+      home.on("pointerdown", () => { window.location.href = "/"; });
+    }
+
     // Barra de vida del JEFE (oculta hasta que aparece uno).
-    this.bossLabel = this.add.text(W / 2, 92, "", f("16px", { color: "#ff5e8a" })).setOrigin(0.5).setDepth(21).setVisible(false);
-    this.bossBarBg = this.add.rectangle(W / 2, 116, 440, 16, 0x000000, 0.5).setDepth(20).setStrokeStyle(2, PAL.hurt, 0.8).setVisible(false);
-    this.bossBar = this.add.rectangle(W / 2 - 218, 116, 436, 10, PAL.hurt, 1).setOrigin(0, 0.5).setDepth(21).setVisible(false);
+    this.bossLabel = S0(this.add.text(W / 2, 92, "", f("16px", { color: "#ff5e8a" })).setOrigin(0.5).setDepth(21).setVisible(false));
+    this.bossBarBg = S0(this.add.rectangle(W / 2, 116, 440, 16, 0x000000, 0.5).setDepth(20).setStrokeStyle(2, PAL.hurt, 0.8).setVisible(false));
+    this.bossBar = S0(this.add.rectangle(W / 2 - 218, 116, 436, 10, PAL.hurt, 1).setOrigin(0, 0.5).setDepth(21).setVisible(false));
   }
 
   _refreshHearts() {
@@ -157,7 +169,7 @@ export class GameScene extends Phaser.Scene {
     for (let i = 0; i < this.stats.maxHp; i++) {
       const filled = i < this.stats.hp;
       this.hearts.push(
-        this.add.image(32 + i * 28, 58, "heart").setDepth(20)
+        this.add.image(32 + i * 28, 58, "heart").setDepth(20).setScrollFactor(0)
           .setTint(filled ? PAL.hurt : 0x3a2a1a).setAlpha(filled ? 1 : 0.6)
       );
     }
@@ -173,37 +185,44 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-P", () => this._togglePause());
     this.input.keyboard.on("keydown-ESC", () => this._togglePause());
 
-    // Joystick virtual FIJO en la esquina inferior izquierda (feedback de
-    // Cristian: "un joystick que se quede en esa zona"). Sustituye al steering
-    // absoluto (mover hacia el dedo), que se sentía raro.
+    // Twin-stick en móvil: joystick IZQUIERDO mueve, joystick DERECHO apunta
+    // (feedback de Cristian: joystick fijo + "apuntar donde quiera"). Ambos
+    // fijos en pantalla (scrollFactor 0). En PC: WASD mueve, el RATÓN apunta.
     this._joyEnabled = this.sys.game.device.input.touch;
-    const JX = 160, JY = H - 150, JR = 78;
-    this._joy = { x: JX, y: JY, r: JR, id: null, dx: 0, dy: 0, mag: 0 };
-    this.joyBase = this.add.circle(JX, JY, JR, PAL.ui, 0.06).setStrokeStyle(3, PAL.ui, 0.3).setDepth(24).setVisible(this._joyEnabled);
-    this.joyKnob = this.add.circle(JX, JY, 32, PAL.ui, 0.28).setStrokeStyle(2, PAL.ui, 0.55).setDepth(25).setVisible(this._joyEnabled);
+    const mkJoy = (JX, JY, JR, tint) => {
+      const j = { x: JX, y: JY, r: JR, id: null, dx: 0, dy: 0, mag: 0 };
+      j.base = this.add.circle(JX, JY, JR, tint, 0.06).setStrokeStyle(3, tint, 0.3).setDepth(24).setScrollFactor(0).setVisible(this._joyEnabled);
+      j.knob = this.add.circle(JX, JY, 32, tint, 0.28).setStrokeStyle(2, tint, 0.55).setDepth(25).setScrollFactor(0).setVisible(this._joyEnabled);
+      return j;
+    };
+    this._joy = mkJoy(160, H - 150, 78, PAL.ui);        // movimiento (izq)
+    this._aimJoy = mkJoy(W - 160, H - 150, 78, PAL.player); // apuntado (der)
 
     this.input.on("pointerdown", (p) => {
       if (this.paused) { if (!this._hudHit(p)) this._togglePause(); return; }
-      if (this._joyEnabled && this._joy.id === null && !this._hudHit(p) && p.x < W * 0.52) {
-        this._joy.id = p.id; this._joyMove(p);
-      }
+      if (!this._joyEnabled || this._hudHit(p)) return;
+      if (p.x < W * 0.5 && this._joy.id === null) { this._joy.id = p.id; this._joyMove(this._joy, p); }
+      else if (p.x >= W * 0.5 && this._aimJoy.id === null) { this._aimJoy.id = p.id; this._joyMove(this._aimJoy, p); }
     });
-    this.input.on("pointermove", (p) => { if (this._joy.id === p.id) this._joyMove(p); });
+    this.input.on("pointermove", (p) => {
+      if (this._joy.id === p.id) this._joyMove(this._joy, p);
+      else if (this._aimJoy.id === p.id) this._joyMove(this._aimJoy, p);
+    });
     const jup = (p) => {
-      if (this._joy.id !== p.id) return;
-      this._joy.id = null; this._joy.dx = this._joy.dy = this._joy.mag = 0;
-      this.joyKnob.setPosition(this._joy.x, this._joy.y);
+      for (const j of [this._joy, this._aimJoy]) {
+        if (j.id === p.id) { j.id = null; j.dx = j.dy = j.mag = 0; j.knob.setPosition(j.x, j.y); }
+      }
     };
     this.input.on("pointerup", jup);
     this.input.on("pointerupoutside", jup);
   }
 
-  _joyMove(p) {
-    const dx = p.x - this._joy.x, dy = p.y - this._joy.y;
+  _joyMove(j, p) {
+    const dx = p.x - j.x, dy = p.y - j.y;
     const d = Math.hypot(dx, dy) || 1;
-    const cl = Math.min(d, this._joy.r);
-    this._joy.dx = dx / d; this._joy.dy = dy / d; this._joy.mag = cl / this._joy.r;
-    this.joyKnob.setPosition(this._joy.x + this._joy.dx * cl, this._joy.y + this._joy.dy * cl);
+    const cl = Math.min(d, j.r);
+    j.dx = dx / d; j.dy = dy / d; j.mag = cl / j.r;
+    j.knob.setPosition(j.x + j.dx * cl, j.y + j.dy * cl);
   }
 
   _buildTutorial() {
@@ -214,9 +233,9 @@ export class GameScene extends Phaser.Scene {
     };
     const isTouch = this.sys.game.device.input.touch;
     const t1 = this.add.text(W / 2, H / 2 - 90, t(isTouch ? "howtoMoveTouch" : "howtoMove"), f)
-      .setOrigin(0.5).setDepth(25);
+      .setOrigin(0.5).setDepth(25).setScrollFactor(0);
     const t2 = this.add.text(W / 2, H / 2 + 90, t("howtoShoot"), { ...f, fontSize: "19px" })
-      .setOrigin(0.5).setDepth(25);
+      .setOrigin(0.5).setDepth(25).setScrollFactor(0);
     this.tweens.add({ targets: t1, scale: 1.08, duration: 480, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     this.time.delayedCall(6500, () => {
       [t1, t2].forEach((x) => this.tweens.add({ targets: x, alpha: 0, duration: 600, onComplete: () => x.destroy() }));
@@ -231,18 +250,18 @@ export class GameScene extends Phaser.Scene {
     this.paused = !this.paused;
     if (this.paused) {
       this.snd.stopMusic();
-      this.pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.66).setDepth(30);
+      this.pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.66).setDepth(30).setScrollFactor(0);
       this.pauseTxt = this.add.text(W / 2, H / 2 - 20, "⏸  " + t("paused"), {
         fontFamily: "'Consolas', monospace", fontSize: "48px", color: "#ffffff", fontStyle: "bold",
-      }).setOrigin(0.5).setDepth(31);
+      }).setOrigin(0.5).setDepth(31).setScrollFactor(0);
       this.pauseTxt2 = this.add.text(W / 2, H / 2 + 40, t("resume"), {
         fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "20px", color: "#ffe6b0",
-      }).setOrigin(0.5).setDepth(31);
+      }).setOrigin(0.5).setDepth(31).setScrollFactor(0);
       // Salir al menú desde la pausa (lo valora la QA de CrazyGames).
       this.pauseMenuBtn = this.add.text(W / 2, H / 2 + 120, t("menu"), {
         fontFamily: "'Consolas', monospace", fontSize: "22px", color: "#ffffff",
         fontStyle: "bold", backgroundColor: "#241a0c",
-      }).setOrigin(0.5).setPadding(26, 12, 26, 12).setDepth(31).setInteractive({ useHandCursor: true });
+      }).setOrigin(0.5).setPadding(26, 12, 26, 12).setDepth(31).setScrollFactor(0).setInteractive({ useHandCursor: true });
       this.pauseMenuBtn.on("pointerdown", () => {
         this.dead = true;               // bloquea el resume del tap y el update
         this.snd.stopMusic();
@@ -306,15 +325,28 @@ export class GameScene extends Phaser.Scene {
       const n = Math.hypot(dx, dy);
       this.px += (dx / n) * this.stats.moveSpeed * mag * dt;
       this.py += (dy / n) * this.stats.moveSpeed * mag * dt;
-      this.px = Phaser.Math.Clamp(this.px, WALL + PLAYER_R + 4, W - WALL - PLAYER_R - 4);
-      this.py = Phaser.Math.Clamp(this.py, WALL + PLAYER_R + 4, H - WALL - PLAYER_R - 4);
+      this.px = Phaser.Math.Clamp(this.px, WALL + PLAYER_R + 4, WW - WALL - PLAYER_R - 4);
+      this.py = Phaser.Math.Clamp(this.py, WALL + PLAYER_R + 4, WH - WALL - PLAYER_R - 4);
     }
     this.orb.setPosition(this.px, this.py);
     this.orbAura.setPosition(this.px, this.py);
 
-    // El cañón apunta al objetivo actual.
+    // El cañón apunta según el AIM (ratón/joystick derecho, o el más cercano).
+    const aim = this._getAim();
+    if (aim) this.orb.setRotation(Math.atan2(aim.y, aim.x) + Math.PI / 2);
+  }
+
+  // Dirección de disparo: joystick derecho (móvil) o ratón (PC); si no, auto al
+  // enemigo más cercano. Devuelve un vector {x,y} sin normalizar (o null).
+  _getAim() {
+    if (this._aimJoy.id !== null && this._aimJoy.mag > 0.12) return { x: this._aimJoy.dx, y: this._aimJoy.dy };
+    if (!this._joyEnabled) {
+      const p = this.input.activePointer;
+      const ax = p.worldX - this.px, ay = p.worldY - this.py;
+      if (Math.hypot(ax, ay) > 8) return { x: ax, y: ay };
+    }
     const tgt = this._nearestEnemy();
-    if (tgt) this.orb.setRotation(Math.atan2(tgt.y - this.py, tgt.x - this.px) + Math.PI / 2);
+    return tgt ? { x: tgt.x - this.px, y: tgt.y - this.py } : null;
   }
 
   _nearestEnemy() {
@@ -331,10 +363,10 @@ export class GameScene extends Phaser.Scene {
   _autofire(dt) {
     this._fireT -= dt;
     if (this._fireT > 0) return;
-    const tgt = this._nearestEnemy();
-    if (!tgt) return;
+    const aim = this._getAim();
+    if (!aim) return;
     this._fireT = 1 / this.stats.fireRate;
-    const base = Math.atan2(tgt.y - this.py, tgt.x - this.px);
+    const base = Math.atan2(aim.y, aim.x);
     const n = this.stats.multishot;
     for (let i = 0; i < n; i++) {
       const off = n === 1 ? 0 : (i - (n - 1) / 2) * 0.16;
@@ -352,7 +384,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   _updateBullets(dt) {
-    const L = WALL + 7, R = W - WALL - 7, T = WALL + 7, B = H - WALL - 7;
+    const L = WALL + 7, R = WW - WALL - 7, T = WALL + 7, B = WH - WALL - 7;
     for (let i = this.bullets.length - 1; i >= 0; i--) {
       const b = this.bullets[i];
       b.x += b.vx * dt;
@@ -469,16 +501,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   _spawnEnemy(kind, def, tSec, at) {
-    // Nace pegado a un borde aleatorio, dentro de la arena.
+    // Nace en un anillo alrededor del jugador, FUERA de la vista de la cámara
+    // (media pantalla ≈ 640/360), clampeado al mundo.
     let x, y;
     if (at) { x = at.x; y = at.y; }
     else {
-      const side = Phaser.Math.Between(0, 3);
-      const m = WALL + 30;
-      if (side === 0) { x = Phaser.Math.Between(m, W - m); y = m; }
-      else if (side === 1) { x = Phaser.Math.Between(m, W - m); y = H - m; }
-      else if (side === 2) { x = m; y = Phaser.Math.Between(m, H - m); }
-      else { x = W - m; y = Phaser.Math.Between(m, H - m); }
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 760 + Math.random() * 140;
+      x = Phaser.Math.Clamp(this.px + Math.cos(ang) * rad, WALL + 30, WW - WALL - 30);
+      y = Phaser.Math.Clamp(this.py + Math.sin(ang) * rad, WALL + 30, WH - WALL - 30);
     }
 
     const scale = 1 + tSec / 120;              // el enjambre se endurece con el tiempo
@@ -506,10 +537,9 @@ export class GameScene extends Phaser.Scene {
 
   _spawnBoss() {
     const scale = 1 + this.elapsed / 120;
-    const side = Phaser.Math.Between(0, 3), m = WALL + 60;
-    let x, y;
-    if (side === 0) { x = W / 2; y = m; } else if (side === 1) { x = W / 2; y = H - m; }
-    else if (side === 2) { x = m; y = H / 2; } else { x = W - m; y = H / 2; }
+    const ang = Math.random() * Math.PI * 2;
+    const x = Phaser.Math.Clamp(this.px + Math.cos(ang) * 820, WALL + 60, WW - WALL - 60);
+    const y = Phaser.Math.Clamp(this.py + Math.sin(ang) * 820, WALL + 60, WH - WALL - 60);
 
     const spr = this.add.image(x, y, "en-tank").setDepth(6).setTint(0xff3aa0).setScale(2.4);
     const hp = 800 * scale;
@@ -533,7 +563,7 @@ export class GameScene extends Phaser.Scene {
     const b = this.add.text(W / 2, H / 2 - 130, "⚠  BOSS  ⚠", {
       fontFamily: "'Consolas', monospace", fontSize: "58px", color: "#ff3aa0",
       fontStyle: "bold", stroke: "#000000", strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(28).setAlpha(0).setScale(0.7);
+    }).setOrigin(0.5).setDepth(28).setScrollFactor(0).setAlpha(0).setScale(0.7);
     this.tweens.add({ targets: b, alpha: 1, scale: 1, duration: 280, ease: "Back.out" });
     this.tweens.add({ targets: b, alpha: 0, delay: 1300, duration: 400, onComplete: () => b.destroy() });
   }
@@ -617,8 +647,8 @@ export class GameScene extends Phaser.Scene {
     // Empujón al enemigo que muerde (para que no te encadene).
     const dx = e.x - this.px, dy = e.y - this.py;
     const d = Math.hypot(dx, dy) || 1;
-    e.x = Phaser.Math.Clamp(e.x + (dx / d) * 70, WALL + e.r, W - WALL - e.r);
-    e.y = Phaser.Math.Clamp(e.y + (dy / d) * 70, WALL + e.r, H - WALL - e.r);
+    e.x = Phaser.Math.Clamp(e.x + (dx / d) * 70, WALL + e.r, WW - WALL - e.r);
+    e.y = Phaser.Math.Clamp(e.y + (dy / d) * 70, WALL + e.r, WH - WALL - e.r);
     if (this.stats.hp <= 0) this._die();
   }
 
@@ -731,6 +761,7 @@ export class GameScene extends Phaser.Scene {
       this.input.keyboard.on(keyName, handler);
       keyHandlers.push([keyName, handler]);
     });
+    ui.forEach((o) => o.setScrollFactor(0));   // el modal es UI fija (la cámara se mueve)
   }
 
   // ------------------------------------------------------------------- misc
@@ -768,7 +799,7 @@ export class GameScene extends Phaser.Scene {
     this.orb.setVisible(false);
     this.orbAura.setVisible(false);
     this.cameras.main.shake(340, 0.015);
-    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0xff4e3a, 0).setDepth(29);
+    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0xff4e3a, 0).setDepth(29).setScrollFactor(0);
     this.tweens.add({ targets: veil, alpha: 0.25, duration: 80, yoyo: true, repeat: 2 });
 
     const secs = Math.floor(this.elapsed);
