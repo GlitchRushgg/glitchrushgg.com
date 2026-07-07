@@ -47,9 +47,9 @@ export class GameScene extends Phaser.Scene {
     this._hurtT = 0;
     this._barFlashT = 0;
     this.sectorIx = 0;
-    this._nextSkateAt = 380;   // meters
-    this._nextGuitarAt = 180;  // primera guitarra a ~26s: el clip viral entra en la primera run
-    this._nextSuperAt = 1200;  // SUPER GUITARRA (rara, más fuerte) cada ~1500m
+    this._nextSkateAt = 220;   // monopatín más pronto y más seguido (feedback fundadora)
+    this._nextGuitarAt = 90;   // guitarra MÁS cerca del inicio (~13s)
+    this._nextSuperAt = 900;   // SUPER GUITARRA (rara, más fuerte)
     this.superSolo = false;
     this.sound.mute = this.snd.muted;   // sincroniza el mute de Phaser (audio real) con el del juego
 
@@ -321,10 +321,10 @@ export class GameScene extends Phaser.Scene {
     // ralentización del tropiezo): un hueco creado durante el skate se cruza
     // después a velocidad normal y sería una trampa mortal.
     const base = Math.min(640, 300 + this.dist * 0.01);
-    const dy = Phaser.Math.Between(-90, 80);
-    // Subir recorta el tiempo de vuelo: si la siguiente plataforma queda alta,
-    // el hueco se capa para que el salto SIEMPRE sea posible.
-    const gapMax = dy < -40 ? 100 + base * 0.4 : 120 + base * 0.55;
+    const dy = Phaser.Math.Between(-70, 80);   // subidas menos bruscas = huecos más saltables
+    // Huecos más conservadores (feedback fundadora: "veo unos muy lejos"): con
+    // estos topes el salto SIEMPRE llega con margen, incluso subiendo a tope de vel.
+    const gapMax = dy < -40 ? 100 + base * 0.32 : 120 + base * 0.46;
     const gap = Phaser.Math.Between(100, Math.round(gapMax));
     const left = this.lastRight + gap;
     const top = Phaser.Math.Clamp(this.lastTop + dy, 400, 610);
@@ -371,15 +371,15 @@ export class GameScene extends Phaser.Scene {
 
     // Power-ups on a distance schedule.
     if (meters >= this._nextSkateAt) {
-      this._nextSkateAt += 420;
+      this._nextSkateAt += 280;   // más seguido (antes 420)
       this._addPickup(left + width / 2, top - 130, "item-skateboard", "skate", 64);
     }
     if (meters >= this._nextSuperAt) {
-      this._nextSuperAt += 1500;
+      this._nextSuperAt += 1200;
       this._addPickup(left + width / 2, top - 155, "item-guitar", "super-guitar", 90);
     }
     if (meters >= this._nextGuitarAt) {
-      this._nextGuitarAt += 780;
+      this._nextGuitarAt += 600;   // guitarra más frecuente (antes 780)
       this._addPickup(left + width / 2 - 80, top - 140, "item-guitar", "guitar", 72);
     }
 
@@ -627,13 +627,18 @@ export class GameScene extends Phaser.Scene {
     this._wasAir = !grounded;
     if (this._jumpBuffer > 0) this._jumpBuffer -= dt;
     if (this._jumpBuffer > 0 && this._coyote > 0) {
-      this.player.body.velocity.y = JUMP;
+      // Con la guitarra, Cristian salta MÁS ALTO (feedback fundadora); la super
+      // guitarra, aún más.
+      const jumpMul = this.soloT > 0 ? (this.superSolo ? 1.42 : 1.26) : 1;
+      this.player.body.velocity.y = JUMP * jumpMul;
       this._jumpBuffer = 0;
       this._coyote = 0;
       this.snd.jump();
       this._squash(1.18, 0.86, 130);   // estira al despegar
     }
-    if (!this.holding && this.player.body.velocity.y < -320) this.player.body.velocity.y = -320;
+    // El corte del salto variable también sube durante el solo (para no cortar el salto alto).
+    const cut = this.soloT > 0 ? -440 : -320;
+    if (!this.holding && this.player.body.velocity.y < cut) this.player.body.velocity.y = cut;
 
     // Textures per state.
     if (!grounded && this._hurtT <= 0 && this.soloT <= 0) {
