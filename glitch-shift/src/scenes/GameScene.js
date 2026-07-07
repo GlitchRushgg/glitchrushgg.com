@@ -280,10 +280,12 @@ export class GameScene extends Phaser.Scene {
   _spawnPattern() {
     const s = this.sectorIx;
     // [patrón, peso] — los sectores altos añaden tipos nuevos y suben el picante.
+    // Más obstáculos y variedad (feedback fundadora: "coloca otros obstáculos
+    // extra"): drones desde el inicio, patrón "twin" (extremos), más pesos.
     const table = [
-      ["block", 30], ["double", 16], ["wall", 14], ["bits", 20], ["shield", 3],
-      ["drone", s >= 1 ? 16 : 0], ["laser", s >= 2 ? 14 : 0],
-      ["triple", s >= 2 ? 10 : 0],
+      ["block", 26], ["double", 18], ["twin", s >= 0 ? 12 : 0], ["wall", 13],
+      ["bits", 17], ["shield", 3],
+      ["drone", 15], ["laser", s >= 2 ? 14 : 0], ["triple", s >= 1 ? 12 : 0],
     ];
     const total = table.reduce((a, [, w]) => a + w, 0);
     let r = Math.random() * total, kind = "block";
@@ -318,6 +320,14 @@ export class GameScene extends Phaser.Scene {
           this._addBlock(W + 60 + off * i, rr, 1);
         }
         extra = off * (NR - 1);
+        break;
+      }
+      case "twin": {
+        // Los dos carriles EXTREMOS bloqueados: hay que estar en el del medio.
+        this._addBlock(W + 60, 0, 1);
+        this._addBlock(W + 60, 2, 1);
+        this._railWarn(0); this._railWarn(2);
+        extra = 40;
         break;
       }
       case "wall":
@@ -467,7 +477,11 @@ export class GameScene extends Phaser.Scene {
           spr.setAlpha(Math.sin(this.time.now / 35) > 0 ? 1 : 0.3);
           if (o.blinkT <= 0) {
             o.state = "done";
-            o.rail = 1 - o.rail;
+            // BUG DEL FREEZE (feedback fundadora): con 3 carriles `1 - rail` daba
+            // rail -1 al saltar desde el carril 2 → setTint(RAIL_COLORS[-1]) =
+            // undefined lanzaba y CONGELABA el loop. Ahora salta a otro carril válido.
+            const opts = [0, 1, 2].filter((r) => r !== o.rail);
+            o.rail = opts[Phaser.Math.Between(0, opts.length - 1)];
             spr.setAlpha(1).setTint(RAIL_COLORS[o.rail]);
             this.tweens.add({ targets: spr, y: RAIL_Y[o.rail], duration: 130, ease: "Quad.in" });
           }
