@@ -15,6 +15,9 @@ When working on a specific game, read that game's own `CLAUDE.md` for its archit
 - **[glitch-shift/](glitch-shift/)** — *"GLITCH SHIFT"*. A one-tap neon arcade: shift between two parallel realities (cyan/magenta lanes) to dodge blocks, drones and lasers; hold to overclock time. Phaser 3, 100% procedural art/audio. See [glitch-shift/CLAUDE.md](glitch-shift/CLAUDE.md).
 - **[ricochet-rush/](ricochet-rush/)** — *"RICOCHET RUSH"*. A survivor-arena where every bullet ricochets and charges up with each bounce; level-up cards, permanent perks shop. Phaser 3, 100% procedural art/audio. See [ricochet-rush/CLAUDE.md](ricochet-rush/CLAUDE.md).
 - **[hop-and-run/](hop-and-run/)** — *"Hop & Run"*. A one-button rooftop runner starring Cristian: energy drains and fruit refills it (Adventure Island recipe), rescue animals, skateboard power-up and the GUITAR SOLO super power. Phaser 3, Replicate-generated art. See [hop-and-run/CLAUDE.md](hop-and-run/CLAUDE.md).
+- **[pulse-drift/](pulse-drift/)** — *"PULSE DRIFT"*. A neon one-button wave-dodger with graze scoring: hold to rise, release to fall, skim obstacles without touching to multiply the score ×1→×5. Plain canvas + WebAudio, 100% procedural, CrazyGames SDK wired. See [pulse-drift/CLAUDE.md](pulse-drift/CLAUDE.md).
+- **[moondrop/](moondrop/)** — *"MOONDROP"*. A cosmic container drop-merge physics puzzle: merge celestial bodies up a 10-tier ladder to the Black Hole endgame. Custom circle physics, plain canvas, 100% procedural, CrazyGames SDK wired. See [moondrop/CLAUDE.md](moondrop/CLAUDE.md).
+- **[build-the-ark/](build-the-ark/)** — *"Build the Ark"*. A nautical idle-builder: tap driftwood, hire crew, raise the Ark part by part; offline earnings, daily streak and "Set Sail" prestige (Doves of Faith). Plain canvas + SVG icons, CrazyGames SDK wired. See [build-the-ark/CLAUDE.md](build-the-ark/CLAUDE.md).
 
 ## Other top-level content
 

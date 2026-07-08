@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0a1f30" />
+  <title>Build the Ark</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffb938' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 14.5h17l-2.7 5.5H6.2z'/%3E%3Cpath d='M7.5 14.5V10h9v4.5'/%3E%3Cpath d='M12 10V3.5'/%3E%3Cpath d='M12 3.5c3.2 0 5.3 1.8 5.3 4.5H12z'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3: only loaded on the platform (and localhost for testing).
+       On glitchrushgg.com no third party is contacted (GDPR); js/sdk.js degrades
+       gracefully when window.CrazyGames is absent. The CrazyGames submission zip
+       may load it unconditionally. -->
+  <script>
+    if (/(^|\.)crazygames\.|^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+      document.write('<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <!-- ===== LOADING SCREEN ===== -->
+  <div id="loader">
+    <div class="loader-ark" data-icon="boat" data-icon-size="88"></div>
+    <div class="loader-title">BUILD <span>THE</span> ARK</div>
+    <div class="loader-bar"><div class="loader-fill" id="loaderFill"></div></div>
+    <div class="loader-tip" id="loaderTip">Gathering the first planks…</div>
+  </div>
+
+  <!-- ===== GAME ROOT ===== -->
+  <div id="game" class="hidden">
+
+    <!-- Canvas world + overlays -->
+    <main id="stage">
+      <canvas id="scene"></canvas>
+
+      <!-- Top HUD (overlay) -->
+      <header id="hud">
+        <div class="hud-currency">
+          <div class="wood-count"><span class="ico-gold" data-icon="log" data-icon-size="24"></span><span id="woodCount">0</span></div>
+          <div class="wood-rate" id="woodRate">0 / sec</div>
+        </div>
+        <div class="hud-right">
+          <button class="icon-btn" id="btnDove" title="Doves of Faith"><span class="ico-white" data-icon="dove" data-icon-size="20"></span><b id="doveCount">0</b></button>
+          <button class="icon-btn" id="btnSettings" title="Settings" data-icon="gear" data-icon-size="20"></button>
+        </div>
+      </header>
+
+      <!-- Ark status (overlay, top-center) -->
+      <div class="ark-status">
+        <div class="ark-label" id="arkStageName">The Keel</div>
+        <div class="ark-progress"><div class="ark-progress-fill" id="arkProgressFill"></div></div>
+        <div class="ark-progress-text" id="arkProgressText">0 / 60 to next section</div>
+      </div>
+
+      <div id="frenzyBadge" class="hidden"></div>
+
+      <!-- Ad boosts (overlay, bottom of stage) -->
+      <div class="boosts-row">
+        <button class="boost-btn" id="btnAd2x">
+          <span class="boost-ico" data-icon="film" data-icon-size="22"></span>
+          <span class="boost-txt"><b>2× Wood</b><small>Watch ad · 60s</small></span>
+        </button>
+        <button class="boost-btn" id="btnAdChest">
+          <span class="boost-ico" data-icon="gift" data-icon-size="22"></span>
+          <span class="boost-txt"><b>Free Chest</b><small>Watch ad</small></span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Shop tabs -->
+    <nav id="tabs">
+      <button class="tab active" data-tab="build"><span class="tab-ic" data-icon="axe" data-icon-size="21"></span><span>Build</span></button>
+      <button class="tab" data-tab="crew"><span class="tab-ic" data-icon="anchor" data-icon-size="21"></span><span>Crew</span></button>
+      <button class="tab" data-tab="flood"><span class="tab-ic" data-icon="wave" data-icon-size="21"></span><span>Set Sail</span></button>
+    </nav>
+
+    <section id="panel">
+      <div class="tab-page active" id="page-build">
+        <div class="shop-list" id="buildList"></div>
+      </div>
+      <div class="tab-page" id="page-crew">
+        <div class="shop-list" id="crewList"></div>
+      </div>
+      <div class="tab-page" id="page-flood">
+        <div class="flood-page">
+          <div class="flood-icon" data-icon="wave" data-icon-size="42"></div>
+          <h2>Set Sail!</h2>
+          <p>Your Ark sails away — and you begin a greater one. Earn <b>Doves of Faith</b> that permanently boost <b>all</b> wood forever.</p>
+          <div class="flood-gain">You will gain <b id="floodGain">0</b> <span class="ico-gold" data-icon="dove" data-icon-size="18"></span> <span class="flood-mult" id="floodMult">(+0%)</span></div>
+          <button id="btnFlood" class="flood-btn">Set Sail</button>
+          <div class="flood-note" id="floodNote">Reach more wood to earn your first Dove.</div>
+          <div class="blessing-list" id="blessingList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Floating tap numbers container -->
+    <div id="fx"></div>
+  </div>
+
+  <!-- ===== MODALS ===== -->
+  <div class="modal-overlay hidden" id="offlineModal">
+    <div class="modal">
+      <div class="modal-ico" data-icon="moon" data-icon-size="46"></div>
+      <h2>While you were away…</h2>
+      <p class="offline-time" id="offlineTime">You were gone 0m</p>
+      <div class="offline-earned"><span class="ico-gold" data-icon="log" data-icon-size="26"></span> <b id="offlineWood">0</b></div>
+      <p class="offline-sub">Your crew kept working!</p>
+      <button class="modal-btn primary" id="offlineClaim">Collect</button>
+      <button class="modal-btn ad" id="offlineDouble"><span data-icon="film" data-icon-size="18"></span> Double it (watch ad)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="milestoneModal">
+    <div class="modal celebrate">
+      <div class="modal-ico" id="msIco"></div>
+      <h2 id="msTitle">Section Complete!</h2>
+      <p id="msText">You built the Hull.</p>
+      <div class="ms-reward" id="msReward">+50% wood</div>
+      <button class="modal-btn primary" id="msClaim">Keep Building</button>
+      <button class="modal-btn share" id="msShare"><span data-icon="share" data-icon-size="18"></span> Share</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal">
+      <div class="modal-ico" data-icon="gear" data-icon-size="46"></div>
+      <h2>Settings</h2>
+      <label class="setting-row"><span>Sound</span><input type="checkbox" id="setSound" checked></label>
+      <button class="modal-btn" id="btnShare2"><span data-icon="share" data-icon-size="18"></span> Share the Ark</button>
+      <button class="modal-btn" id="btnHome">🏠 Back to glitchrushgg.com</button>
+      <button class="modal-btn danger" id="btnReset"><span data-icon="trash" data-icon-size="18"></span> Reset Progress</button>
+      <button class="modal-btn primary" id="settingsClose">Close</button>
+      <div class="credits">Build the Ark · v1.1</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="chestModal">
+    <div class="modal celebrate">
+      <div class="modal-ico" id="chestIco"></div>
+      <h2 id="chestTitle">Free Chest!</h2>
+      <p id="chestSub" class="hidden"></p>
+      <div class="ms-reward" id="chestReward">+0</div>
+      <button class="modal-btn primary" id="chestClaim">Collect</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- Scripts -->
+  <script src="js/format.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/scene.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

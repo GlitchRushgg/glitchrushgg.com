@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#070d1a" />
+  <title>Pulse Drift</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 12l5-7 5 7 5-7 5 7-5 7-5-7-5 7z' fill='none' stroke='%2338e8ff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3: only loaded on the platform (and localhost for testing).
+       On glitchrushgg.com no third party is contacted (GDPR); js/sdk.js degrades
+       gracefully when window.CrazyGames is absent. The CrazyGames submission zip
+       may load it unconditionally. -->
+  <script>
+    if (/(^|\.)crazygames\.|^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+      document.write('<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== HUD (during play) ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-center">
+      <div id="score">0</div>
+      <div class="meter"><div id="meterFill"></div></div>
+    </div>
+    <div id="multBadge" data-tier="1">×1</div>
+    <div class="hud-sparks">✦ <span class="sparksVal">0</span></div>
+  </div>
+
+  <!-- ===== MENU ===== -->
+  <div id="menu" class="overlay">
+    <div class="title-wrap">
+      <h1 class="title">PULSE<span>DRIFT</span></h1>
+      <p class="tagline">HOLD to rise · RELEASE to fall</p>
+      <p class="tagline accent">GRAZE the obstacles to multiply your score</p>
+    </div>
+    <div class="menu-best">BEST <b id="menuBest">0</b></div>
+    <div class="tap-start">TAP TO START</div>
+    <div class="menu-bottom panel">
+      <div class="sparks-line">✦ <span class="sparksVal">0</span> sparks</div>
+      <div id="skinRow"></div>
+      <div class="menu-btns">
+        <button id="btnSound" class="mini-btn">🔊</button>
+        <button id="btnShare" class="mini-btn">SHARE</button>
+        <button id="btnHome" class="mini-btn">🏠</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GAME OVER ===== -->
+  <div id="dead" class="overlay hidden">
+    <div class="panel dead-panel">
+      <div id="newBest" class="new-best hidden">★ NEW BEST ★</div>
+      <div class="dead-label">SCORE</div>
+      <div id="deadScore" class="dead-score">0</div>
+      <div class="dead-stats">
+        <span>BEST <b id="deadBest">0</b></span>
+        <span><b id="deadDist">0m</b></span>
+        <span class="spark-earn">✦ <b id="deadSparks">+0</b></span>
+      </div>
+      <button id="btnRevive" class="big-btn ad">▶ REVIVE <small>watch ad · 3s shield</small></button>
+      <button id="btnReviveSparks" class="big-btn spark">✦ REVIVE <small>50 sparks</small></button>
+      <button id="btnX2" class="big-btn ad">▶ DOUBLE SCORE <small>watch ad</small></button>
+      <button id="btnRestart" class="big-btn go">RETRY</button>
+      <button id="btnMenu" class="mini-btn wide">MENU</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — challenge your friends!</div>
+
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

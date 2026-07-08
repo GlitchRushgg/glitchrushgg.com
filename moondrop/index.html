@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a1f" />
+  <title>Moondrop</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='%23f2e7c9'/%3E%3Ccircle cx='9' cy='10' r='1.4' fill='%231e1432'/%3E%3Ccircle cx='15' cy='10' r='1.4' fill='%231e1432'/%3E%3Cpath d='M9.5 14.5c1.5 1.5 3.5 1.5 5 0' stroke='%231e1432' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3: only loaded on the platform (and localhost for testing).
+       On glitchrushgg.com no third party is contacted (GDPR); js/sdk.js degrades
+       gracefully when window.CrazyGames is absent. The CrazyGames submission zip
+       may load it unconditionally. -->
+  <script>
+    if (/(^|\.)crazygames\.|^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+      document.write('<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-score">
+        <div id="score">0</div>
+        <div class="hud-best">BEST <span id="best">0</span></div>
+      </div>
+      <div class="hud-next">
+        <span class="hud-next-label">NEXT</span>
+        <span id="nextDot"></span>
+      </div>
+    </div>
+    <div id="comboBadge" class="hidden">×2 COMBO</div>
+    <div id="ladder"></div>
+    <button id="btnMiniBH" class="bh-btn hidden">▶ MINI BLACK HOLE<small>watch ad · clears the peak</small></button>
+    <div class="hud-corner">
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== TITLE ===== -->
+  <div id="title" class="overlay">
+    <h1 class="logo">MOON<span>DROP</span></h1>
+    <p class="tagline">Drop · Merge · Reach the <b>BLACK HOLE</b></p>
+    <div class="chain-demo">
+      <span style="--c:#cdb4f6;width:14px;height:14px"></span>→
+      <span style="--c:#8ea6f5;width:18px;height:18px"></span>→
+      <span style="--c:#54d6c8;width:22px;height:22px"></span>→
+      <span style="--c:#f2e7c9;width:27px;height:27px"></span>→
+      <span class="bh-dot">🕳</span>
+    </div>
+    <div class="menu-best">BEST <b id="titleBest">0</b></div>
+    <div class="tap-start">TAP TO PLAY</div>
+    <button id="btnHome" class="mini-btn">🏠 glitchrushgg.com</button>
+  </div>
+
+  <!-- ===== GAME OVER ===== -->
+  <div id="over" class="overlay hidden">
+    <div class="panel over-panel">
+      <div id="overNewBest" class="new-best hidden">★ NEW BEST ★</div>
+      <div class="over-label">SCORE</div>
+      <div id="overScore" class="over-score">0</div>
+      <div class="over-stats">
+        <span>BEST <b id="overBest">0</b></span>
+        <span>REACHED <b id="overTier">Moon</b></span>
+      </div>
+      <button id="btnSecond" class="big-btn ad">▶ SECOND CHANCE<small>watch ad · vaporize the top of the pile</small></button>
+      <button id="btnRetry" class="big-btn go">PLAY AGAIN</button>
+      <button id="btnShare" class="mini-btn wide">SHARE SCORE</button>
+      <button id="btnHome2" class="mini-btn wide">🏠 glitchrushgg.com</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — challenge your friends!</div>
+
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
