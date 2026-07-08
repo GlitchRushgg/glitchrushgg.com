@@ -18,6 +18,7 @@ When working on a specific game, read that game's own `CLAUDE.md` for its archit
 - **[pulse-drift/](pulse-drift/)** — *"PULSE DRIFT"*. A neon one-button wave-dodger with graze scoring: hold to rise, release to fall, skim obstacles without touching to multiply the score ×1→×5. Plain canvas + WebAudio, 100% procedural, CrazyGames SDK wired. See [pulse-drift/CLAUDE.md](pulse-drift/CLAUDE.md).
 - **[moondrop/](moondrop/)** — *"MOONDROP"*. A cosmic container drop-merge physics puzzle: merge celestial bodies up a 10-tier ladder to the Black Hole endgame. Custom circle physics, plain canvas, 100% procedural, CrazyGames SDK wired. See [moondrop/CLAUDE.md](moondrop/CLAUDE.md).
 - **[build-the-ark/](build-the-ark/)** — *"Build the Ark"*. A nautical idle-builder: tap driftwood, hire crew, raise the Ark part by part; offline earnings, daily streak and "Set Sail" prestige (Doves of Faith). Plain canvas + SVG icons, CrazyGames SDK wired. See [build-the-ark/CLAUDE.md](build-the-ark/CLAUDE.md).
+- **[dream-duo/](dream-duo/)** — *"DREAM DUO — Elizabeth & Flofy"*. A one-brain-two-worlds runner: Elizabeth runs the park below while her magic plush bunny hops the dream above — you control both at once. SYNC star pairs → ×5 multiplier → FAIRY RUSH; family power-ups; star shop with skins. Phaser 3, Replicate art from the family canon. See [dream-duo/CLAUDE.md](dream-duo/CLAUDE.md).
 
 ## Other top-level content
 
