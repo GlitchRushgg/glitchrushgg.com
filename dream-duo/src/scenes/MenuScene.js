@@ -25,36 +25,42 @@ export class MenuScene extends Phaser.Scene {
     this.add.text(W / 2, 158, "Elizabeth & Flofy", f("28px", { color: "#cbb7ff" })).setOrigin(0.5);
     this.add.text(W / 2, 208, "One brain. Two worlds. At the same time.", f("21px", { color: "#ffe6b0", fontStyle: "normal" })).setOrigin(0.5);
 
-    // best + stars
-    this.add.text(W / 2 - 80, 258, `🏆 BEST ${sv.best}`, f("22px")).setOrigin(0.5);
-    this.add.image(W / 2 + 56, 258, "star").setScale(0.55);
-    this.add.text(W / 2 + 76, 258, `${sv.stars}`, f("22px", { color: "#ffd94e" })).setOrigin(0, 0.5);
+    // progress + stars
+    const done = Object.keys(sv.levelStars).length;
+    this.add.text(W / 2 - 90, 258, `🏁 ${done}/12 LEVELS`, f("22px")).setOrigin(0.5);
+    this.add.image(W / 2 + 66, 258, "star").setScale(0.55);
+    this.add.text(W / 2 + 86, 258, `${sv.stars}`, f("22px", { color: "#ffd94e" })).setOrigin(0, 0.5);
 
-    // PLAY
-    const play = this.add.text(W / 2, 380, "▶  PLAY", f("42px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
-      .setOrigin(0.5).setPadding(56, 18, 56, 18).setInteractive({ useHandCursor: true });
+    // PLAY → next uncompleted level
+    const nextLevel = Math.min(sv.levelsUnlocked, 12);
+    const startNext = () => { this.snd.resume(); this.snd.ui(); this.scene.start("Game", { mode: "level", level: nextLevel }); };
+    const play = this.add.text(W / 2, 372, done >= 12 ? "▶  PLAY" : `▶  PLAY — LEVEL ${nextLevel}`, f("40px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
+      .setOrigin(0.5).setPadding(52, 17, 52, 17).setInteractive({ useHandCursor: true });
     this.tweens.add({ targets: play, scale: 1.05, duration: 550, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-    play.on("pointerdown", () => { this.snd.resume(); this.snd.ui(); this.scene.start("Game"); });
+    play.on("pointerdown", startNext);
 
-    // SHOP
-    const shop = this.add.text(W / 2, 480, "★  STAR SHOP", f("24px", { backgroundColor: "#3a2260", color: "#ffd94e" }))
-      .setOrigin(0.5).setPadding(34, 12, 34, 12).setInteractive({ useHandCursor: true });
+    // LEVELS + SHOP
+    const lvls = this.add.text(W / 2 - 118, 462, "🗺 LEVELS", f("23px", { backgroundColor: "#3a2260", color: "#cbb7ff" }))
+      .setOrigin(0.5).setPadding(28, 12, 28, 12).setInteractive({ useHandCursor: true });
+    lvls.on("pointerdown", () => { this.snd.ui(); this.scene.start("LevelSelect"); });
+    const shop = this.add.text(W / 2 + 118, 462, "★ STAR SHOP", f("23px", { backgroundColor: "#3a2260", color: "#ffd94e" }))
+      .setOrigin(0.5).setPadding(28, 12, 28, 12).setInteractive({ useHandCursor: true });
     shop.on("pointerdown", () => { this.snd.ui(); this.scene.start("Shop"); });
 
     // how to play
     [
-      "LEFT side / A — Elizabeth jumps in the park",
-      "RIGHT side / L — Flofy hops in the dream (tap twice = flutter)",
+      "LEFT side / A — Elizabeth jumps",
+      "RIGHT side / L — Flofy (flying by her side!) boosts up",
       "Grab BOTH stars together = SYNC → fill the meter → FAIRY RUSH!",
     ].forEach((line, i) => {
-      this.add.text(W / 2, 560 + i * 30, line, f("17px", {
+      this.add.text(W / 2, 552 + i * 30, line, f("17px", {
         color: i === 2 ? "#8ef5c9" : "#e8dcff", fontStyle: "normal",
       })).setOrigin(0.5);
     });
-    this.add.text(W / 2, 664, "Can your brain run two worlds at once?", f("18px", { color: "#ffd94e" })).setOrigin(0.5);
+    this.add.text(W / 2, 660, "Can your brain guide them both at once?", f("18px", { color: "#ffd94e" })).setOrigin(0.5);
 
-    this.input.keyboard.on("keydown-SPACE", () => this.scene.start("Game"));
-    this.input.keyboard.on("keydown-ENTER", () => this.scene.start("Game"));
+    this.input.keyboard.on("keydown-SPACE", startNext);
+    this.input.keyboard.on("keydown-ENTER", startNext);
 
     // mute
     this._muteBtn = this.add.text(W - 24, 20, this.snd.muted ? "🔇" : "🔊", f("22px", { backgroundColor: "#3a2260cc" }))

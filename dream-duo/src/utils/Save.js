@@ -3,7 +3,7 @@
 const KEY = "dreamDuo_v1";
 
 const data = {
-  best: 0,
+  best: 0,               // endless mode high score
   stars: 0,
   plays: 0,
   mute: false,
@@ -12,6 +12,8 @@ const data = {
   trails: ["sparkle"],
   skin: "classic",
   trail: "sparkle",
+  levelsUnlocked: 1,     // highest playable level (1-based)
+  levelStars: {},        // levelIdx(1-based) -> 1..3 stars
 };
 try { Object.assign(data, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
 
@@ -33,5 +35,12 @@ export const Save = {
     data.plays++;
     persist();
     return isBest;
+  },
+  completeLevel(levelNum, stars) {
+    const prev = data.levelStars[levelNum] || 0;
+    if (stars > prev) data.levelStars[levelNum] = stars;
+    if (levelNum + 1 > data.levelsUnlocked) data.levelsUnlocked = levelNum + 1;
+    data.plays++;
+    persist();
   },
 };

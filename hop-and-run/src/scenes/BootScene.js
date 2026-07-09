@@ -12,6 +12,8 @@ const FRAMES = {
   "cristian-run-2": [210, 190, 172],
   "cristian-run-3": [210, 190, 172],
   "cristian-run-4": [210, 190, 172],
+  "cristian-run-5": [210, 190, 172], // fase opuesta real (rodilla alta) — ciclo natural
+
   "cristian-jump": [210, 190, 168],
   "cristian-skate": [230, 190, 176],
   "cristian-guitar": [250, 190, 176],
@@ -31,8 +33,10 @@ export class BootScene extends Phaser.Scene {
     for (const name of Object.keys(FRAMES)) this.load.image("raw-" + name, ART + name + "-cut.png");
     this.load.image("cristian-celebrate", ART + "cristian-celebrate-cut.png");
 
-    for (const t of ["rooftop-day", "rooftop-sunset", "rooftop-night"]) this.load.image(t, ART + t + ".jpg");
-    for (const t of ["skyline-day", "skyline-sunset", "skyline-night"]) this.load.image(t, ART + t + ".jpg");
+    for (const t of ["rooftop-day", "rooftop-sunset", "rooftop-night",
+      "rooftop-beach", "rooftop-jungle", "rooftop-italy"]) this.load.image(t, ART + t + ".jpg");
+    for (const t of ["skyline-day", "skyline-sunset", "skyline-night",
+      "skyline-beach", "skyline-jungle", "skyline-italy"]) this.load.image(t, ART + t + ".jpg");
 
     for (const t of ["fruit-apple", "fruit-banana", "fruit-orange", "fruit-melon",
       "animal-kitten", "animal-puppy", "animal-chick",
@@ -52,7 +56,21 @@ export class BootScene extends Phaser.Scene {
     this._genGlow();
     this._genBolt();
     this._genCloud();
+    this._genHeart();
     this.scene.start("Menu");
+  }
+
+  // Corazón de CONTINUAR (sistema de vidas — feedback fundadora).
+  _genHeart() {
+    const g = this.add.graphics();
+    g.fillStyle(0xff5e7a, 1);
+    g.fillCircle(16, 15, 12);
+    g.fillCircle(34, 15, 12);
+    g.fillTriangle(5, 21, 45, 21, 25, 46);
+    g.fillStyle(0xffb3c2, 1);
+    g.fillCircle(13, 12, 4);
+    g.generateTexture("heart", 50, 48);
+    g.destroy();
   }
 
   // Draw each Cristian frame into a fixed-size canvas, scaled to a common

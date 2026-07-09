@@ -1,20 +1,23 @@
 # CLAUDE.md — DREAM DUO (Elizabeth & Flofy)
 
-**One-brain-two-worlds arcade runner** built for CrazyGames: two stacked
-worlds scroll in sync — **Elizabeth runs through the park below** (classic
-gravity jump: coyote + buffer + variable height) while **Flofy, her magic
-plush bunny, hops through the dream above** (floaty gravity + flutter
-double-hop). Left half / `A` / `←` = Elizabeth · right half / `L` / `→` =
-Flofy. **SYNC star pairs** (grab both within 0.7s) build a ×1→×5 multiplier
-and fill the Dream Meter; 5 syncs = **FAIRY RUSH** — Elizabeth sprouts fairy
-wings (canon skin) and both fly side-by-side through a merged, invincible,
-star-magnet rainbow world (the TikTok moment). **Family power-ups**: Mamá
-(+1 heart), Papá (8s bubble shield), Cristian (skateboard dash that clears
-the way — Hop & Run crossover). 3 shared hearts, 8 obstacle types across
-2 worlds, 3 biomes (day → sunset → starlight at 400/900m). Stars = persistent
-currency → **Star Shop** (3 Elizabeth skins with perks + 4 Flofy trails).
-English only (studio rule). Design rationale: [docs/DISENO.md](docs/DISENO.md),
-grounded in `../glitch-shift/docs/ESTUDIO-MERCADO.md`.
+**LEVEL-BASED duo runner** built for CrazyGames (reworked 2026-07-08 on
+founder feedback: natural running, ONE understandable world, and LEVELS —
+not an endless-only runner). **Elizabeth runs through a full-screen park**
+with a natural 4-phase stride (contact→passing→contact→kick-back frames,
+cadence tied to speed) while **Flofy, her magic plush bunny, floats BY HER
+SIDE** (spring-hover; boosts kick him up). Left half / `A` / `←` = Elizabeth
+jumps · right half / `L` / `→` = Flofy boosts. **12 seeded, learnable levels**
+(fixed courses, goal line where the family waits, 1-3 star rating by stars
+collected) + **Endless Dream** mode unlocked after 8 levels. **SYNC star
+pairs** (ground + air within 0.7s) build ×1→×5 and fill the Dream Meter;
+5 syncs = **FAIRY RUSH** — the whole world TRANSFORMS into Flofy's dream
+(dream bg takeover), Elizabeth sprouts fairy wings and they fly together,
+invincible with a star magnet (the TikTok moment). **Family power-ups**:
+Mamá (+1 heart), Papá (8s shield), Cristian (dash — Hop & Run crossover).
+3 hearts, 8 obstacle types (5 ground for Elizabeth, 3 air for Flofy),
+3 biomes. Stars → **Star Shop** (3 skins with perks + 4 trails). English
+only (studio rule). Design: [docs/DISENO.md](docs/DISENO.md), grounded in
+`../glitch-shift/docs/ESTUDIO-MERCADO.md`.
 
 Part of the `glitchrushgg.com` monorepo — see root `CLAUDE.md`.
 

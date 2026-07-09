@@ -18,6 +18,9 @@ mkdirSync(outDir, { recursive: true });
 // [origen, salida, {h: altura px} | {w,h, jpg: calidad, cover:true}]
 const SPRITES = [
   ["eliz-run-a-cut", "eliz-run-a", 320], ["eliz-run-b-cut", "eliz-run-b", 320],
+  // ciclo natural de 4 fases: contacto-izq → rodilla arriba → contacto-dcha → patada atrás
+  ["eliz-run-opp2-cut", "eliz-r1", 320], ["eliz-run-opp-cut", "eliz-r2", 320],
+  ["eliz-run-c1-cut", "eliz-r3", 320], ["eliz-run-c2-cut", "eliz-r4", 320],
   ["eliz-jump-cut", "eliz-jump", 320], ["eliz-fairy-fly-cut", "eliz-fairy", 340],
   ["flofy-hop-cut", "flofy-hop", 230], ["flofy-fall-cut", "flofy-fall", 230],
   ["ob-hedge-cut", "ob-hedge", 240], ["ob-bench-cut", "ob-bench", 250],

@@ -25,13 +25,17 @@ export class GameOverScene extends Phaser.Scene {
     // ¿Cruzó un hito en esta run?
     const hitMilestone = Save.nextMilestone(prevTotal) !== next && prevTotal !== total;
 
-    const g = this.add.graphics();
-    g.fillGradientStyle(0x2a3b57, 0x2a3b57, 0x0b1220, 0x0b1220, 1);
-    g.fillRect(0, 0, W, H);
+    // Fondo con la MISMA calidad que el menú (feedback fundadora): el key-art
+    // hero al fondo + velo oscuro, en vez del gradiente plano.
+    const bg = this.add.image(W / 2, H / 2, "key-art");
+    const cover = Math.max(W / bg.width, H / bg.height);
+    bg.setScale(cover * 1.04);
+    this.tweens.add({ targets: bg, scale: cover * 1.09, duration: 6000, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    this.add.rectangle(W / 2, H / 2, W, H, 0x0b1220, 0.62);
     // Rayos suaves de fondo para dar profundidad.
     for (let i = 0; i < 5; i++) {
       this.add.image(Phaser.Math.Between(0, W), Phaser.Math.Between(0, H), "cloud")
-        .setAlpha(0.05).setScale(Phaser.Math.FloatBetween(1.5, 3)).setTint(0x8fd6ff);
+        .setAlpha(0.06).setScale(Phaser.Math.FloatBetween(1.5, 3)).setTint(0x8fd6ff);
     }
 
     const f = (size, extra = {}) => ({
@@ -50,10 +54,13 @@ export class GameOverScene extends Phaser.Scene {
     const titleTx = this.add.text(W / 2, 88, title, f("58px", { color: "#ff8a5e", stroke: "#0b1220", strokeThickness: 8 })).setOrigin(0.5);
     this.add.text(W / 2, 142, hint, f("20px", { color: "#cfe4ff", fontStyle: "normal" })).setOrigin(0.5);
 
-    // Cristian celebrating (it's still a great run!).
+    // Cristian celebrating (it's still a great run!) — con glow y entrada.
+    const cGlow = this.add.image(W / 2 - 340, H / 2 + 80, "glow").setScale(7).setTint(0xffe066).setAlpha(0.35);
     const c = this.add.image(W / 2 - 340, H / 2 + 70, "cristian-celebrate");
-    c.setScale(320 / c.height);
+    c.setScale(340 / c.height).setAlpha(0);
+    this.tweens.add({ targets: c, alpha: 1, x: c.x + 14, duration: 400, ease: "Back.out" });
     this.tweens.add({ targets: c, y: c.y - 16, angle: 3, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    this.tweens.add({ targets: cGlow, alpha: 0.15, duration: 900, yoyo: true, repeat: -1 });
 
     // Distancia (métrica principal, dentro del panel).
     this.add.text(PX, 208, "DISTANCE", f("20px", { color: "#9fb8d8", fontStyle: "normal" })).setOrigin(0.5);

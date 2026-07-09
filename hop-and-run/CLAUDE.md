@@ -2,14 +2,18 @@
 
 One-button rooftop runner starring **Cristian (15)**, with the **Adventure
 Island recipe** adapted: an **energy bar drains over time and fruit refills
-it**; varied obstacles (crates to hop, pigeons at jump height, roof gaps);
-a **skateboard** power-up (speed + smashes through); and the **GUITAR SOLO**
-super power (electric guitar pickup → 6.5s invincible rock-out: lightning
-blasts every obstacle, magnet pulls fruit/animals, music switches to a riff).
-Rescue animals (kitten/puppy/chick) for score+combo. 3 sectors by distance
-(day → sunset → night, art swap). Score = distance + animals. English only
-(studio rule). Target: CrazyGames (monetize + viral clips — the guitar solo
-IS the TikTok moment).
+it**; varied obstacles (crates to hop, pigeons overhead, roof gaps) placed
+with **fairness rules** (no crate in the landing zone after a gap; crate and
+pigeon never share a platform); a **skateboard** power-up; **stored lives**
+(heart pickups → CONTINUE on a rescue platform after falling, max 2); and
+the **GUITAR SOLO** super power (guitar pickup → anime-style **cut-in
+cinematic** of Cristian rocking out, then 9s invincible + faster + higher
+jumps + power trail + real Pixabay riff; the rarer **SUPER GUITAR** at pink
+glow = 14s and its own track — first at 300m so players actually see it).
+Natural 4-phase run cycle (frames 1→2→4→5: the old 1→2→3→4 repeated the same
+stride). Rescue animals for score+combo. **7 sectors** by distance: day →
+sunset → **BEACH (500m)** → **JUNGLE (900m)** → **LITTLE ITALY (1350m)** →
+night → aurora. English only (studio rule). Target: CrazyGames.
 
 Part of the `glitchrushgg.com` monorepo — see root `CLAUDE.md`. Market-fit
 checklist lives in `../glitch-shift/docs/ESTUDIO-MERCADO.md`.
@@ -60,8 +64,8 @@ No build step. **Phaser 3.88 via CDN**, ES modules, landscape **1280×720**
 
 ## Status / pending
 
-- **PUBLISHED** (founder-approved, jul 2026) at `https://glitchrushgg.com/hop-and-run/`, with landing card and root `CLAUDE.md` entry.
-
+- **PRIVATE**: don't publish (push to `main`) until the founder approves.
+- On publish: landing card + root `CLAUDE.md` entry.
 - CrazyGames package: vendor Phaser, strip share URL, 3 covers + 2 videos
   (pipeline in `C:\Users\Rosselyn\Documents\crazygames\tools\`).
 - Pending idea (checklist): light meta-progression (coins → skins) before

@@ -12,11 +12,12 @@ let deathsSinceAd = 0;
 export class GameOverScene extends Phaser.Scene {
   constructor() { super("GameOver"); }
 
-  init(data) { this.res = data || { score: 0, meters: 0, stars: 0 }; }
+  init(data) { this.res = data || { mode: "endless", level: 1, score: 0, meters: 0, stars: 0 }; }
 
   create() {
     this.snd = new Sound();
-    const isBest = Save.submitScore(this.res.score);
+    const isLevel = this.res.mode === "level";
+    const isBest = isLevel ? false : Save.submitScore(this.res.score);
     if (isBest) SDK.happyTime();
     const sv = Save.get();
     const f = (size, extra = {}) => ({ fontFamily: FONT, fontSize: size, color: "#fff", fontStyle: "bold", ...extra });
@@ -34,9 +35,15 @@ export class GameOverScene extends Phaser.Scene {
     art.setScale(150 / art.height);
     panel.add(art);
 
-    panel.add(this.add.text(W / 2 + 40, H / 2 - 200, isBest ? "★ NEW BEST! ★" : "SWEET DREAMS…", f("34px", { color: isBest ? "#ffd94e" : "#ff9ed2" })).setOrigin(0.5));
-    panel.add(this.add.text(W / 2 + 40, H / 2 - 130, String(this.res.score), f("74px")).setOrigin(0.5));
-    panel.add(this.add.text(W / 2 + 40, H / 2 - 70, `BEST ${sv.best}   ·   ${this.res.meters}m`, f("20px", { color: "#cbb7ff" })).setOrigin(0.5));
+    if (isLevel) {
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 200, "SWEET DREAMS…", f("34px", { color: "#ff9ed2" })).setOrigin(0.5));
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 130, `LEVEL ${this.res.level}`, f("58px")).setOrigin(0.5));
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 70, "So close — try it again!", f("20px", { color: "#cbb7ff" })).setOrigin(0.5));
+    } else {
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 200, isBest ? "★ NEW BEST! ★" : "SWEET DREAMS…", f("34px", { color: isBest ? "#ffd94e" : "#ff9ed2" })).setOrigin(0.5));
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 130, String(this.res.score), f("74px")).setOrigin(0.5));
+      panel.add(this.add.text(W / 2 + 40, H / 2 - 70, `BEST ${sv.best}   ·   ${this.res.meters}m`, f("20px", { color: "#cbb7ff" })).setOrigin(0.5));
+    }
 
     this.starLine = this.add.text(W / 2 + 40, H / 2 - 30, `★ +${this.res.stars} stars`, f("22px", { color: "#ffd94e" })).setOrigin(0.5);
     panel.add(this.starLine);
@@ -56,7 +63,7 @@ export class GameOverScene extends Phaser.Scene {
       panel.add(this.x2Btn);
     }
 
-    const retry = this.add.text(W / 2, H / 2 + 106, "▶  PLAY AGAIN", f("32px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
+    const retry = this.add.text(W / 2, H / 2 + 106, isLevel ? "↻  TRY AGAIN" : "▶  PLAY AGAIN", f("32px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
       .setOrigin(0.5).setPadding(40, 14, 40, 14).setInteractive({ useHandCursor: true });
     retry.on("pointerdown", () => this._retry());
     panel.add(retry);
@@ -66,9 +73,9 @@ export class GameOverScene extends Phaser.Scene {
     shop.on("pointerdown", () => { this.snd.ui(); this.scene.start("Shop"); });
     panel.add(shop);
 
-    const menu = this.add.text(W / 2 + 30, H / 2 + 190, "MENU", f("20px", { backgroundColor: "#3a2260" }))
+    const menu = this.add.text(W / 2 + 30, H / 2 + 190, isLevel ? "LEVELS" : "MENU", f("20px", { backgroundColor: "#3a2260" }))
       .setOrigin(0.5).setPadding(20, 9, 20, 9).setInteractive({ useHandCursor: true });
-    menu.on("pointerdown", () => { this.snd.ui(); this.scene.start("Menu"); });
+    menu.on("pointerdown", () => { this.snd.ui(); this.scene.start(isLevel ? "LevelSelect" : "Menu"); });
     panel.add(menu);
 
     const share = this.add.text(W / 2 + 160, H / 2 + 190, "SHARE", f("20px", { backgroundColor: "#3a2260", color: "#8ef5c9" }))
@@ -94,9 +101,10 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   _retry() {
+    const data = this.res.mode === "level" ? { mode: "level", level: this.res.level } : { mode: "endless" };
     deathsSinceAd++;
-    if (deathsSinceAd >= 3) { deathsSinceAd = 0; SDK.midgameAd(() => this.scene.start("Game")); }
-    else this.scene.start("Game");
+    if (deathsSinceAd >= 3) { deathsSinceAd = 0; SDK.midgameAd(() => this.scene.start("Game", data)); }
+    else this.scene.start("Game", data);
   }
 
   async _share() {

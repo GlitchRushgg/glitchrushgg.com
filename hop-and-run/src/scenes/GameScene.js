@@ -48,8 +48,10 @@ export class GameScene extends Phaser.Scene {
     this._barFlashT = 0;
     this.sectorIx = 0;
     this._nextSkateAt = 220;   // monopatín más pronto y más seguido (feedback fundadora)
-    this._nextGuitarAt = 90;   // guitarra MÁS cerca del inicio (~13s)
-    this._nextSuperAt = 900;   // SUPER GUITARRA (rara, más fuerte)
+    this._nextGuitarAt = 60;   // guitarra AÚN más cerca del inicio (~9s)
+    this._nextSuperAt = 300;   // SUPER GUITARRA alcanzable (antes 900m — con récord de ~700m nunca salía)
+    this.lives = 0;            // corazones guardados para CONTINUAR tras caer (feedback fundadora)
+    this._nextLifeAt = 250;    // primer corazón a los 250m
     this.superSolo = false;
     this.sound.mute = this.snd.muted;   // sincroniza el mute de Phaser (audio real) con el del juego
 
@@ -106,12 +108,19 @@ export class GameScene extends Phaser.Scene {
   _swapBackground(pal) {
     // Crossfade to the new sector's skyline.
     const oldA = this.bgA, oldB = this.bgB;
-    this.bgA = this.add.image(oldA.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
-    this.bgB = this.add.image(oldB.x, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
+    this.bgA = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
+    this.bgB = this.add.image(0, 0, pal.sky).setOrigin(0, 0).setDepth(0).setAlpha(0).setTint(pal.tint);
     const sc = Math.max(W / this.bgA.width, H / this.bgA.height);
     [this.bgA, this.bgB].forEach((b) => b.setScale(sc));
     this.bgB.setFlipX(true);
     this.bgW = this.bgA.displayWidth;
+    // BUG (banda de cielo vacía): las x del arte viejo no valen para el nuevo si
+    // cambia el ancho — se re-derivan envolviendo la x vieja al ancho nuevo para
+    // que las dos copias SIEMPRE cubran la pantalla completa sin hueco.
+    let x0 = ((oldA.x % this.bgW) + this.bgW) % this.bgW;
+    if (x0 > 0) x0 -= this.bgW;
+    this.bgA.x = x0;
+    this.bgB.x = x0 + this.bgW;
     this.tweens.add({ targets: [this.bgA, this.bgB], alpha: 1, duration: 1200 });
     this.tweens.add({ targets: [oldA, oldB], alpha: 0, duration: 1200,
       onComplete: () => { oldA.destroy(); oldB.destroy(); } });
@@ -119,10 +128,14 @@ export class GameScene extends Phaser.Scene {
 
   _buildPlayer() {
     if (!this.anims.exists("run")) {
+      // Ciclo NATURAL de 4 fases (feedback fundadora: "lo más natural posible").
+      // Antes: 1→2→3→4 repetía la misma zancada (el frame 3 duplica al 1) →
+      // parecía que arrastraba los pies. Ahora: zancada dcha → paso (rodilla
+      // media) → zancada izq → paso (rodilla alta) = alternancia real de piernas.
       this.anims.create({
         key: "run",
-        frames: [1, 2, 3, 4].map((i) => ({ key: `p-cristian-run-${i}` })),
-        frameRate: 13,   // ciclo más rápido = carrera más fluida (feedback de Cristian)
+        frames: [1, 2, 4, 5].map((i) => ({ key: `p-cristian-run-${i}` })),
+        frameRate: 13,
         repeat: -1,
       });
     }
@@ -159,6 +172,12 @@ export class GameScene extends Phaser.Scene {
       stroke: "#23324a", strokeThickness: 5, ...extra,
     });
     this.hudDist = this.add.text(24, 16, "0 m", f("34px")).setDepth(20);
+
+    // Vidas guardadas (corazones para CONTINUAR tras caer).
+    this.hudLives = [];
+    for (let i = 0; i < 2; i++) {
+      this.hudLives.push(this.add.image(196 + i * 40, 34, "heart").setDepth(20).setScale(0.7).setAlpha(0.18));
+    }
 
     // Energy bar (the Adventure Island heart of the game).
     this.add.image(34, 78, "fruit-apple").setDisplaySize(34, 34).setDepth(20);
@@ -231,7 +250,7 @@ export class GameScene extends Phaser.Scene {
   // ------------------------------------------------------------------- input
 
   _pressFrom(id) {
-    if (this.dead) return;
+    if (this.dead || this.cutscene) return;
     if (this.paused) { this._togglePause(); return; }
     this._holdSrc.add(id);
     this.holding = true;
@@ -350,19 +369,33 @@ export class GameScene extends Phaser.Scene {
         ["animal-kitten", "animal-puppy", "animal-chick"][Phaser.Math.Between(0, 2)], "animal", 66);
     }
 
-    // Crate obstacle (hop it!) — from 150 m.
-    if (meters > 150 && Math.random() < Math.min(0.5, 0.22 + meters * 0.0004) && width > 340) {
-      const c = this.hazards.create(left + width * Phaser.Math.FloatBetween(0.35, 0.7), top - 40, "obstacle-crate");
-      c.setDisplaySize(80, 80).setDepth(6);
-      c.body.setVelocityX(-this._speedNow());
-      c.setData("kind", "crate");
+    // FAIRNESS (feedback fundadora: "los obstáculos están mal ubicados, es
+    // imposible esquivar algunos"). Reglas: (1) NUNCA caja en la zona de
+    // aterrizaje tras el hueco — margen proporcional a la velocidad para que
+    // dé tiempo a reaccionar y saltar; (2) la caja deja salida antes del borde
+    // derecho (saltarla no te tira al siguiente hueco); (3) caja y paloma
+    // NUNCA en la misma plataforma (una pide saltar y la otra NO saltar =
+    // órdenes contradictorias); (4) la paloma nace al 80% del ancho: como
+    // vuela 1.22× más rápido que el scroll, cruza el interior de la plataforma
+    // cuando ya corres por ella — jamás sobre la zona donde aterrizas ni sobre
+    // el borde donde estás obligado a saltar.
+    let hasCrate = false;
+    if (meters > 150 && Math.random() < Math.min(0.5, 0.22 + meters * 0.0004) && width > 380) {
+      const minX = left + Math.max(210, this._speedNow() * 0.35); // zona segura tras aterrizar
+      const maxX = left + width - 140;                            // salida antes del borde
+      if (maxX > minX + 40) {
+        const c = this.hazards.create(Phaser.Math.Between(Math.round(minX), Math.round(maxX)), top - 40, "obstacle-crate");
+        c.setDisplaySize(80, 80).setDepth(6);
+        c.body.setVelocityX(-this._speedNow());
+        c.setData("kind", "crate");
+        hasCrate = true;
+      }
     }
 
     // Pigeon overhead — from 350 m. A top−210 pasa con holgura si NO saltas y
-    // te golpea si saltas: regla legible para un juego de un botón (a −165
-    // solapaba 13px con Cristian de pie = daño por lotería).
-    if (meters > 350 && Math.random() < 0.3) {
-      const p = this.hazards.create(left + width / 2, top - 210, "obstacle-pigeon");
+    // te golpea si saltas: regla legible para un juego de un botón.
+    if (!hasCrate && meters > 350 && Math.random() < 0.3 && width > 380) {
+      const p = this.hazards.create(left + width * 0.8, top - 210, "obstacle-pigeon");
       p.setDisplaySize(72, 56).setDepth(6);
       p.body.setVelocityX(-this._speedNow() * 1.22);
       p.setData("kind", "pigeon");
@@ -375,12 +408,17 @@ export class GameScene extends Phaser.Scene {
       this._addPickup(left + width / 2, top - 130, "item-skateboard", "skate", 64);
     }
     if (meters >= this._nextSuperAt) {
-      this._nextSuperAt += 1200;
+      this._nextSuperAt += 800;   // antes 1200 — que se vea varias veces por buena run
       this._addPickup(left + width / 2, top - 155, "item-guitar", "super-guitar", 90);
     }
     if (meters >= this._nextGuitarAt) {
-      this._nextGuitarAt += 600;   // guitarra más frecuente (antes 780)
+      this._nextGuitarAt += 400;   // guitarra mucho más frecuente (feedback fundadora)
       this._addPickup(left + width / 2 - 80, top - 140, "item-guitar", "guitar", 72);
+    }
+    // Corazón de CONTINUAR: guárdalo y al caer sigues la partida (máx 2).
+    if (meters >= this._nextLifeAt && this.lives < 2) {
+      this._nextLifeAt = meters + 450;
+      this._addPickup(left + width * 0.3, top - 135, "heart", "life", 54);
     }
 
     this.lastRight = left + width;
@@ -424,6 +462,12 @@ export class GameScene extends Phaser.Scene {
       this.snd.animal(this.combo);
       this._burst(p.x, p.y, 10, 0xff8fb0);
       this._float(p.x, p.y, this.combo >= 2 ? `RESCUED! x${this.combo}` : "RESCUED!", "#ffe066");
+    } else if (kind === "life") {
+      this.lives = Math.min(2, this.lives + 1);
+      this.snd.animal(1);
+      this._burst(p.x, p.y, 10, 0xff5e7a);
+      this._float(p.x, p.y, "+1 LIFE!", "#ff8fb0");
+      this._refreshLives();
     } else if (kind === "skate") {
       this.skateT = 9;
       this.snd.skate();
@@ -444,11 +488,7 @@ export class GameScene extends Phaser.Scene {
     this.superSolo = false;
     this.snd.soloStart();
     this._playSoloAudio("guitarSolo", 0.8);   // solo de guitarra REAL (Pixabay)
-    this.aura.setAlpha(0.85).setTint(0xffe066);
-    this.cameras.main.flash(280, 255, 224, 102);
-    this._float(this.player.x, this.player.y - 190, "GUITAR SOLO!!", "#ffe066");
-    this._soloPose(600);
-    this.hazards.children.iterate((h) => { if (h && h.x < W + 40) this._smash(h, true); });
+    this._soloCutIn(false);
   }
 
   _startSuperSolo() {
@@ -456,11 +496,73 @@ export class GameScene extends Phaser.Scene {
     this.superSolo = true;
     this.snd.soloStart();
     this._playSoloAudio("superGuitar", 0.85);   // rock potente (Pixabay)
-    this.aura.setAlpha(1).setTint(0xff4488);     // aura roja/rosa más intensa
-    this.cameras.main.flash(420, 255, 90, 150);
-    this.cameras.main.shake(300, 0.006);
-    this._float(this.player.x, this.player.y - 200, "🎸 SUPER GUITAR! 🔥", "#ff5ea0");
-    this._soloPose(700);
+    this._soloCutIn(true);
+  }
+
+  // CUT-IN cinemático (feedback fundadora: "una pantalla como la inicial donde
+  // salga Cristian empezando a tocar"): el mundo se congela ~1.1s, entra el
+  // arte grande de Cristian con la guitarra + rayos de velocidad + título,
+  // y al salir sigue corriendo ya con el poder encima.
+  _soloCutIn(sup) {
+    this.cutscene = true;
+    this.physics.pause();
+    this.anims.pauseAll();
+    this._holdSrc.clear(); this.holding = false;
+
+    const col = sup ? 0xff4488 : 0xffe066;
+    const ui = [];
+    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0x0c1420, 0).setDepth(40);
+    ui.push(veil);
+    this.tweens.add({ targets: veil, fillAlpha: 0.8, duration: 160 });
+    // rayos de velocidad estilo anime
+    const rays = this.add.graphics().setDepth(41).setAlpha(0);
+    for (let i = 0; i < 16; i++) {
+      rays.fillStyle(col, 0.16 + Math.random() * 0.3);
+      rays.fillRect(0, Math.random() * H, W, 2 + Math.random() * 4);
+    }
+    ui.push(rays);
+    this.tweens.add({ targets: rays, alpha: 1, duration: 200 });
+    // Cristian rockeando, gigante, entrando desde la izquierda
+    const art = this.add.image(W * 0.12, H / 2 + 34, "raw-cristian-guitar").setDepth(42).setAlpha(0);
+    art.setScale((H * 0.74) / art.height);
+    ui.push(art);
+    this.tweens.add({ targets: art, x: W * 0.3, alpha: 1, duration: 280, ease: "Back.out" });
+    // título
+    const f = {
+      fontFamily: "'Segoe UI', system-ui, sans-serif", fontStyle: "bold",
+      color: sup ? "#ff8fb0" : "#ffe066", stroke: "#0c1420", strokeThickness: 10,
+    };
+    const t1 = this.add.text(W * 0.66, H / 2 - 64, sup ? "SUPER GUITAR!!" : "GUITAR SOLO!", { ...f, fontSize: sup ? "78px" : "72px" })
+      .setOrigin(0.5).setDepth(42).setScale(0.3).setAlpha(0).setAngle(-4);
+    const t2 = this.add.text(W * 0.66, H / 2 + 16, sup ? "🔥 UNSTOPPABLE 🔥" : "Rock through everything!", { ...f, fontSize: "28px", color: "#ffffff" })
+      .setOrigin(0.5).setDepth(42).setAlpha(0);
+    ui.push(t1, t2);
+    this.tweens.add({ targets: t1, scale: 1, alpha: 1, duration: 260, delay: 120, ease: "Back.out" });
+    this.tweens.add({ targets: t2, alpha: 1, duration: 240, delay: 320 });
+    // chispas alrededor de la guitarra
+    for (let i = 0; i < 12; i++) {
+      this.time.delayedCall(120 + i * 70, () => {
+        if (this.dead) return;
+        this._burst(W * 0.3 + Phaser.Math.Between(-90, 110), H / 2 + Phaser.Math.Between(-160, 120), 3, col);
+      });
+    }
+    this.cameras.main.flash(sup ? 380 : 260, 255, sup ? 90 : 224, sup ? 150 : 102);
+    if (sup) this.cameras.main.shake(320, 0.007);
+
+    this.time.delayedCall(1150, () => {
+      ui.forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
+      if (this.dead) return;
+      this.cutscene = false;
+      this.physics.resume();
+      this.anims.resumeAll();
+      this._afterCutIn(sup);
+    });
+  }
+
+  _afterCutIn(sup) {
+    this.aura.setAlpha(sup ? 1 : 0.85).setTint(sup ? 0xff4488 : 0xffe066);
+    this._float(this.player.x, this.player.y - 190, sup ? "🎸 SUPER POWER! 🔥" : "🎸 LET'S ROCK!", sup ? "#ff5ea0" : "#ffe066");
+    this._soloPose(sup ? 650 : 550);
     this.hazards.children.iterate((h) => { if (h && h.x < W + 40) this._smash(h, true); });
   }
 
@@ -526,12 +628,15 @@ export class GameScene extends Phaser.Scene {
   _speedNow() {
     const base = Math.min(640, 300 + this.dist * 0.01);
     const skate = this.skateT > 0 ? 1.38 : 1;
+    // Con la guitarra se CORRE más rápido (feedback fundadora: "que se vea que
+    // está agarrando poder para saltar más rápido y pasar obstáculos").
+    const solo = this.soloT > 0 ? (this.superSolo ? 1.22 : 1.12) : 1;
     const pen = 1 - 0.35 * this.speedPenalty;
-    return base * skate * pen;
+    return base * Math.max(skate, solo) * pen;
   }
 
   update(timeNow, dms) {
-    if (this.dead || this.paused) return;
+    if (this.dead || this.paused || this.cutscene) return;
     const dt = Math.min(0.05, dms / 1000);
 
     this.speedPenalty = Math.max(0, this.speedPenalty - dt / 1.2);
@@ -554,6 +659,14 @@ export class GameScene extends Phaser.Scene {
     if (this.soloT > 0) {
       this.soloT -= dt;
       this.aura.setAlpha(0.55 + Math.sin(timeNow / 90) * 0.3);
+      // Estela de poder detrás de Cristian: se VE que va cargado.
+      this._soloTrailT = (this._soloTrailT || 0) - dt;
+      if (this._soloTrailT <= 0) {
+        this._soloTrailT = 0.055;
+        const tr = this.add.image(this.player.x - 34, this.player.y - Phaser.Math.Between(30, 130), "spark")
+          .setDepth(9).setTint(this.superSolo ? 0xff77aa : 0xffe066).setScale(Phaser.Math.FloatBetween(0.7, 1.4));
+        this.tweens.add({ targets: tr, x: tr.x - 90, alpha: 0, scale: 0.2, duration: 420, onComplete: () => tr.destroy() });
+      }
       if (this.soloT <= 0) {
         this._stopSoloAudio();
         this.snd.startMusic();
@@ -738,8 +851,37 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  _refreshLives() {
+    this.hudLives.forEach((h, i) => h.setAlpha(i < this.lives ? 1 : 0.18));
+  }
+
+  // Con un corazón guardado, la caída/energía no termina la partida: Cristian
+  // CONTINÚA en una plataforma de rescate (feedback fundadora).
+  _useLife(reason) {
+    this.lives--;
+    this._refreshLives();
+    this._stopSoloAudio();
+    this.soloT = 0; this.superSolo = false; this.skateT = 0;
+    this.aura.setAlpha(0);
+    this.speedPenalty = 1;
+    // plataforma de rescate justo debajo
+    const top = 520;
+    this._spawnPlatform(PLAYER_X - 240, top, 600);
+    this.player.setPosition(PLAYER_X, top - 12);
+    this.player.body.setVelocity(0, 0);
+    this.energy = Math.max(this.energy, 60);
+    this.invuln = 2.5;
+    this._hurtT = 0;
+    this.player.play("run");
+    this.snd.skate();
+    this.cameras.main.flash(320, 255, 143, 176);
+    this._float(PLAYER_X, 380, "CONTINUE! ❤", "#ff8fb0");
+    if (!this.snd.muted) this.snd.startMusic();
+  }
+
   _die(reason) {
     if (this.dead) return;
+    if (this.lives > 0) { this._useLife(reason); return; }
     this.dead = true;
     this.snd.stopMusic();
     this._stopSoloAudio();

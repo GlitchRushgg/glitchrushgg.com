@@ -9,9 +9,13 @@ export const PLAYER_X = 280;
 // platforms use. Sky = gradient stops for the background graphics. `tint`
 // recolours the reused art so late sectors feel distinct without new assets.
 export const SECTORS = [
-  { at: 0,    roof: "rooftop-day",    sky: "skyline-day",    tint: 0xffffff, top: 0x7ec8f7, bottom: 0xcfeaff, name: "DAY" },
-  { at: 250,  roof: "rooftop-sunset", sky: "skyline-sunset", tint: 0xffffff, top: 0xffb36b, bottom: 0xff7ea0, name: "SUNSET" },
-  { at: 600,  roof: "rooftop-night",  sky: "skyline-night",  tint: 0xffffff, top: 0x1a2350, bottom: 0x3b2a68, name: "NIGHT" },
-  { at: 1050, roof: "rooftop-sunset", sky: "skyline-sunset", tint: 0xd6a8ea, top: 0x4a2a72, bottom: 0xf0a6c8, name: "DAWN" },
-  { at: 1600, roof: "rooftop-night",  sky: "skyline-night",  tint: 0x88ffcc, top: 0x081a30, bottom: 0x1c5248, name: "AURORA" },
+  { at: 0,    roof: "rooftop-day",    sky: "skyline-day",    tint: 0xffffff, name: "DAY" },
+  { at: 250,  roof: "rooftop-sunset", sky: "skyline-sunset", tint: 0xffffff, name: "SUNSET" },
+  // Entornos NUEVOS (feedback fundadora: "pasar de tejados a otra visión —
+  // selva, playa, o la carretera estilo las calles italianas").
+  { at: 500,  roof: "rooftop-beach",  sky: "skyline-beach",  tint: 0xffffff, name: "BEACH" },
+  { at: 900,  roof: "rooftop-jungle", sky: "skyline-jungle", tint: 0xffffff, name: "JUNGLE" },
+  { at: 1350, roof: "rooftop-italy",  sky: "skyline-italy",  tint: 0xffffff, name: "LITTLE ITALY" },
+  { at: 1900, roof: "rooftop-night",  sky: "skyline-night",  tint: 0xffffff, name: "NIGHT" },
+  { at: 2500, roof: "rooftop-night",  sky: "skyline-night",  tint: 0x88ffcc, name: "AURORA" },
 ];

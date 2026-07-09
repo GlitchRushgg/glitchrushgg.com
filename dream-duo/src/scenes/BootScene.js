@@ -7,7 +7,8 @@ import { W, H } from "../const.js";
 import { SDK } from "../utils/SDK.js";
 
 const ART = [
-  "eliz-run-a", "eliz-run-b", "eliz-jump", "eliz-fairy",
+  "eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4", // natural 4-phase run cycle
+  "eliz-run-a", "eliz-jump", "eliz-fairy",
   "flofy-hop", "flofy-fall", "flofy-front",
   "ob-hedge", "ob-bench", "ob-birdbath", "ob-pigeon",
   "ob-cloud", "ob-blocks", "ob-top",
@@ -129,10 +130,10 @@ export class BootScene extends Phaser.Scene {
       const s = maxH ? targetH / maxH : 1;
       keys.forEach((k) => this.registry.set(`scale:${k}`, s));
     };
-    norm(["eliz-run-a", "eliz-run-b", "eliz-jump"], 158);
-    norm(["eliz-fairy"], 150);
-    norm(["flofy-hop", "flofy-fall"], 102);
-    norm(["pw-mama", "pw-papa", "pw-cristian"], 132);
+    norm(["eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4", "eliz-run-a", "eliz-jump"], 178);
+    norm(["eliz-fairy"], 166);
+    norm(["flofy-hop", "flofy-fall"], 114);
+    norm(["pw-mama", "pw-papa", "pw-cristian"], 148);
   }
 
   _starPath(t, cx, cy, R, r, n) {
