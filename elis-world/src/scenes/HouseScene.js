@@ -1,4 +1,4 @@
-// ELIZABETH'S WORLD — the house. A cozy Toca-style sandbox:
+// ELI'S WORLD — the house. A cozy dollhouse sandbox:
 //   · move through 4 rooms (arrows; drag a family member onto an arrow to
 //     send them next door)
 //   · PAINT the walls (10 colors × 4 patterns; the garden paints its fence)

@@ -28,7 +28,7 @@ export class MenuScene extends Phaser.Scene {
       this.tweens.add({ targets: e, y: e.y - 14, duration: 1100, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     }
 
-    this.add.text(W / 2 + 60, 170, "ELIZABETH'S", {
+    this.add.text(W / 2 + 60, 170, "ELI'S", {
       fontFamily: FONT, fontSize: "58px", color: "#ff6b96", fontStyle: "bold", stroke: "#ffffff", strokeThickness: 10,
     }).setOrigin(0.5);
     this.add.text(W / 2 + 60, 248, "WORLD", {

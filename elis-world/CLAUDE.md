@@ -1,6 +1,10 @@
-# CLAUDE.md — ELIZABETH'S WORLD
+# CLAUDE.md — ELI'S WORLD
 
-**Toca-Boca-style cozy sandbox** (Elizabeth's favourite genre — founder
+*(folder `elis-world/`; renamed from "Elizabeth's World" 2026-07-10 on founder
+request — the internal localStorage key stays `elizabethsWorld_v1` so no saved
+house is wiped.)*
+
+**Cozy dollhouse sandbox** (Elizabeth's favourite genre — founder
 commission): a digital dollhouse with **no goals, no score, no fail state**.
 The player directs the story: drag the **canon family** (Elizabeth, Flofy,
 Mamá, Papá, Cristian) around **4 rooms** (living room, kitchen, bedroom,
@@ -19,8 +23,8 @@ family member is). English only. **NOT for CrazyGames** (child-directed =
 rejection there) — this one is for glitchrushgg.com and for Elizabeth.
 
 Part of the `glitchrushgg.com` monorepo — see root `CLAUDE.md`. IP rule: we
-copy the *genre* (dollhouse sandbox — not protectable), never the "Toca"
-name/art/trade dress.
+copy the *genre* (dollhouse sandbox — not protectable), never any competitor's
+name/art/trade dress; our 3D family-canon look is our own.
 
 ## Run locally
 
@@ -28,7 +32,7 @@ Static site with ES modules — serve over HTTP, don't open `file://`:
 
 ```powershell
 npx -y http-server -p 8080 -c-1 .   # from the repo root
-# open http://localhost:8080/elizabeths-world/
+# open http://localhost:8080/elis-world/
 ```
 
 ## Architecture
@@ -76,7 +80,7 @@ no physics engine (it's a dollhouse: drag & drop + tweens). No CrazyGames SDK.
 
 ## Status / pending
 
-- **PUBLISHED** at `https://glitchrushgg.com/elizabeths-world/` (2026-07-10,
+- **PUBLISHED** at `https://glitchrushgg.com/elis-world/` (2026-07-10,
   founder-ordered deploy). glitchrushgg.com only; never CrazyGames.
 - Wishlist (fase 2): dress-up wardrobe (fairy skin exists), ice-cream shop /
   pet-shop locations, planet-map hub, more reactions, PWA for tablet.

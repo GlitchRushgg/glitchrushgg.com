@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
 
     this.add.rectangle(W / 2, H / 2 + 40, 448, 22).setStrokeStyle(3, 0xff9ed2);
     const bar = this.add.rectangle(W / 2 - 220, H / 2 + 40, 8, 14, 0xff9ed2).setOrigin(0, 0.5);
-    this.add.text(W / 2, H / 2 - 40, "ELIZABETH'S WORLD", {
+    this.add.text(W / 2, H / 2 - 40, "ELI'S WORLD", {
       fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "44px", color: "#a05a78", fontStyle: "bold",
     }).setOrigin(0.5);
     this.load.on("progress", (p) => { bar.width = 440 * p; });
