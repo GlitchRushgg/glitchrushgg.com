@@ -38,10 +38,10 @@ export class BootScene extends Phaser.Scene {
     }
     // crayon artworks for frames
     for (const a of ["crayon-family", "crayon-rainbow", "crayon-bunny"]) this.load.image(a, `assets/art/${a}.png`);
-    // artwork reuses from other studio games (already-shipped art)
-    this.load.image("reuse-beach", "../hop-and-run/assets/art/skyline-beach.jpg");
-    this.load.image("reuse-italy", "../hop-and-run/assets/art/skyline-italy.jpg");
-    this.load.image("reuse-dream", "../dream-duo/assets/art/bg-dream-day.jpg");
+    // artwork backgrounds (copied local — self-contained, bug QA #3)
+    this.load.image("reuse-beach", "assets/art/reuse-beach.jpg");
+    this.load.image("reuse-italy", "assets/art/reuse-italy.jpg");
+    this.load.image("reuse-dream", "assets/art/reuse-dream.jpg");
   }
 
   create() {

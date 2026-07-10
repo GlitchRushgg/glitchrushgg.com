@@ -56,13 +56,17 @@ export class HouseScene extends Phaser.Scene {
 
   _clearRoom() {
     this.snd.waterOff();
+    // Matar los tweens ANTES de destruir (Phaser no los cancela al destruir el
+    // objeto): el tween infinito de "sentarse" (repeat:-1) seguía vivo sobre el
+    // sprite muerto → fuga de memoria/CPU en sesiones largas (bug QA B3).
+    this.layerRoom.list.forEach((o) => this.tweens.killTweensOf(o));
     this.layerWall.removeAll(true);
     this.layerRoom.removeAll(true);
-    this.items.forEach((i) => i.destroy());
+    this.items.forEach((i) => { this.tweens.killTweensOf(i); i.destroy(); });
     this.items = [];
-    this.paintSprites.forEach((p) => p.destroy());
+    this.paintSprites.forEach((p) => { this.tweens.killTweensOf(p); p.destroy(); });
     this.paintSprites = [];
-    Object.values(this.chars).forEach((c) => c.destroy());
+    Object.values(this.chars).forEach((c) => { this.tweens.killTweensOf(c); c.destroy(); });
     this.chars = {};
     this._glowStates = {};
     this._dropZones = [];
@@ -341,6 +345,7 @@ export class HouseScene extends Phaser.Scene {
         this.tweens.add({ targets: z, angle: 4, duration: 70, yoyo: true, repeat: 5, onComplete: () => z.setAngle(0) });
         this._removeItem(spr, false);
         this.time.delayedCall(600, () => {
+          if (!z.active) return; // guarda (bug QA #2): si cambió de sala, no spawnear el zumo en la sala nueva
           const j = this._spawnItem("juice", z.x, z.y - z.displayHeight - 10);
           this.tweens.add({ targets: j, y: j.y - 20, duration: 150, yoyo: true });
           this.snd.chime();
@@ -592,6 +597,7 @@ export class HouseScene extends Phaser.Scene {
   _bindDrag() {
     this.input.on("dragstart", (p, obj) => {
       obj._dragMoved = false;
+      obj._downX = p.x; obj._downY = p.y; // para el umbral tap-vs-arrastre
       if (obj._furn) {
         if (this.mode !== "none") { obj._noDrag = true; return; }
         obj._noDrag = false;
@@ -619,6 +625,10 @@ export class HouseScene extends Phaser.Scene {
     });
     this.input.on("drag", (p, obj, dx, dy) => {
       if (obj._noDrag) return;
+      // Umbral de 10px (bug QA #1): dedos de niña dan micro-movimiento; sin esto
+      // un TOQUE para que la tele brille se leía como arrastre de 2px y no
+      // disparaba la reacción. Por debajo del umbral = sigue siendo un tap.
+      if (!obj._dragMoved && Math.hypot(p.x - obj._downX, p.y - obj._downY) < 10) return;
       obj._dragMoved = true;
       if (obj._drawerArt && obj._spawned) { obj._spawned.x = dx; obj._spawned.y = dy; return; }
       obj.x = dx; obj.y = dy;

@@ -263,7 +263,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   _togglePause() {
-    if (this.dead) return;
+    // Durante el cut-in de la guitarra la física ya está pausada y se reanuda
+    // sola al terminar; permitir pausar aquí dejaba la física corriendo bajo el
+    // overlay → Cristian caía y moría injustamente (bug QA B1, confirmado).
+    if (this.dead || this.cutscene) return;
     this.paused = !this.paused;
     if (this.paused) {
       this._holdSrc.clear(); this.holding = false; // el pointerup puede perderse tras pausa/blur
@@ -553,8 +556,9 @@ export class GameScene extends Phaser.Scene {
       ui.forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
       if (this.dead) return;
       this.cutscene = false;
-      this.physics.resume();
-      this.anims.resumeAll();
+      // Solo reanudar si NO quedó en pausa: si no, la física corría bajo el
+      // overlay de pausa (bug QA B1). Al salir de pausa, _togglePause reanuda.
+      if (!this.paused) { this.physics.resume(); this.anims.resumeAll(); }
       this._afterCutIn(sup);
     });
   }

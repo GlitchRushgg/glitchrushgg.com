@@ -108,9 +108,17 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   async _share() {
-    const text = `I scored ${Save.get().best} in DREAM DUO 🌙✨ — one brain, two worlds at the same time. Beat me!`;
+    const sv = Save.get();
+    // Ver MenuScene._share: sv.best es Endless-only → fallback a niveles.
+    const done = Object.keys(sv.levelStars || {}).length;
+    const brag = sv.best > 0
+      ? `I scored ${sv.best}`
+      : (this.res.mode === "level")
+        ? `I cleared ${done} level${done > 1 ? "s" : ""} (★${sv.stars})`
+        : `I'm playing`;
+    const text = `${brag} in DREAM DUO 🌙✨ — one brain, two worlds at the same time. Beat me!`;
     let url = location.href;
-    const cg = await SDK.invite({ best: Save.get().best });
+    const cg = await SDK.invite({ best: sv.best });
     if (cg) url = cg;
     try { if (navigator.share) { await navigator.share({ title: "Dream Duo", text, url }); return; } } catch (e) {}
     try { await navigator.clipboard.writeText(text + " " + url); this.snd.ui(); } catch (e) {}

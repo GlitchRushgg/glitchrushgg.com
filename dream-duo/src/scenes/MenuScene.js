@@ -85,7 +85,16 @@ export class MenuScene extends Phaser.Scene {
 
   async _share() {
     const sv = Save.get();
-    const text = `I scored ${sv.best} in DREAM DUO 🌙✨ — one brain, two worlds at the same time. Can you beat me?`;
+    // El récord (sv.best) es de modo Endless, bloqueado hasta 8 niveles → un
+    // jugador de niveles compartía "I scored 0" (bug game-director). Si aún no
+    // hay récord, presumimos de niveles superados / estrellas.
+    const done = Object.keys(sv.levelStars || {}).length;
+    const brag = sv.best > 0
+      ? `I scored ${sv.best}`
+      : done > 0
+        ? `I cleared ${done} level${done > 1 ? "s" : ""} (★${sv.stars})`
+        : `I'm playing`;
+    const text = `${brag} in DREAM DUO 🌙✨ — one brain, two worlds at the same time. Can you beat me?`;
     let url = location.href;
     const cg = await SDK.invite({ best: sv.best });
     if (cg) url = cg;
