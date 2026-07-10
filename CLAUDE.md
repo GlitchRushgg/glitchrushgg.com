@@ -19,6 +19,7 @@ When working on a specific game, read that game's own `CLAUDE.md` for its archit
 - **[moondrop/](moondrop/)** — *"MOONDROP"*. A cosmic container drop-merge physics puzzle: merge celestial bodies up a 10-tier ladder to the Black Hole endgame. Custom circle physics, plain canvas, 100% procedural, CrazyGames SDK wired. See [moondrop/CLAUDE.md](moondrop/CLAUDE.md).
 - **[build-the-ark/](build-the-ark/)** — *"Build the Ark"*. A nautical idle-builder: tap driftwood, hire crew, raise the Ark part by part; offline earnings, daily streak and "Set Sail" prestige (Doves of Faith). Plain canvas + SVG icons, CrazyGames SDK wired. See [build-the-ark/CLAUDE.md](build-the-ark/CLAUDE.md).
 - **[dream-duo/](dream-duo/)** — *"DREAM DUO — Elizabeth & Flofy"*. A one-brain-two-worlds runner: Elizabeth runs the park below while her magic plush bunny hops the dream above — you control both at once. SYNC star pairs → ×5 multiplier → FAIRY RUSH; family power-ups; star shop with skins. Phaser 3, Replicate art from the family canon. See [dream-duo/CLAUDE.md](dream-duo/CLAUDE.md).
+- **[elizabeths-world/](elizabeths-world/)** — *"Elizabeth's World"*. A cozy Toca-style dollhouse sandbox starring the family canon: move everyone through 4 rooms, paint the walls, hang pictures, move every piece of furniture, sit the family down, cook in the kitchen — no goals, just stories. Everything persists. Web-only (never CrazyGames: child-directed). See [elizabeths-world/CLAUDE.md](elizabeths-world/CLAUDE.md).
 
 ## Other top-level content
 
