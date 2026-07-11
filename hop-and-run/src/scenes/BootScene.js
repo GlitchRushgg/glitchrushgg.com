@@ -36,7 +36,7 @@ export class BootScene extends Phaser.Scene {
     for (const t of ["rooftop-day", "rooftop-sunset", "rooftop-night",
       "rooftop-beach", "rooftop-jungle", "rooftop-italy"]) this.load.image(t, ART + t + ".jpg");
     for (const t of ["skyline-day", "skyline-sunset", "skyline-night",
-      "skyline-beach", "skyline-jungle", "skyline-italy"]) this.load.image(t, ART + t + ".jpg");
+      "skyline-beach", "skyline-jungle", "skyline-italy", "skyline-aurora"]) this.load.image(t, ART + t + ".jpg");
 
     for (const t of ["fruit-apple", "fruit-banana", "fruit-orange", "fruit-melon",
       "animal-kitten", "animal-puppy", "animal-chick",

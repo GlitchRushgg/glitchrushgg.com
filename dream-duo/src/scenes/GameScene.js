@@ -164,6 +164,27 @@ export class GameScene extends Phaser.Scene {
 
     this.shieldE = this.add.image(PLAYER_X, GROUND - 70, "shield").setDepth(11).setVisible(false).setScale(1.15);
     this.shieldF = this.add.image(FLOFY_X, HOVER, "shield").setDepth(11).setVisible(false).setScale(0.85);
+
+    // Hilo mágico permanente Elizabeth↔Flofy (auditoría: que se lean como UNA
+    // unidad, no dos entidades separadas — la queja de fondo de la fundadora).
+    this.tether = this.add.graphics().setDepth(9);
+  }
+
+  _drawTether() {
+    this.tether.clear();
+    if (this.rushT > 0) return; // en el rush vuelan juntos, no hace falta
+    const ex = PLAYER_X, ey = this.E.y - this.E.spr.displayHeight * 0.55;
+    const fx = FLOFY_X, fy = this.F.y;
+    const cx = (ex + fx) / 2, cy = Math.min(ey, fy) - 26 + Math.sin(this.tt * 3) * 4;
+    // Bézier cuadrática manual (Phaser Graphics no tiene quadraticCurveTo).
+    this.tether.lineStyle(3, 0xfff2b0, 0.4);
+    this.tether.beginPath();
+    this.tether.moveTo(ex, ey);
+    for (let i = 1; i <= 10; i++) {
+      const t = i / 10, u = 1 - t;
+      this.tether.lineTo(u * u * ex + 2 * u * t * cx + t * t * fx, u * u * ey + 2 * u * t * cy + t * t * fy);
+    }
+    this.tether.strokePath();
   }
 
   /* ================= HUD ================= */
@@ -487,6 +508,7 @@ export class GameScene extends Phaser.Scene {
     this._moveWorld(dt);
     if (!this.finishing) this._collide();
     this._updatePairs(dt);
+    this._drawTether();
     this._trail(dt);
   }
 
@@ -776,7 +798,8 @@ export class GameScene extends Phaser.Scene {
     this.hearts--;
     this._refreshHearts();
     this.mult = 1;
-    this.meter = Math.max(0, this.meter - 1);
+    // Un golpe resetea el multiplicador pero YA NO vacía el Dream Meter
+    // (auditoría: doble castigo hacía casi imposible llegar al FAIRY RUSH).
     this._refreshMeter();
     this.invuln = 1.4;
     o._popped = true; this._popObstacle(o, false);

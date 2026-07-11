@@ -68,10 +68,20 @@ export function buildCourse(levelIdx, PX_PER_M) {
     starCount += 3;
   }
 
-  // one family pickup mid-level from level 3 on (rotates)
-  if (levelIdx >= 2) {
-    const kinds = ["mama", "papa", "cristian"];
-    events.push({ x: startPad + usable * 0.55, kind: "pickup", type: kinds[levelIdx % 3] });
+  // Nivel 1: cinta de estrellas AÉREAS garantizada al principio para que la
+  // mano derecha (Flofy) tenga trabajo desde el primer segundo (auditoría: en
+  // L1 el segundo botón no servía para nada → no se entendía el juego dual).
+  if (levelIdx === 0) {
+    events.push({ x: startPad + 240, kind: "line", lane: "air" });
+    starCount += 3;
+  }
+
+  // GIRO cada 4 niveles (4/8/12): una "SYNC STORM" — ráfaga de 3 pares de sync
+  // juntos a media pista (reusa el sistema de pares, sin mecánica nueva) que
+  // dispara el FAIRY RUSH y da a esos niveles un clímax reconocible.
+  if ((levelIdx + 1) % 4 === 0) {
+    const base = startPad + usable * 0.6;
+    for (let i = 0; i < 3; i++) { events.push({ x: base + i * 150, kind: "pair" }); starCount += 2; }
   }
 
   events.sort((a, b) => a.x - b.x);

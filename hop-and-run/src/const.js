@@ -9,13 +9,14 @@ export const PLAYER_X = 280;
 // platforms use. Sky = gradient stops for the background graphics. `tint`
 // recolours the reused art so late sectors feel distinct without new assets.
 export const SECTORS = [
+  // Umbrales ACERCADOS (auditoría game-director: con récord ~700m casi nadie
+  // veía playa/selva/Italia a 500-1350m) → ahora se disfrutan de verdad.
   { at: 0,    roof: "rooftop-day",    sky: "skyline-day",    tint: 0xffffff, name: "DAY" },
-  { at: 250,  roof: "rooftop-sunset", sky: "skyline-sunset", tint: 0xffffff, name: "SUNSET" },
-  // Entornos NUEVOS (feedback fundadora: "pasar de tejados a otra visión —
-  // selva, playa, o la carretera estilo las calles italianas").
-  { at: 500,  roof: "rooftop-beach",  sky: "skyline-beach",  tint: 0xffffff, name: "BEACH" },
-  { at: 900,  roof: "rooftop-jungle", sky: "skyline-jungle", tint: 0xffffff, name: "JUNGLE" },
-  { at: 1350, roof: "rooftop-italy",  sky: "skyline-italy",  tint: 0xffffff, name: "LITTLE ITALY" },
-  { at: 1900, roof: "rooftop-night",  sky: "skyline-night",  tint: 0xffffff, name: "NIGHT" },
-  { at: 2500, roof: "rooftop-night",  sky: "skyline-night",  tint: 0x88ffcc, name: "AURORA" },
+  { at: 200,  roof: "rooftop-sunset", sky: "skyline-sunset", tint: 0xffffff, name: "SUNSET" },
+  { at: 350,  roof: "rooftop-beach",  sky: "skyline-beach",  tint: 0xffffff, name: "BEACH" },
+  { at: 650,  roof: "rooftop-jungle", sky: "skyline-jungle", tint: 0xffffff, name: "JUNGLE" },
+  { at: 1000, roof: "rooftop-italy",  sky: "skyline-italy",  tint: 0xffffff, name: "LITTLE ITALY" },
+  { at: 1400, roof: "rooftop-night",  sky: "skyline-night",  tint: 0xffffff, name: "NIGHT" },
+  // AURORA con cielo PROPIO (ya no clona la noche con un tinte).
+  { at: 1900, roof: "rooftop-night",  sky: "skyline-aurora", tint: 0xffffff, name: "AURORA" },
 ];

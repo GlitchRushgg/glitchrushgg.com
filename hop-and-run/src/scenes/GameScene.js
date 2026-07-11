@@ -206,7 +206,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   _hudHit(p) {
-    return p.y < 104 && p.x > W - 250;
+    // Ceñido a los botones reales (mute/pausa) — antes un bloque 250×104 se
+    // comía saltos con el pulgar apoyado arriba-derecha (auditoría M3).
+    return p.y < 76 && p.x > W - 170;
   }
 
   _buildInput() {
@@ -415,7 +417,9 @@ export class GameScene extends Phaser.Scene {
       this._addPickup(left + width / 2, top - 155, "item-guitar", "super-guitar", 90);
     }
     if (meters >= this._nextGuitarAt) {
-      this._nextGuitarAt += 400;   // guitarra mucho más frecuente (feedback fundadora)
+      // Menos frecuente que antes (auditoría: guitarra cada 400m = ~45% de la
+      // run invencible; ahora cada 550m). La primera sigue a 60m (el hook).
+      this._nextGuitarAt += 550;
       this._addPickup(left + width / 2 - 80, top - 140, "item-guitar", "guitar", 72);
     }
     // Corazón de CONTINUAR: guárdalo y al caer sigues la partida (máx 2).
@@ -487,19 +491,23 @@ export class GameScene extends Phaser.Scene {
   }
 
   _startSolo() {
-    this.soloT = 9;   // más largo (feedback de la fundadora): el poder dura más
+    this.soloT = 7;   // algo más corto (auditoría: bajar el % de invencibilidad)
     this.superSolo = false;
     this.snd.soloStart();
     this._playSoloAudio("guitarSolo", 0.8);   // solo de guitarra REAL (Pixabay)
-    this._soloCutIn(false);
+    // Guitarra normal: FLASH rápido SIN congelar (el cut-in cinemático completo
+    // se reserva para la SUPER — auditoría: proteger el flow del runner de un
+    // botón y hacer el gran cut-in más raro/especial/clipeable).
+    this.cameras.main.flash(300, 255, 224, 102);
+    this._afterCutIn(false);
   }
 
   _startSuperSolo() {
-    this.soloT = 14;   // la super guitarra dura MÁS (feedback de la fundadora)
+    this.soloT = 13;   // la super dura más y ES el momento cinemático
     this.superSolo = true;
     this.snd.soloStart();
     this._playSoloAudio("superGuitar", 0.85);   // rock potente (Pixabay)
-    this._soloCutIn(true);
+    this._soloCutIn(true);   // cut-in completo (freeze) solo aquí
   }
 
   // CUT-IN cinemático (feedback fundadora: "una pantalla como la inicial donde
@@ -651,7 +659,11 @@ export class GameScene extends Phaser.Scene {
     // Energy drain — the clock that keeps you hungry. Proporcional a la
     // velocidad (4.5/s a 300 → 9.6/s a 640): a más velocidad pasan más
     // plataformas (más fruta/s), así la presión no se invierte en el late game.
-    this.energy -= 0.015 * this.speed * dt;
+    // RAMPA POST-PLATEAU (auditoría: la velocidad topa ~680m y con solos+vidas
+    // el experto casi no muere → runs largas tediosas): tras 700m la energía se
+    // drena progresivamente más rápido para que las runs largas tengan tensión.
+    const lateRamp = 1 + Math.max(0, meters - 700) * 0.0005;   // 1.4× a 1500m, ~2× a 2500m
+    this.energy -= 0.015 * this.speed * lateRamp * dt;
     if (this.energy <= 25) {
       this._lowBeepT -= dt;
       if (this._lowBeepT <= 0) { this._lowBeepT = 1.6; this.snd.lowEnergy(); }
@@ -871,6 +883,11 @@ export class GameScene extends Phaser.Scene {
     // plataforma de rescate justo debajo
     const top = 520;
     this._spawnPlatform(PLAYER_X - 240, top, 600);
+    // El spawner reconstruye un tramo limpio DELANTE de la plataforma de rescate
+    // (auditoría M1: si no, el hueco hacia la siguiente plataforma no estaba
+    // controlado y podías "revivir y casi volver a caer").
+    this.lastRight = PLAYER_X - 240 + 600;
+    this.hazards.children.iterate((h) => { if (h) { this.tweens.killTweensOf(h); h.destroy(); } });
     this.player.setPosition(PLAYER_X, top - 12);
     this.player.body.setVelocity(0, 0);
     this.energy = Math.max(this.energy, 60);

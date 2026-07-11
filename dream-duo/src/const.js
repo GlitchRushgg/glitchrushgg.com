@@ -9,7 +9,9 @@ export const FLOFY_X = 400;    // Flofy floats just ahead of her, same world
 // ONE world: the park fills the whole screen (founder feedback — the split
 // worlds read as confusing; now Flofy visibly floats BY HER SIDE).
 export const GROUND = 642;     // Elizabeth's path
-export const HOVER = 330;      // Flofy's hover baseline (his magic keeps him afloat)
+// Flofy flota MÁS CERCA de Elizabeth (auditoría: 312px de separación hacían que
+// el ojo cruzara media pantalla = la queja de fondo "no los entiendo juntos").
+export const HOVER = 452;      // Flofy's hover baseline (his magic keeps him afloat)
 export const HOVER_MIN = 90;   // how high a boost can carry him
 export const SKY_TOP = 40;
 
@@ -35,7 +37,9 @@ export const ENDLESS_BIOME_AT = [0, 400, 900]; // meters
 
 export const SYNC_WINDOW = 0.7;
 export const MAX_MULT = 5;
-export const METER_MAX = 5;
+// 3 syncs para el FAIRY RUSH (auditoría: con 5 no se veía hasta el nivel ~6;
+// el momento TikTok debe alcanzarse en el nivel 1-2 y verlo todo el mundo).
+export const METER_MAX = 3;
 export const RUSH_SECS = 8;
 export const SHIELD_SECS = 8;
 export const DASH_SECS = 4;
