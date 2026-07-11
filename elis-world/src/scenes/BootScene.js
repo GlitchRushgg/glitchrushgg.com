@@ -2,7 +2,7 @@
 // break Elizabeth's game), normalizes character heights, and builds the
 // procedural textures: floors, wall patterns, frames, particles.
 
-import { W, H, PAINTS } from "../const.js";
+import { W, H, PAINTS, ACCESSORIES } from "../const.js";
 import { ROOMS } from "../data/rooms.js";
 import { FOODS } from "../data/rooms.js";
 
@@ -22,9 +22,12 @@ export class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.load.on("progress", (p) => { bar.width = 440 * p; });
 
-    // family
+    // family + pet
     for (const c of CHARS) this.load.image(c, `assets/art/${c}.png`);
     this.load.image("celebrating", "assets/art/celebrating.png");
+    this.load.image("pet", "assets/art/pet-puppy.png");
+    // dress-up accessories
+    for (const a of Object.keys(ACCESSORIES)) this.load.image(a, `assets/art/${a}.png`);
     // furniture (every key used across rooms)
     const keys = new Set();
     Object.values(ROOMS).forEach((r) => r.furniture.forEach((f) => keys.add(f.key)));
@@ -182,8 +185,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   _normalize() {
-    // shared display heights for the family (stored as scale in registry)
-    const target = { elizabeth: 215, flofy: 150, mama: 265, papa: 260, cristian: 268 };
+    // shared display heights for the family + pet (stored as scale in registry)
+    const target = { elizabeth: 215, flofy: 150, mama: 265, papa: 260, cristian: 268, pet: 96 };
     for (const [k, h] of Object.entries(target)) {
       if (!this.textures.exists(k)) continue;
       const src = this.textures.get(k).getSourceImage();

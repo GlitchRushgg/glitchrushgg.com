@@ -10,11 +10,16 @@
   <style>
     html, body { margin: 0; padding: 0; background: #ffeef5; height: 100%; overflow: hidden; }
     #game { width: 100vw; height: 100vh; }
+    /* Enlace de privacidad discreto (higiene legal — auditoría). */
+    #privacy { position: fixed; bottom: 4px; right: 8px; z-index: 5;
+      font: 11px system-ui, sans-serif; color: #c79ab0; text-decoration: none; opacity: .7; }
+    #privacy:hover { opacity: 1; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"></script>
 </head>
 <body>
   <div id="game"></div>
+  <a id="privacy" href="/privacidad.html">Privacy</a>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

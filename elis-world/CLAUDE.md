@@ -6,21 +6,27 @@ house is wiped.)*
 
 **Cozy dollhouse sandbox** (Elizabeth's favourite genre — founder
 commission): a digital dollhouse with **no goals, no score, no fail state**.
-The player directs the story: drag the **canon family** (Elizabeth, Flofy,
-Mamá, Papá, Cristian) around **4 rooms** (living room, kitchen, bedroom,
-garden), **paint the walls** (10 colors × 4 patterns; the garden paints its
-fence), **hang pictures** (drawer of 8 artworks — 3 crayon drawings + reused
-studio canon; drag to hang, tap to swap art, drag off the wall to remove),
-**move every piece of furniture and toy** (drag anywhere; short tap = its
-reaction), **sit the family down** (sofa/armchair/rug/picnic/sandbox — tall
-characters sit behind the backrest, small ones on the cushion), and play in
-the **kitchen** (fridge opens with food, pan cooks bread→toast and egg→fried
-egg, blender makes juice, the tap runs, feed anyone). Reactions everywhere:
-TV/lamps glow, aquarium bubbles, cuckoo sings, radio plays, tree drops
-apples, beds = 💤, swing swings, trampoline bounces, Flofy fits in the hutch.
-**Everything persists** (walls, pictures, furniture positions, where each
-family member is). English only. **NOT for CrazyGames** (child-directed =
-rejection there) — this one is for glitchrushgg.com and for Elizabeth.
+The player directs the story: drag the **canon family + a pet puppy**
+(Elizabeth, Flofy, Mamá, Papá, Cristian, puppy) around **5 rooms** (living
+room, kitchen, **bathroom**, bedroom, garden), **paint the walls** (10 colors
+× 4 patterns; the garden paints its fence), **hang pictures** (drawer of 8
+artworks; drag to hang, tap to swap, drag off to remove), **move every piece
+of furniture and toy** (drag anywhere; short tap = its reaction, with a 10px
+tap-vs-drag threshold for small fingers), **sit the family down**
+(sofa/armchair/rug/picnic/sandbox — pose persists), **dress up** (👗 drawer:
+crown / party-hat / bow / fairy-wings snap onto anyone and persist), a
+**day/night toggle** (🌙 darkens the whole house + stars + moon), and lots
+of play: kitchen (fridge, pan cooks bread→toast & egg→fried egg, blender
+makes juice, tap runs, feed anyone → 😋), **bathroom** (bathe a character →
+bubbles 🛁, rubber duck squeaks), **birthday** (drop cake/cupcake on a table →
+🎂 candles + family gathers + confetti + fanfare). Reactions everywhere (TV/
+lamps glow, aquarium bubbles, cuckoo sings, radio plays, tree drops apples,
+beds 💤, swing, trampoline, puppy/Flofy fit in the doghouse/hutch) plus
+**ambient surprises** (butterflies, birds, falling apples on a timer). A soft
+**RESET** lives in the dress-up bar. **Everything persists** (walls, pictures,
+furniture, worn outfits, day/night, where everyone is). English only.
+**NOT for CrazyGames** (child-directed = rejection there) — for glitchrushgg.com
+and for Elizabeth.
 
 Part of the `glitchrushgg.com` monorepo — see root `CLAUDE.md`. IP rule: we
 copy the *genre* (dollhouse sandbox — not protectable), never any competitor's

@@ -11,14 +11,14 @@
 
 import {
   W, H, WALL_TOP, WALL_BOT, FLOOR_Y, CHAR_MIN_Y, CHAR_MAX_Y,
-  ROOM_ORDER, PAINTS, PATTERNS, ARTWORKS,
+  ROOM_ORDER, PAINTS, PATTERNS, ARTWORKS, ACCESSORIES,
 } from "../const.js";
 import { ROOMS, CHAR_START, FOODS, FRIDGE_MENU } from "../data/rooms.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
 
 const FONT = "'Segoe UI', system-ui, sans-serif";
-const ROOM_LABEL = { living: "LIVING ROOM", kitchen: "KITCHEN", bedroom: "BEDROOM", garden: "GARDEN" };
+const ROOM_LABEL = { living: "LIVING ROOM", kitchen: "KITCHEN", bathroom: "BATHROOM", bedroom: "BEDROOM", garden: "GARDEN" };
 
 export class HouseScene extends Phaser.Scene {
   constructor() { super("House"); }
@@ -41,6 +41,7 @@ export class HouseScene extends Phaser.Scene {
     this._buildRoom();
     this._buildHUD();
     this._bindDrag();
+    if (Save.get().night) this._applyNight(false); // restaurar modo noche
 
     Save.get().visits++; Save.persist();
   }
@@ -66,7 +67,11 @@ export class HouseScene extends Phaser.Scene {
     this.items = [];
     this.paintSprites.forEach((p) => { this.tweens.killTweensOf(p); p.destroy(); });
     this.paintSprites = [];
-    Object.values(this.chars).forEach((c) => { this.tweens.killTweensOf(c); c.destroy(); });
+    Object.values(this.chars).forEach((c) => {
+      this.tweens.killTweensOf(c);
+      (c._acc || []).forEach((a) => a.destroy()); // los accesorios NO están en layerRoom → destruir a mano
+      c.destroy();
+    });
     this.chars = {};
     this._glowStates = {};
     this._dropZones = [];
@@ -157,23 +162,61 @@ export class HouseScene extends Phaser.Scene {
   /* ============================ CHARACTERS ============================ */
 
   _spawnChar(name, x, y) {
+    const st = Save.get().chars[name] || {};
     const spr = this.add.image(x, Phaser.Math.Clamp(y, CHAR_MIN_Y, CHAR_MAX_Y), name).setOrigin(0.5, 1);
     spr.setScale(this.registry.get(`scale:${name}`) || 0.2);
     spr.setDepth(14);
     spr.setInteractive({ useHandCursor: true, draggable: true });
     spr._char = name;
     spr._baseScale = spr.scale;
+    spr._acc = [];
     this.chars[name] = spr;
+    // re-apply a saved "sitting" pose (bug QA #4: antes aparecía de pie)
+    if (st.sitting) {
+      spr.y = Phaser.Math.Clamp(st.y || y, CHAR_MIN_Y, CHAR_MAX_Y);
+      spr._sitting = true;
+      this.tweens.add({ targets: spr, y: spr.y - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    }
+    this._drawAccessories(spr);
     return spr;
+  }
+
+  // Dress-up: draw the accessories this character wears, following the sprite.
+  _drawAccessories(spr) {
+    (spr._acc || []).forEach((a) => a.destroy());
+    spr._acc = [];
+    const worn = Save.get().worn[spr._char] || [];
+    for (const key of worn) {
+      const def = ACCESSORIES[key];
+      if (!def || !this.textures.exists(key)) continue;
+      const img = this.add.image(0, 0, key).setDepth(def.back ? spr.depth - 1 : spr.depth + 1);
+      img.setScale((def.h / img.height) * (spr.scale / spr._baseScale || 1));
+      img._accKey = key; img._def = def;
+      spr._acc.push(img);
+    }
+    this._posAccessories(spr);
+  }
+  _posAccessories(spr) {
+    const headY = spr.y - spr.displayHeight;
+    for (const img of spr._acc) {
+      const d = img._def;
+      img.x = spr.x + spr.displayWidth * (d.offX || 0);
+      img.y = headY + spr.displayHeight * (d.offY || 0);
+    }
   }
 
   _charTap(spr) {
     this.snd.giggle();
-    this.tweens.add({ targets: spr, y: spr.y - 46, duration: 190, yoyo: true, ease: "Quad.out" });
+    this.tweens.add({ targets: spr, y: spr.y - 46, duration: 190, yoyo: true, ease: "Quad.out", onUpdate: () => this._posAccessories(spr) });
+    // emoción variada (game-director #5): la mayoría corazones, a veces otra
+    const moods = ["heart", "😆", "🎵", "😍", "⭐"];
+    const mood = Math.random() < 0.55 ? "heart" : Phaser.Utils.Array.GetRandom(moods);
     for (let i = 0; i < 4; i++) {
-      const h = this.add.image(spr.x + Phaser.Math.Between(-30, 30), spr.y - spr.displayHeight - 8, "heart")
-        .setDepth(41).setScale(0.8);
-      this.tweens.add({ targets: h, y: h.y - 50, alpha: 0, duration: 700, delay: i * 90, onComplete: () => h.destroy() });
+      const x = spr.x + Phaser.Math.Between(-30, 30), y = spr.y - spr.displayHeight - 8;
+      const o = mood === "heart"
+        ? this.add.image(x, y, "heart").setDepth(41).setScale(0.8)
+        : this.add.text(x, y, mood, { fontSize: "26px" }).setOrigin(0.5).setDepth(41);
+      this.tweens.add({ targets: o, y: y - 50, alpha: 0, duration: 700, delay: i * 90, onComplete: () => o.destroy() });
     }
   }
 
@@ -286,6 +329,15 @@ export class HouseScene extends Phaser.Scene {
         else this.snd.waterOff();
         break;
       }
+      case "duck": {
+        this.snd.boing();
+        this.tweens.add({ targets: spr, scaleY: spr.scaleY * 0.7, duration: 90, yoyo: true });
+        for (let i = 0; i < 4; i++) {
+          const b = this.add.image(spr.x + Phaser.Math.Between(-14, 14), spr.y - spr.displayHeight * 0.6, "bubble").setDepth(41);
+          this.tweens.add({ targets: b, y: b.y - 50, alpha: 0, duration: 700, delay: i * 90, onComplete: () => b.destroy() });
+        }
+        break;
+      }
     }
   }
 
@@ -356,6 +408,9 @@ export class HouseScene extends Phaser.Scene {
         spr.x = Phaser.Math.Clamp(x, z.x - z.displayWidth * 0.3, z.x + z.displayWidth * 0.3);
         spr.y = z.y - z.displayHeight * 0.82;
         this.snd.drop();
+        // CUMPLEAÑOS (game-director #4): tarta/cupcake en la mesa → velas +
+        // la familia de la sala se acerca + confeti + fanfarria.
+        if (spr._item === "cake" || spr._item === "cupcake") this._birthday(spr.x, spr.y);
         return;
       }
     }
@@ -394,10 +449,26 @@ export class HouseScene extends Phaser.Scene {
         this.tweens.add({ targets: spr, y: spr.y - 120, duration: 320, yoyo: true, repeat: 3, ease: "Quad.out", onComplete: () => { spr.y = z.y - z.displayHeight * 0.6; this._persistChar(name, spr); } });
         return;
       }
-      if (f.drop === "hide" && name === "flofy") {
+      if (f.drop === "hide" && (name === "flofy" || name === "pet")) {
         spr.x = z.x; spr.y = z.y - 14;
         this.snd.giggle();
         this._floatEmoji(z.x, z.y - z.displayHeight - 10, "❤");
+        this._persistChar(name, spr);
+        return;
+      }
+      if (f.drop === "bathe") {
+        // BAÑO (game-director #1): el personaje se mete en la bañera, burbujas
+        // + patito de goma, tras el frente de la bañera (piernas ocultas).
+        spr.x = z.x; spr.y = z.y - z.displayHeight * 0.42;
+        spr.setAngle(0);
+        this.layerRoom.add(spr);
+        this.layerRoom.moveTo(spr, Math.max(0, this.layerRoom.getIndex(z)));
+        this.snd.splash();
+        this._floatEmoji(z.x, z.y - z.displayHeight - 10, "🛁");
+        for (let i = 0; i < 8; i++) {
+          const b = this.add.image(z.x + Phaser.Math.Between(-40, 40), z.y - z.displayHeight * 0.4, "bubble").setDepth(41);
+          this.tweens.add({ targets: b, y: b.y - Phaser.Math.Between(40, 90), alpha: 0, duration: 900, delay: i * 80, onComplete: () => b.destroy() });
+        }
         this._persistChar(name, spr);
         return;
       }
@@ -435,6 +506,7 @@ export class HouseScene extends Phaser.Scene {
   _persistChar(name, spr) {
     const st = Save.get().chars[name];
     st.room = this.room; st.x = Math.round(spr.x); st.y = Math.round(spr.y);
+    st.sitting = !!spr._sitting; // pose sentado persiste (bug QA #4)
     Save.persist();
   }
 
@@ -487,9 +559,15 @@ export class HouseScene extends Phaser.Scene {
       return { btn, t };
     };
     let x = 60;
-    if (window.self === window.top) { mkIcon(x, "🏠", () => { window.location.href = "/"; }); x += 100; }
-    this._paintBtn = mkIcon(x, "🖌️", () => this._toggleMode("paint")); x += 100;
-    this._frameBtn = mkIcon(x, "🖼️", () => this._toggleMode("frames")); x += 100;
+    if (window.self === window.top) { mkIcon(x, "🏠", () => { window.location.href = "/"; }); x += 92; }
+    this._paintBtn = mkIcon(x, "🖌️", () => this._toggleMode("paint")); x += 92;
+    this._frameBtn = mkIcon(x, "🖼️", () => this._toggleMode("frames")); x += 92;
+    this._dressBtn = mkIcon(x, "👗", () => this._toggleMode("dress")); x += 92;
+    // día/noche (game-director #2): un botón que oscurece toda la casa
+    this._dayNight = mkIcon(x, Save.get().night ? "☀️" : "🌙", () => {
+      this._toggleNight();
+      this._dayNight.t.setText(Save.get().night ? "☀️" : "🌙");
+    }); x += 92;
     const mute = mkIcon(W - 60, this.snd.muted ? "🔇" : "🔊", () => {
       this.snd.setMuted(!this.snd.muted);
       if (!this.snd.muted) this.snd.startMusic();
@@ -526,6 +604,37 @@ export class HouseScene extends Phaser.Scene {
     if (this._modeUI) { this._modeUI.destroy(true); this._modeUI = null; }
     if (this.mode === "paint") this._refreshPaintUI();
     if (this.mode === "frames") this._buildFramesUI();
+    if (this.mode === "dress") this._buildDressUI();
+  }
+
+  /* ============================ DAY / NIGHT ============================ */
+
+  _toggleNight() {
+    const sv = Save.get();
+    sv.night = !sv.night;
+    Save.persist();
+    this.snd.chime();
+    this._applyNight(true);
+  }
+
+  _applyNight(animate) {
+    const on = Save.get().night;
+    if (on && !this._nightOverlay) {
+      this._nightOverlay = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a44, 0).setDepth(35);
+      this._nightStars = [];
+      for (let i = 0; i < 26; i++) {
+        const s = this.add.image(Phaser.Math.Between(30, W - 30), Phaser.Math.Between(30, 460), "sparkle")
+          .setDepth(36).setTint(0xfff2b0).setScale(Phaser.Math.FloatBetween(0.4, 0.9)).setAlpha(0);
+        this.tweens.add({ targets: s, alpha: { from: 0.3, to: 0.9 }, duration: Phaser.Math.Between(800, 1600), yoyo: true, repeat: -1 });
+        this._nightStars.push(s);
+      }
+      this._moon = this.add.image(1130, 90, "glowdisc").setDepth(36).setScale(2.4).setTint(0xdfe8ff).setAlpha(0);
+    }
+    if (this._nightOverlay) {
+      this.tweens.add({ targets: this._nightOverlay, fillAlpha: on ? 0.42 : 0, duration: animate ? 700 : 0 });
+      this._nightStars.forEach((s) => s.setVisible(on));
+      if (this._moon) this.tweens.add({ targets: this._moon, alpha: on ? 0.8 : 0, duration: animate ? 700 : 0 });
+    }
   }
 
   _refreshPaintUI() {
@@ -541,14 +650,15 @@ export class HouseScene extends Phaser.Scene {
       b.on("pointerdown", () => this._applyPaint(col, null));
       c.add(b);
     });
-    // patterns (not for the garden fence)
+    // patterns (not for the garden fence) — botones más altos (qa #7: 34px era
+    // poco para dedos de niña; ahora 50px).
     if (this.room !== "garden") {
       PATTERNS.forEach((pat, i) => {
         const x = W / 2 - 330 + i * 180;
-        const bg = this.add.rectangle(x, H - 40, 150, 34, 0xffeef5).setStrokeStyle(2, 0xffb3cd)
+        const bg = this.add.rectangle(x, H - 38, 158, 50, 0xffeef5).setStrokeStyle(2, 0xffb3cd)
           .setInteractive({ useHandCursor: true });
-        const label = this.add.text(x, H - 40, pat === "none" ? "PLAIN" : pat.toUpperCase(), {
-          fontFamily: FONT, fontSize: "16px", color: "#a05a78", fontStyle: "bold",
+        const label = this.add.text(x, H - 38, pat === "none" ? "PLAIN" : pat.toUpperCase(), {
+          fontFamily: FONT, fontSize: "17px", color: "#a05a78", fontStyle: "bold",
         }).setOrigin(0.5);
         bg.on("pointerdown", () => this._applyPaint(null, pat));
         c.add(bg); c.add(label);
@@ -592,6 +702,87 @@ export class HouseScene extends Phaser.Scene {
     });
   }
 
+  // Vestidor (game-director #3): arrastra un accesorio sobre un personaje para
+  // ponérselo; tócalo de nuevo (mismo accesorio) para quitárselo. + botón reset.
+  _buildDressUI() {
+    const c = this.add.container(0, 0).setDepth(70);
+    this._modeUI = c;
+    const bar = this.add.rectangle(W / 2, H - 84, 1000, 140, 0xffffff, 0.94).setStrokeStyle(4, 0xffb3cd);
+    c.add(bar);
+    c.add(this.add.text(W / 2, H - 144, "Drag an accessory onto anyone · drag it off to remove", {
+      fontFamily: FONT, fontSize: "15px", color: "#b98aa0",
+    }).setOrigin(0.5));
+    const keys = Object.keys(ACCESSORIES);
+    keys.forEach((key, i) => {
+      const img = this.add.image(W / 2 - 330 + i * 150, H - 78, key)
+        .setInteractive({ useHandCursor: true, draggable: true });
+      img.setScale(Math.min(1, 90 / img.height));
+      img._drawerAcc = key;
+      c.add(img);
+    });
+    // reset suave (encargo/qa): re-ordena TODA la casa desde cero
+    const reset = this.add.text(W - 150, H - 84, "↺ RESET", {
+      fontFamily: FONT, fontSize: "18px", color: "#ffffff", fontStyle: "bold", backgroundColor: "#e08aa8",
+    }).setOrigin(0.5).setPadding(16, 10, 16, 10).setInteractive({ useHandCursor: true });
+    reset.on("pointerdown", () => this._confirmReset());
+    c.add(reset);
+  }
+
+  _confirmReset() {
+    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.6).setDepth(95).setInteractive();
+    const box = this.add.container(0, 0).setDepth(96);
+    box.add(this.add.text(W / 2, H / 2 - 40, "Start the house fresh?", { fontFamily: FONT, fontSize: "30px", color: "#fff", fontStyle: "bold" }).setOrigin(0.5));
+    const yes = this.add.text(W / 2 - 90, H / 2 + 30, "YES", { fontFamily: FONT, fontSize: "24px", color: "#fff", fontStyle: "bold", backgroundColor: "#e08aa8" }).setOrigin(0.5).setPadding(26, 12, 26, 12).setInteractive({ useHandCursor: true });
+    const no = this.add.text(W / 2 + 90, H / 2 + 30, "NO", { fontFamily: FONT, fontSize: "24px", color: "#a05a78", fontStyle: "bold", backgroundColor: "#ffffff" }).setOrigin(0.5).setPadding(26, 12, 26, 12).setInteractive({ useHandCursor: true });
+    yes.on("pointerdown", () => { Save.reset(); this.scene.restart(); });
+    no.on("pointerdown", () => { veil.destroy(); box.destroy(true); });
+    box.add(yes); box.add(no);
+  }
+
+  /* ============================ DRESS-UP / BIRTHDAY ============================ */
+
+  _equipAccessory(key, x, y) {
+    // ¿sobre un personaje? → ponérselo (o quitárselo si ya lo lleva)
+    for (const [name, spr] of Object.entries(this.chars)) {
+      const r = new Phaser.Geom.Rectangle(spr.x - spr.displayWidth / 2, spr.y - spr.displayHeight, spr.displayWidth, spr.displayHeight);
+      if (!r.contains(x, y)) continue;
+      const worn = Save.get().worn[name] || (Save.get().worn[name] = []);
+      const i = worn.indexOf(key);
+      if (i >= 0) worn.splice(i, 1); else worn.push(key);
+      Save.persist();
+      this._drawAccessories(spr);
+      this.snd.pick();
+      this._sparkle(spr.x, spr.y - spr.displayHeight, 6);
+      return;
+    }
+    this.snd.drop();
+  }
+
+  _birthday(x, y) {
+    this.snd.fanfare();
+    const cake = this.add.text(x, y - 34, "🎂", { fontSize: "40px" }).setOrigin(0.5).setDepth(42);
+    this.tweens.add({ targets: cake, y: cake.y - 10, scale: 1.15, duration: 500, yoyo: true, repeat: 2 });
+    this.time.delayedCall(1900, () => cake.destroy());
+    this._floatEmoji(x, y - 90, "🎉");
+    // la familia de la sala se acerca a celebrar
+    Object.values(this.chars).filter((c) => c._char !== "pet").slice(0, 3).forEach((c, i) => {
+      if (c._sitting) return;
+      this.tweens.add({ targets: c, x: Phaser.Math.Clamp(x + (i - 1) * 130, 90, W - 90), duration: 550, ease: "Sine.inOut",
+        onComplete: () => { this._charTap(c); this._persistChar(c._char, c); } });
+    });
+    this._confetti();
+  }
+
+  _confetti() {
+    for (let i = 0; i < 44; i++) {
+      const p = this.add.image(Phaser.Math.Between(0, W), -20, "confetti").setDepth(43)
+        .setScale(Phaser.Math.FloatBetween(0.5, 1)).setAngle(Math.random() * 360);
+      p.setCrop(Phaser.Math.Between(0, 4) * 12, 0, 9, 14);
+      this.tweens.add({ targets: p, y: H + 30, x: p.x + Phaser.Math.Between(-80, 80), angle: p.angle + Phaser.Math.Between(-360, 360),
+        duration: Phaser.Math.Between(1600, 2800), delay: Math.random() * 400, onComplete: () => p.destroy() });
+    }
+  }
+
   /* ============================ DRAG WIRING ============================ */
 
   _bindDrag() {
@@ -619,6 +810,11 @@ export class HouseScene extends Phaser.Scene {
         obj._spawned = this._hangPainting(data, false);
         obj._spawned.setDepth(75);
         this.snd.pick();
+      } else if (obj._drawerAcc) {
+        // fantasma del accesorio que sigue al dedo hasta soltarlo en alguien
+        obj._accGhost = this.add.image(p.x, p.y, obj._drawerAcc).setDepth(80);
+        obj._accGhost.setScale(Math.min(1.1, 100 / obj._accGhost.height));
+        this.snd.pick();
       } else if (obj._painting) {
         obj.setDepth(75);
       }
@@ -631,6 +827,7 @@ export class HouseScene extends Phaser.Scene {
       if (!obj._dragMoved && Math.hypot(p.x - obj._downX, p.y - obj._downY) < 10) return;
       obj._dragMoved = true;
       if (obj._drawerArt && obj._spawned) { obj._spawned.x = dx; obj._spawned.y = dy; return; }
+      if (obj._drawerAcc && obj._accGhost) { obj._accGhost.x = p.x; obj._accGhost.y = p.y; return; }
       obj.x = dx; obj.y = dy;
       if (obj._furn && obj._glow) { obj._glow.x = dx; obj._glow.y = dy - obj.displayHeight * 0.72; }
     });
@@ -659,6 +856,12 @@ export class HouseScene extends Phaser.Scene {
         obj._spawned = null;
         s.setDepth(6);
         this._dropPainting(s, s.x, s.y);
+        return;
+      }
+      if (obj._drawerAcc && obj._accGhost) {
+        const gx = obj._accGhost.x, gy = obj._accGhost.y;
+        obj._accGhost.destroy(); obj._accGhost = null;
+        if (obj._dragMoved) this._equipAccessory(obj._drawerAcc, gx, gy);
         return;
       }
       if (obj._char) {
@@ -709,13 +912,38 @@ export class HouseScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: y - 46, alpha: 0, duration: 900, onComplete: () => t.destroy() });
   }
 
-  update() {
+  update(_, dms) {
+    // los accesorios de disfraz siguen a su personaje cada frame
+    for (const c of Object.values(this.chars)) if (c._acc && c._acc.length) this._posAccessories(c);
+
     // running tap water
     if (this._sinkOn && this._waterSpr && Math.random() < 0.5) {
       const z = this._waterSpr;
       const wx = z.x + z.displayWidth * 0.16, wy = z.y - z.displayHeight * 0.62;
       const d = this.add.image(wx + Phaser.Math.Between(-3, 3), wy, "px").setDepth(15).setTint(0x7fd4ff).setScale(2);
       this.tweens.add({ targets: d, y: wy + 70, alpha: 0.2, duration: 300, onComplete: () => d.destroy() });
+    }
+
+    // eventos ambientales (game-director #7): el mundo se siente vivo al volver
+    this._ambientT = (this._ambientT || 6) - (dms || 16) / 1000;
+    if (this._ambientT <= 0) { this._ambientT = 7 + Math.random() * 8; this._ambientEvent(); }
+  }
+
+  _ambientEvent() {
+    if (this.mode !== "none" || this.dead) return;
+    const kind = this.room === "garden"
+      ? Phaser.Utils.Array.GetRandom(["butterfly", "bird", "apple"])
+      : Phaser.Utils.Array.GetRandom(["butterfly", "note", "sparkle"]);
+    if (kind === "butterfly" || kind === "bird") {
+      const fromL = Math.random() < 0.5, y = Phaser.Math.Between(140, 420);
+      const e = this.add.text(fromL ? -30 : W + 30, y, kind === "bird" ? "🐦" : "🦋", { fontSize: "30px" }).setOrigin(0.5).setDepth(42);
+      this.tweens.add({ targets: e, x: fromL ? W + 40 : -40, y: y + Phaser.Math.Between(-40, 40), duration: 4200, ease: "Sine.inOut", onComplete: () => e.destroy() });
+      if (kind === "bird") this.snd.giggle();
+    } else if (kind === "apple") {
+      const tree = this.layerRoom.list.find((s) => s._furn?.key === "tree");
+      if (tree) { const a = this.add.image(tree.x + Phaser.Math.Between(-60, 60), tree.y - tree.displayHeight * 0.5, "apple").setDepth(16).setScale(0.5); this.tweens.add({ targets: a, y: CHAR_MAX_Y, duration: 500, ease: "Bounce.out", onComplete: () => this.time.delayedCall(2500, () => a.destroy()) }); }
+    } else if (kind === "note" || kind === "sparkle") {
+      this._sparkle(Phaser.Math.Between(200, W - 200), Phaser.Math.Between(120, 360), 5);
     }
   }
 }

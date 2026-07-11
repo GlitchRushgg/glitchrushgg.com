@@ -11,6 +11,8 @@ const data = {
   rooms: Object.fromEntries(ROOM_ORDER.map((r) => [r, { wall: PAINTS[0], pattern: "none", moved: {} }])),
   paintings: [],          // { room, x, y, art }
   chars: JSON.parse(JSON.stringify(CHAR_START)),
+  worn: {},               // name -> [accessory keys] (dress-up)
+  night: false,           // day/night toggle
   visits: 0,
 };
 try {
@@ -21,10 +23,16 @@ try {
     if (!data.rooms[r].moved) data.rooms[r].moved = {};
   }
   for (const c of Object.keys(CHAR_START)) if (!data.chars[c]) data.chars[c] = { ...CHAR_START[c] };
+  if (!data.worn) data.worn = {};
 } catch (e) {}
 
 function persist() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
 }
 
-export const Save = { get: () => data, persist };
+// Wipe everything (soft reset button in the dress-up bar).
+function reset() {
+  try { localStorage.removeItem(KEY); } catch (e) {}
+}
+
+export const Save = { get: () => data, persist, reset };

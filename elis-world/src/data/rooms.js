@@ -35,6 +35,16 @@ export const ROOMS = {
       { key: "teapot", x: 858, y: 552, h: 82, tap: "wiggle" },
     ],
   },
+  bathroom: {
+    floor: "tiles",
+    furniture: [
+      { key: "bathtub", x: 340, y: 690, h: 250, drop: "bathe" },
+      { key: "toilet", x: 1130, y: 668, h: 230, tap: "wiggle" },
+      { key: "bathsink", x: 780, y: 660, h: 300, tap: "sink" },
+      { key: "towelrack", x: 560, y: 560, h: 240, wall: true, tap: "wiggle" },
+      { key: "duck", x: 340, y: 470, h: 62, tap: "duck" },
+    ],
+  },
   bedroom: {
     floor: "wood",
     furniture: [
@@ -67,14 +77,17 @@ export const ROOMS = {
   },
 };
 
-// Where each family member starts (first play).
+// Where each family member starts (first play). `pet` = a puppy the kid can
+// carry, feed, put in the doghouse (nurturing play, game-director #6).
 export const CHAR_START = {
   elizabeth: { room: "living", x: 560 },
   flofy: { room: "living", x: 700 },
   mama: { room: "kitchen", x: 880 },
   papa: { room: "garden", x: 700 },
   cristian: { room: "bedroom", x: 640 },
+  pet: { room: "garden", x: 900 },
 };
+export const PET_SCALE = "pet-puppy";
 
 // Foods (spawn from fridge / tree / fruit bowl). cooked = texture after the pan.
 export const FOODS = {

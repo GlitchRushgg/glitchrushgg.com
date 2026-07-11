@@ -10,7 +10,16 @@ export const FLOOR_Y = 520;          // top of the floor
 export const CHAR_MIN_Y = 560;       // characters stand between these
 export const CHAR_MAX_Y = 700;
 
-export const ROOM_ORDER = ["living", "kitchen", "bedroom", "garden"];
+export const ROOM_ORDER = ["living", "kitchen", "bathroom", "bedroom", "garden"];
+
+// Accesorios de disfraz que se enganchan a un personaje (arrastrar y soltar
+// encima). offX/offY = posición relativa a la cabeza; h = altura de dibujo.
+export const ACCESSORIES = {
+  "acc-crown": { name: "crown", offY: -0.02, h: 46 },
+  "acc-hat":   { name: "hat",   offY: 0.0,  h: 64 },
+  "acc-bow":   { name: "bow",   offY: 0.04, offX: 0.18, h: 34 },
+  "acc-wings": { name: "wings", offY: 0.42, h: 120, back: true },
+};
 
 // Paint palette (kid-friendly, 10 colors) + wall patterns.
 export const PAINTS = [
