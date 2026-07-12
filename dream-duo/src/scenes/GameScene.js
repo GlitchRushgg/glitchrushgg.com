@@ -1,33 +1,32 @@
-// DREAM DUO core — ONE world, the whole park on screen (founder feedback:
-// the old split-worlds layout was confusing). Elizabeth runs the path with a
-// natural 4-phase stride; Flofy, her magic plush bunny, floats BY HER SIDE.
-// Left half / A / ← = Elizabeth jumps · right half / L / → = Flofy boosts up.
-// LEVEL MODE (primary): seeded, learnable courses with a goal line where the
-// family waits + 1-3 star rating. ENDLESS mode unlocks after 8 levels.
-// FAIRY RUSH: 5 syncs and the whole world TRANSFORMS into Flofy's dream.
-// No physics engine — manual dt-capped movement (consistent at any Hz).
+// DREAM DUO v2 core — la pantalla SE PARTE A PROPÓSITO en dos mundos:
+// columna izquierda = el parque de Elizabeth · columna derecha = el sueño de
+// Flofy. Un input binario por mano (fórmula Two Cars, validada en el estudio
+// de mercado jul-2026): tap izquierda = Elizabeth cambia de carril · tap
+// derecha = Flofy cambia de carril. Estrellas OBLIGATORIAS (fallarlas cuesta
+// corazón), obstáculos prohibidos. SYNC (par simultáneo) sube el multiplicador
+// y llena el Dream Meter → FAIRY RUSH: el divisor se disuelve y los dos mundos
+// se funden. Endless con ramp por escalones + misiones diarias.
+// Sin motor de físicas — movimiento manual con dt acotado.
 
 import {
-  W, H, PLAYER_X, FLOFY_X, GROUND, HOVER, HOVER_MIN, ELIZ, FLOFY,
-  BASE_SPEED, MAX_RAMP, RAMP_DIST, PX_PER_M, BIOMES, ENDLESS_BIOME_AT,
-  SYNC_WINDOW, MAX_MULT, METER_MAX, RUSH_SECS, SHIELD_SECS, DASH_SECS, REVIVE_STARS,
+  W, H, DIV_X, LANES, CHAR_Y, HIT_WIN, SPAWN_Y, LERP_MS,
+  SPEED0, RAMP_STEP, RAMP_EVERY, MAX_RAMP, PX_PER_M,
+  SYNC_WINDOW, MAX_MULT, METER_MAX, RUSH_SECS, SHIELD_SECS, REVIVE_STARS,
+  TINTS, TINT_EVERY,
 } from "../const.js";
-import { LEVELS, buildCourse } from "../levels.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
 import { SDK } from "../utils/SDK.js";
 import { TRAILS } from "../items.js";
+import { startRun, report } from "../missions.js";
 
 const FONT = "'Segoe UI', system-ui, sans-serif";
-const RUN_FRAMES = ["eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4"];
+const PARK_OBS = ["hedge", "bench", "birdbath", "pigeon"];
+const DREAM_OBS = ["cloud", "blocks", "top", "bubble"];
+const OB_SIZE = { hedge: 64, bench: 62, birdbath: 74, pigeon: 52, cloud: 60, blocks: 76, top: 54, bubble: 58 };
 
 export class GameScene extends Phaser.Scene {
   constructor() { super("Game"); }
-
-  init(data) {
-    this.mode = data?.mode || "level";
-    this.levelNum = data?.level || 1;              // 1-based
-  }
 
   create() {
     window.__dd = this;
@@ -39,145 +38,785 @@ export class GameScene extends Phaser.Scene {
     this.trailTint = (TRAILS.find((t) => t.id === sv.trail) || TRAILS[0]).tint;
 
     // ---------- state ----------
+    this.time_ = 0;
     this.dist = 0;
-    this.speed = 0;
+    this.speed = SPEED0;
     this.hearts = 3;
     this.score = 0;
     this.mult = 1;
+    this.multMax = 1;
     this.meter = 0;
-    this.starsRun = 0;           // currency earned this run
-    this.starsGot = 0;           // level rating counter
+    this.starsRun = 0;
+    this.syncsRun = 0;
     this.rushT = 0;
     this.shieldT = 0;
-    this.dashT = 0;
+    this.sweepT = 0;           // Cristian: sin obstáculos unos segundos
     this.invuln = 0;
+    this.slowmo = 0;
     this.dead = false;
     this.paused = false;
-    this.finishing = false;
     this.usedRevive = false;
     this.tt = 0;
     this._pairSeq = 0;
+    this._tintIdx = 0;
+    this._missionClock = 0;
 
-    this.obstacles = [];
-    this.stars = [];
+    this.objs = [];            // stars / obs / pickups / ghost
     this.pairs = new Map();
-    this.pickups = [];
     this._trailT = 0;
 
-    // ---------- mode setup ----------
-    if (this.mode === "level") {
-      const built = buildCourse(this.levelNum - 1, PX_PER_M);
-      this.course = built.events;
-      this.courseLen = built.lenPx;
-      this.courseStars = built.starCount;
-      this.levelDef = built.def;
-      this.biome = built.def.biome;
-      this._nextEvent = 0;
-    } else {
-      this.biome = 0;
-      this._obClock = 900;
-      this._starClock = 420;
-      this._pickupClock = 4200;
-      this._pickupIdx = 0;
-      this._lastObDist = { ground: -9999, air: -9999 };
-    }
+    // spawner clocks (por columna) + globales
+    this._colT = [1.2, 2.0];   // primer evento de cada mundo
+    this._lastLane = [0, 0];
+    this._laneRepeat = [0, 0];
+    this._syncT = 8;
+    this._pwT = 35;
+    this._pwIdx = 0;
+    this._feint = [null, null];
 
     this._buildWorld();
     this._buildCharacters();
     this._buildHUD();
     this._bindInput();
+    this._ghostSetup(sv);
 
-    // level intro + first-level gesture hints
-    if (this.mode === "level") {
-      this._toast(`LEVEL ${this.levelNum} — ${this.levelDef.intro}`, 0xffd94e);
-      if (this.levelNum === 1) this._hint("left");
-      if (this.levelNum === 2) this._hint("right");
-    }
+    startRun();
+
+    // tutorial en gameplay, sin texto: manos pulsantes (saltable jugando)
+    this._hands = [];
+    if (!sv.tutorialSeen) { this._hand(0); this._hand(1); }
 
     this.snd.startMusic();
     SDK.gameplayStart();
 
     this.events.on("shutdown", () => { this.snd.stopMusic(); this.snd.setRush(false); });
-    this._onBlur = () => { if (!this.dead && !this.paused && !this.finishing) this._togglePause(true); };
+    this._onBlur = () => { if (!this.dead && !this.paused) this._togglePause(true); };
     this.game.events.on(Phaser.Core.Events.BLUR, this._onBlur);
     this.events.once("shutdown", () => this.game.events.off(Phaser.Core.Events.BLUR, this._onBlur));
   }
 
   /* ================= WORLD ================= */
   _buildWorld() {
-    const parkKey = BIOMES[this.biome].park;
-    // park fills the WHOLE screen; second layer for endless biome crossfade
-    this.bgA = this.add.tileSprite(0, 0, W, H, parkKey).setOrigin(0).setDepth(0);
-    this.bgB = this.add.tileSprite(0, 0, W, H, parkKey).setOrigin(0).setDepth(1).setAlpha(0);
-    this.bgFront = this.bgA;
-    // dream layer — hidden until FAIRY RUSH transforms the world
-    this.dreamBg = this.add.tileSprite(0, 0, W, H, BIOMES[this.biome].dream).setOrigin(0).setDepth(2).setAlpha(0);
+    const colW = DIV_X;
+    const ts = colW / 512; // el arte de columna es 512 de ancho
+    this.bgPark = this.add.tileSprite(0, 0, colW, H, "bg-col-park").setOrigin(0).setDepth(0).setTileScale(ts);
+    this.bgDream = this.add.tileSprite(colW, 0, colW, H, "bg-col-dream").setOrigin(0).setDepth(0).setTileScale(ts);
+    // capa-sueño sobre el parque, solo visible durante el FAIRY RUSH
+    this.bgParkDream = this.add.tileSprite(0, 0, colW, H, "bg-col-dream").setOrigin(0).setDepth(1).setTileScale(ts).setAlpha(0);
 
-    // subtle path line so the ground reads
-    const g = this.add.graphics().setDepth(3);
-    g.fillStyle(0x2c1f0e, 0.22); g.fillRect(0, GROUND + 2, W, 3);
+    // vignette lateral suave para que el ojo se centre
+    const vg = this.add.graphics().setDepth(2);
+    vg.fillGradientStyle(0x14102b, 0x14102b, 0x14102b, 0x14102b, 0.35, 0, 0.35, 0);
+    vg.fillRect(0, 0, 14, H);
+    vg.fillGradientStyle(0x14102b, 0x14102b, 0x14102b, 0x14102b, 0, 0.35, 0, 0.35);
+    vg.fillRect(W - 14, 0, 14, H);
 
-    this.rainbow = this.add.graphics().setDepth(4).setVisible(false);
+    // divisor entre mundos — cinta de luz (se disuelve en el RUSH)
+    this.divider = this.add.tileSprite(DIV_X, H / 2, 24, H, "ribbonV").setDepth(5).setAlpha(0.95);
+    this.divGlow = this.add.image(DIV_X, H / 2, "glow").setDepth(4).setScale(1.9, 9.2).setAlpha(0.32).setTint(0xb9a6ff);
+
+    this.rainbow = this.add.graphics().setDepth(3).setVisible(false);
     [0xff9ed2, 0xffd94e, 0x8ef5c9, 0x7fd4ff, 0xb9a6ff].forEach((c, i) => {
-      this.rainbow.fillStyle(c, 0.08);
-      this.rainbow.fillRect(0, 100 + i * 104, W, 104);
+      this.rainbow.fillStyle(c, 0.09);
+      this.rainbow.fillRect(0, 120 + i * 130, W, 130);
     });
 
     this.veilFlash = this.add.rectangle(W / 2, H / 2, W, H, 0xffffff).setDepth(50).setAlpha(0);
   }
 
-  _swapBiomeEndless(idx) {
-    this.biome = idx;
-    const back = this.bgFront === this.bgA ? this.bgB : this.bgA;
-    back.setTexture(BIOMES[idx].park);
-    back.tilePositionX = this.bgFront.tilePositionX;
-    this.tweens.add({ targets: back, alpha: 1, duration: 700 });
-    const old = this.bgFront;
-    this.tweens.add({ targets: old, alpha: 0, duration: 700, delay: 60 });
-    back.setDepth(1); old.setDepth(0);
-    this.bgFront = back;
-    this.dreamBg.setTexture(BIOMES[idx].dream);
-    this._toast(BIOMES[idx].name, 0xb9a6ff);
-  }
-
   /* ================= CHARACTERS ================= */
   _buildCharacters() {
-    const escale = this.registry.get("scale:eliz-r1") || 0.16;
-    this.E = {
-      spr: this.add.sprite(PLAYER_X, GROUND, "eliz-r1").setOrigin(0.5, 1).setDepth(10).setScale(escale),
-      y: GROUND, vy: 0, grounded: true, coyote: 0, buffer: 0, holding: false,
-      animT: 0, frame: 0, scale: escale,
+    const mk = (keys, laneAbs, scaleKey) => {
+      const sc = this.registry.get(`scale:${keys[0]}`) || 0.14;
+      const shadow = this.add.image(LANES[laneAbs], CHAR_Y + 6, "charShadow").setDepth(9);
+      const spr = this.add.sprite(LANES[laneAbs], CHAR_Y, keys[0]).setOrigin(0.5, 1).setDepth(10).setScale(sc);
+      return { spr, shadow, keys, lane: 0, x: LANES[laneAbs], animT: 0, frame: 0, scale: sc, switchT: 0 };
     };
+    this.E = mk(["eliz-back-a", "eliz-back-b"], 0);
+    this.F = mk(["flofy-back-a", "flofy-back-b"], 2);
     if (this.skin === "golden") this.E.spr.setTint(0xffd57a);
-    if (this.skin === "fairy") {
-      const fs = this.registry.get("scale:eliz-fairy") || escale;
-      this.E.spr.setTexture("eliz-fairy").setScale(fs);
-      this.E.scale = fs;
-      this.E.fairySkin = true;
-    }
 
-    const fscale = this.registry.get("scale:flofy-fall") || 0.45;
-    this.F = {
-      spr: this.add.sprite(FLOFY_X, HOVER, "flofy-fall").setOrigin(0.5, 0.5).setDepth(10).setScale(fscale),
-      y: HOVER, vy: 0, scale: fscale,
-    };
+    this.shieldE = this.add.image(LANES[0], CHAR_Y - 55, "shield").setDepth(11).setVisible(false).setScale(0.95);
+    this.shieldF = this.add.image(LANES[2], CHAR_Y - 45, "shield").setDepth(11).setVisible(false).setScale(0.8);
 
-    this.shieldE = this.add.image(PLAYER_X, GROUND - 70, "shield").setDepth(11).setVisible(false).setScale(1.15);
-    this.shieldF = this.add.image(FLOFY_X, HOVER, "shield").setDepth(11).setVisible(false).setScale(0.85);
+    // hilo mágico: una mente, dos mundos (se lee por encima del divisor)
+    this.tether = this.add.graphics().setDepth(8);
 
-    // Hilo mágico permanente Elizabeth↔Flofy (auditoría: que se lean como UNA
-    // unidad, no dos entidades separadas — la queja de fondo de la fundadora).
-    this.tether = this.add.graphics().setDepth(9);
+    // chevrons de carril: pista sutil de que el tap alterna
+    this.chevs = [0, 1].map((side) => {
+      const cx = side === 0 ? DIV_X / 2 : DIV_X + DIV_X / 2;
+      return this.add.text(cx, CHAR_Y + 58, "◂ tap ▸", {
+        fontFamily: FONT, fontSize: "13px", color: "#ffffff", fontStyle: "bold",
+      }).setOrigin(0.5).setAlpha(0.4).setDepth(9);
+    });
+    this.time.delayedCall(6000, () => this.chevs.forEach((c) => this.tweens.add({ targets: c, alpha: 0, duration: 800 })));
   }
 
-  _drawTether() {
+  _charX(who) { return LANES[(who === this.E ? 0 : 2) + who.lane]; }
+
+  _switch(who) {
+    if (this.dead || this.paused) return;
+    who.lane = 1 - who.lane;
+    who.switchT = LERP_MS / 1000;
+    who.fromX = who.x;
+    // squash & stretch del cambio (respetando la escala del skin hada en el rush)
+    const base = this.rushT > 0 && who === this.E
+      ? (this.registry.get("scale:eliz-fairy") || who.scale) : who.scale;
+    who.spr.setScale(base * 1.12, base * 0.9);
+    this.time.delayedCall(110, () => {
+      if (this.dead) return;
+      const b = this.rushT > 0 && who === this.E
+        ? (this.registry.get("scale:eliz-fairy") || who.scale) : who.scale;
+      who.spr.setScale(b);
+    });
+    if (who === this.E) this.snd.jumpE(); else this.snd.hopF();
+    this._spark(who.x, CHAR_Y - 30, who === this.E ? 0xff9ed2 : 0xfff2b0);
+    // tutorial: la mano de ese lado desaparece al primer input
+    const side = who === this.E ? 0 : 1;
+    if (this._hands[side]) { this._hands[side].forEach((o) => o.destroy()); this._hands[side] = null; }
+    if (!this._hands[0] && !this._hands[1] && !Save.get().tutorialSeen) { Save.get().tutorialSeen = true; Save.persist(); }
+  }
+
+  /* ================= HUD ================= */
+  _buildHUD() {
+    const f = (size, extra = {}) => ({ fontFamily: FONT, fontSize: size, color: "#fff", fontStyle: "bold", ...extra });
+
+    this.hudBack = this.add.rectangle(W / 2, 44, W, 88, 0x14102b, 0.35).setDepth(59);
+
+    this.heartIcons = [];
+    for (let i = 0; i < 3; i++) this.heartIcons.push(this.add.image(26 + i * 34, 28, "heart").setDepth(60).setScale(0.62));
+
+    this.scoreTxt = this.add.text(W / 2, 12, "0", f("34px", { stroke: "#3a2260", strokeThickness: 6 })).setOrigin(0.5, 0).setDepth(60);
+    this.multTxt = this.add.text(W / 2 + 64, 20, "×1", f("20px", { color: "#ffd94e" })).setOrigin(0, 0).setDepth(60);
+
+    this.meterSegs = [];
+    for (let i = 0; i < METER_MAX; i++) {
+      this.meterSegs.push(
+        this.add.rectangle(W / 2 - 51 + i * 34, 62, 28, 9, 0xffffff, 0.18).setStrokeStyle(2, 0xb9a6ff, 0.7).setDepth(60)
+      );
+    }
+
+    this.add.image(20, 62, "star").setDepth(60).setScale(0.42);
+    this.starTxt = this.add.text(36, 62, "0", f("16px", { color: "#ffd94e" })).setOrigin(0, 0.5).setDepth(60);
+
+    this.pauseBtn = this.add.text(W - 14, 10, "⏸", f("22px", { backgroundColor: "#3a2260cc" }))
+      .setOrigin(1, 0).setPadding(10, 6, 10, 6).setDepth(60).setInteractive({ useHandCursor: true });
+    this.pauseBtn.on("pointerdown", () => this._togglePause());
+    this.muteBtn = this.add.text(W - 64, 10, this.snd.muted ? "🔇" : "🔊", f("18px", { backgroundColor: "#3a2260cc" }))
+      .setOrigin(1, 0).setPadding(9, 8, 9, 8).setDepth(60).setInteractive({ useHandCursor: true });
+    this.muteBtn.on("pointerdown", () => {
+      this.snd.setMuted(!this.snd.muted);
+      if (!this.snd.muted) this.snd.startMusic();
+      this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
+    });
+
+    this.toastTxt = this.add.text(W / 2, 118, "", f("19px", { stroke: "#3a2260", strokeThickness: 5, align: "center" }))
+      .setOrigin(0.5).setDepth(60).setAlpha(0);
+  }
+
+  _toast(msg, color = 0xffffff) {
+    this.toastTxt.setText(msg).setColor("#" + color.toString(16).padStart(6, "0")).setAlpha(1).setScale(0.7);
+    this.tweens.add({ targets: this.toastTxt, scale: 1, duration: 180, ease: "Back.out" });
+    this.tweens.add({ targets: this.toastTxt, alpha: 0, delay: 1500, duration: 400 });
+  }
+
+  _hand(side) {
+    const cx = side === 0 ? DIV_X / 2 : DIV_X + DIV_X / 2;
+    const hand = this.add.text(cx, CHAR_Y - 170, "👆", { fontSize: "40px" }).setOrigin(0.5).setDepth(70);
+    const ring = this.add.image(cx, CHAR_Y - 160, "glow").setDepth(69).setScale(1.3).setTint(side === 0 ? 0xff9ed2 : 0xb9a6ff);
+    this.tweens.add({ targets: hand, y: CHAR_Y - 152, duration: 420, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: ring, alpha: { from: 0.8, to: 0.3 }, duration: 420, yoyo: true, repeat: -1 });
+    this._hands[side] = [hand, ring];
+  }
+
+  /* ================= INPUT ================= */
+  _bindInput() {
+    this.input.on("pointerdown", (p) => {
+      if (this.dead || this.paused) return;
+      if (p.y < 88) return; // HUD
+      this.snd.resume();
+      this._switch(p.x < DIV_X ? this.E : this.F);
+    });
+    const kb = this.input.keyboard;
+    kb.on("keydown-A", (e) => { if (!e.repeat) this._switch(this.E); });
+    kb.on("keydown-LEFT", (e) => { if (!e.repeat) this._switch(this.E); });
+    kb.on("keydown-L", (e) => { if (!e.repeat) this._switch(this.F); });
+    kb.on("keydown-RIGHT", (e) => { if (!e.repeat) this._switch(this.F); });
+    kb.on("keydown-P", () => this._togglePause());
+    kb.on("keydown-ESC", () => this._togglePause());
+  }
+
+  /* ================= PAUSE ================= */
+  _togglePause(force) {
+    if (this.dead) return;
+    this.paused = force === true ? true : !this.paused;
+    if (this.paused) {
+      this.snd.stopMusic();
+      this._pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.72).setDepth(80).setInteractive();
+      const f = (s, e = {}) => ({ fontFamily: FONT, fontSize: s, color: "#fff", fontStyle: "bold", ...e });
+      this._pauseTxt = this.add.text(W / 2, H / 2 - 80, "PAUSED", f("42px")).setOrigin(0.5).setDepth(81);
+      this._resumeBtn = this.add.text(W / 2, H / 2, "▶ RESUME", f("26px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
+        .setOrigin(0.5).setPadding(28, 12, 28, 12).setDepth(81).setInteractive({ useHandCursor: true });
+      this._resumeBtn.on("pointerdown", () => this._togglePause());
+      this._menuBtn = this.add.text(W / 2, H / 2 + 76, "MENU", f("18px", { backgroundColor: "#3a2260" }))
+        .setOrigin(0.5).setPadding(20, 9, 20, 9).setDepth(81).setInteractive({ useHandCursor: true });
+      this._menuBtn.on("pointerdown", () => { this.dead = true; SDK.gameplayStop(); this.scene.start("Menu"); });
+    } else {
+      if (!this.snd.muted) this.snd.startMusic();
+      [this._pauseVeil, this._pauseTxt, this._resumeBtn, this._menuBtn].forEach((o) => o && o.destroy());
+    }
+  }
+
+  /* ================= SPAWNING =================
+     Fases: 0 (0-6s solo estrellas · tutorial) → 1 (obstáculos sueltos)
+     → 2 (20s eventos simultáneos asimétricos) → 3 (40s movers y fintas).
+     Fairness: por columna, nunca dos acciones exigidas en <0.55s. */
+  _phase() { return this.time_ < 6 ? 0 : this.time_ < 20 ? 1 : this.time_ < 40 ? 2 : 3; }
+
+  _spawner(dt) {
+    const ph = this._phase();
+
+    for (let col = 0; col < 2; col++) {
+      this._colT[col] -= dt;
+      // finta programada (obstáculo tras estrella en el mismo carril)
+      const feint = this._feint[col];
+      if (feint) {
+        feint.t -= dt;
+        if (feint.t <= 0) { this._addOb(col, feint.lane, this._obType(col)); this._feint[col] = null; }
+      }
+      if (this._colT[col] > 0) continue;
+
+      // elegir carril con variedad (no repetir el mismo 3+ veces)
+      let lane = Math.random() < 0.5 ? 0 : 1;
+      if (lane === this._lastLane[col] && this._laneRepeat[col] >= 2) lane = 1 - lane;
+      this._laneRepeat[col] = lane === this._lastLane[col] ? this._laneRepeat[col] + 1 : 1;
+      this._lastLane[col] = lane;
+
+      if (ph === 0) {
+        this._addStar(col, lane);
+      } else if (this.rushT > 0) {
+        this._addStar(col, lane); // en el rush solo llueven estrellas
+      } else {
+        const roll = Math.random();
+        if (roll < 0.62 || this.sweepT > 0) {
+          this._addStar(col, lane);
+          // finta: solo fase 3, con margen justo para recoger y cambiar
+          if (ph === 3 && Math.random() < 0.15) this._feint[col] = { lane, t: 0.65 };
+        } else {
+          this._addOb(col, lane, this._obType(col));
+        }
+      }
+
+      // cadencia: constante por escalón de velocidad; min 0.55s por mano
+      const base = ph === 0 ? 1.5 : Math.max(0.62, 1.18 - this.time_ * 0.004);
+      this._colT[col] = Math.max(0.55, base + Math.random() * 0.35);
+      // fase 2+: a veces evento simultáneo en la otra columna (asimétrico)
+      if (ph >= 2 && this.rushT <= 0 && Math.random() < 0.22) {
+        const other = 1 - col;
+        if (this._colT[other] > 0.55) {
+          const oLane = Math.random() < 0.5 ? 0 : 1;
+          if (Math.random() < 0.5) this._addStar(other, oLane);
+          else this._addOb(other, oLane, this._obType(other));
+          this._colT[other] = Math.max(this._colT[other], 0.7);
+        }
+      }
+    }
+
+    // SYNC pairs — frecuentes: el FAIRY RUSH debe verse en la primera sesión
+    if (this.time_ > 8 && this.rushT <= 0) {
+      this._syncT -= dt;
+      if (this._syncT <= 0) {
+        this._addPair();
+        this._syncT = (this._phase() >= 3 ? 5.5 : 7) + Math.random() * 1.5;
+        this._colT[0] = Math.max(this._colT[0], 0.75);
+        this._colT[1] = Math.max(this._colT[1], 0.75);
+      }
+    }
+
+    // power-ups de la familia
+    if (this.time_ > 20 && this.rushT <= 0) {
+      this._pwT -= dt;
+      if (this._pwT <= 0) {
+        const kinds = ["mama", "papa", "cristian"];
+        this._addPickup(kinds[this._pwIdx++ % 3]);
+        this._pwT = 19 + Math.random() * 7;
+      }
+    }
+  }
+
+  _obType(col) {
+    const pool = col === 0 ? PARK_OBS : DREAM_OBS;
+    const ph = this._phase();
+    const n = ph >= 3 ? pool.length : 3; // movers (pigeon/bubble al final del pool) desde fase 3
+    return pool[(Math.random() * n) | 0];
+  }
+
+  _laneX(col, lane) { return LANES[col * 2 + lane]; }
+
+  _addStar(col, lane, pairId = 0, yOff = 0) {
+    const x = this._laneX(col, lane);
+    const spr = this.add.image(x, SPAWN_Y + yOff, "star").setDepth(7).setScale(0.82);
+    this.tweens.add({ targets: spr, angle: 360, duration: 2600, repeat: -1 });
+    let glow = null;
+    if (pairId) {
+      spr.setScale(0.95);
+      glow = this.add.image(x, SPAWN_Y + yOff, "glow").setDepth(6).setScale(1).setTint(0xffd94e);
+      this.tweens.add({ targets: glow, alpha: { from: 0.9, to: 0.4 }, duration: 460, yoyo: true, repeat: -1 });
+    }
+    this.objs.push({ kind: "star", spr, glow, col, lane, y: SPAWN_Y + yOff, pairId, taken: false });
+  }
+
+  _addPair() {
+    const id = ++this._pairSeq;
+    // Espejados hasta la fase 3 ("¡los dos a la izquierda!" = una sola idea);
+    // cruzados después — ahí vive la dificultad "pat your head, rub your belly".
+    const l0 = Math.random() < 0.5 ? 0 : 1;
+    const l1 = this._phase() >= 3 && Math.random() < 0.5 ? 1 - l0 : l0;
+    this._addStar(0, l0, id);
+    this._addStar(1, l1, id);
+    this.pairs.set(id, { got: 0, timer: 0 });
+  }
+
+  _addOb(col, lane, type) {
+    const x = this._laneX(col, lane);
+    const key = `ob-${type}`;
+    const spr = this.add.image(x, SPAWN_Y, key).setDepth(8);
+    spr.setScale(OB_SIZE[type] / spr.height);
+    const o = { kind: "ob", spr, col, lane, y: SPAWN_Y, type, taken: false };
+    if (type === "top") this.tweens.add({ targets: spr, angle: { from: -8, to: 8 }, duration: 160, yoyo: true, repeat: -1 });
+    if (type === "pigeon" || type === "bubble") {
+      o.mover = { from: lane, t: 0, dur: 1.6 + Math.random() * 0.6 }; // cruza al otro carril
+    }
+    this.objs.push(o);
+  }
+
+  _addPickup(kind) {
+    const col = Math.random() < 0.5 ? 0 : 1;
+    const lane = Math.random() < 0.5 ? 0 : 1;
+    const x = this._laneX(col, lane);
+    const glow = this.add.image(x, SPAWN_Y, "glow").setDepth(6).setScale(1.3).setTint(0xfff2b0);
+    const spr = this.add.image(x, SPAWN_Y, `pw-${kind}`).setDepth(7);
+    spr.setScale((this.registry.get(`scale:pw-${kind}`) || 0.1) * 0.8);
+    this.objs.push({ kind: "pw", spr, glow, col, lane, y: SPAWN_Y, type: kind, taken: false });
+  }
+
+  _ghostSetup(sv) {
+    // marca fantasma donde moriste la última vez (la lección de Duet)
+    this._ghost = sv.lastDeath && sv.lastDeath.dist > 400 ? { ...sv.lastDeath, spawned: false } : null;
+  }
+
+  /* ================= UPDATE ================= */
+  update(_, dms) {
+    if (this.dead || this.paused) return;
+    let dt = Math.min(dms / 1000, 0.05);
+    this.tt += dt;
+    if (this.slowmo > 0) { this.slowmo -= dt; dt *= 0.35; }
+
+    this.time_ += dt;
+    // velocidad por escalones (+5% cada 8s, constante dentro del escalón)
+    const steps = Math.floor(this.time_ / RAMP_EVERY);
+    this.speed = SPEED0 * Math.min(MAX_RAMP, 1 + RAMP_STEP * steps) * (this.rushT > 0 ? 1.15 : 1);
+    this.dist += this.speed * dt;
+
+    // scroll de mundos (el tile es 512 de ancho escalado)
+    const ts = DIV_X / 512;
+    this.bgPark.tilePositionY -= (this.speed * dt) / ts;
+    this.bgDream.tilePositionY -= (this.speed * dt * 1.12) / ts; // el sueño flota un pelín más rápido
+    this.bgParkDream.tilePositionY = this.bgDream.tilePositionY;
+    this.divider.tilePositionY -= (this.speed * dt) * 0.8;
+
+    // ambiente día → atardecer → noche
+    const tintIdx = Math.min(TINTS.length - 1, Math.floor(this.time_ / TINT_EVERY));
+    if (tintIdx !== this._tintIdx) {
+      this._tintIdx = tintIdx;
+      const t = TINTS[tintIdx];
+      [this.bgPark, this.bgDream].forEach((bg) => bg.setTint(t.t));
+      if (t.name) this._toast(t.name, 0xb9a6ff);
+    }
+
+    this._spawner(dt);
+    this._moveObjs(dt);
+    this._chars(dt);
+    this._updateRush(dt);
+    if (this.shieldT > 0) this._updateShield(dt);
+    if (this.sweepT > 0) this.sweepT -= dt;
+    if (this.invuln > 0) {
+      this.invuln -= dt;
+      const blink = Math.sin(this.tt * 24) > 0 ? 1 : 0.35;
+      this.E.spr.setAlpha(blink); this.F.spr.setAlpha(blink);
+      if (this.invuln <= 0) { this.E.spr.setAlpha(1); this.F.spr.setAlpha(1); }
+    }
+
+    // pairs: ventana de SYNC
+    for (const [id, p] of this.pairs) {
+      if (p.got === 1) {
+        p.timer += dt;
+        if (p.timer > SYNC_WINDOW) { this.pairs.delete(id); } // se perdió el sync (las estrellas siguen contando solas)
+      }
+    }
+
+    // ghost de la muerte anterior
+    if (this._ghost && !this._ghost.spawned && this.dist >= this._ghost.dist - (CHAR_Y - SPAWN_Y)) {
+      this._ghost.spawned = true;
+      const x = LANES[this._ghost.lane];
+      const g = this.add.text(x, SPAWN_Y, "💤", { fontSize: "26px" }).setOrigin(0.5).setDepth(6).setAlpha(0.4);
+      this.objs.push({ kind: "ghost", spr: g, col: this._ghost.lane < 2 ? 0 : 1, lane: this._ghost.lane % 2, y: SPAWN_Y, taken: true });
+    }
+
+    // misiones: tiempo 1/s
+    this._missionClock += dt;
+    if (this._missionClock >= 1) {
+      this._missionClock -= 1;
+      this._missionToast(report("time", 1));
+    }
+
+    this._tether();
+    this._trail(dt);
+    this.scoreTxt.setText(String(Math.floor(this.score)));
+  }
+
+  _chars(dt) {
+    for (const who of [this.E, this.F]) {
+      const target = this._charX(who);
+      if (who.switchT > 0) {
+        who.switchT -= dt;
+        const k = 1 - Math.max(0, who.switchT) / (LERP_MS / 1000);
+        who.x = Phaser.Math.Linear(who.fromX, target, Phaser.Math.Easing.Cubic.Out(Math.min(1, k)));
+      } else who.x = target;
+      // trote/bote en el sitio
+      who.animT += dt * (this.speed / 44);
+      const fr = Math.floor(who.animT) % 2;
+      if (fr !== who.frame) { who.frame = fr; if (this.rushT <= 0 || who === this.F) who.spr.setTexture(who.keys[fr]); }
+      const bob = Math.abs(Math.sin(who.animT * Math.PI)) * (who === this.E ? 5 : 9);
+      who.spr.x = who.x; who.spr.y = CHAR_Y - bob - (this.rushT > 0 && who === this.E ? 26 : 0);
+      who.shadow.x = who.x; who.shadow.setScale(1 - bob * 0.02);
+    }
+    this.shieldE.setPosition(this.E.x, CHAR_Y - 55);
+    this.shieldF.setPosition(this.F.x, CHAR_Y - 45);
+  }
+
+  _moveObjs(dt) {
+    const kill = [];
+    for (const o of this.objs) {
+      o.y += this.speed * dt * (o.kind === "pw" ? 0.92 : 1);
+      // movers: cruzan de carril dentro de su columna (telegraph con la propia trayectoria)
+      if (o.mover) {
+        o.mover.t += dt;
+        const k = Math.min(1, o.mover.t / o.mover.dur);
+        const a = this._laneX(o.col, o.mover.from), b = this._laneX(o.col, 1 - o.mover.from);
+        o.spr.x = Phaser.Math.Linear(a, b, Phaser.Math.Easing.Sine.InOut(k));
+        o.lane = k > 0.5 ? 1 - o.mover.from : o.mover.from;
+      }
+      o.spr.y = o.y;
+      if (o.glow) { o.glow.y = o.y; o.glow.x = o.spr.x; }
+
+      if (!o.taken) {
+        const contact = Math.abs(o.y - CHAR_Y + 34) <= HIT_WIN;
+        const who = o.col === 0 ? this.E : this.F;
+        if (contact && who.lane === o.lane) {
+          if (o.kind === "star") this._collectStar(o);
+          else if (o.kind === "ob") this._hitOb(o);
+          else if (o.kind === "pw") this._collectPickup(o);
+        } else if (o.kind === "star" && o.y > CHAR_Y + HIT_WIN && !o.missed) {
+          o.missed = true;
+          this._missStar(o);
+        }
+        // imán del FAIRY RUSH
+        if (this.rushT > 0 && o.kind === "star" && o.y > CHAR_Y - 300) {
+          o.spr.x = Phaser.Math.Linear(o.spr.x, who.x, dt * 8);
+          if (Math.abs(o.y - CHAR_Y + 34) < 90 && Math.abs(o.spr.x - who.x) < 50) this._collectStar(o);
+        }
+      }
+      if (o.y > H + 80) kill.push(o);
+    }
+    for (const o of kill) {
+      o.spr.destroy(); if (o.glow) o.glow.destroy();
+      this.objs.splice(this.objs.indexOf(o), 1);
+    }
+  }
+
+  /* ================= CONTACTOS ================= */
+  _collectStar(o) {
+    if (o.taken) return;
+    o.taken = true;
+    const bonus = this.skin === "golden" ? 11 : 10;
+    this.score += bonus * this.mult;
+    this.starsRun++;
+    Save.addStars(1);
+    this.starTxt.setText(String(this.starsRun));
+    this.snd.star(this.mult);
+    for (let i = 0; i < 6; i++) this._spark(o.spr.x, o.y, 0xffd94e);
+    this.tweens.add({ targets: [o.spr, o.glow].filter(Boolean), scale: 0, alpha: 0, duration: 160, onComplete: () => { o.spr.destroy(); if (o.glow) o.glow.destroy(); } });
+    this._missionToast(report("stars", 1));
+
+    if (o.pairId) {
+      const p = this.pairs.get(o.pairId);
+      if (p) {
+        p.got++;
+        if (p.got === 1) p.timer = 0;
+        else if (p.timer <= SYNC_WINDOW) this._sync(o);
+        if (p.got >= 2) this.pairs.delete(o.pairId);
+      }
+    }
+  }
+
+  _sync(o) {
+    this.syncsRun++;
+    this.mult = Math.min(MAX_MULT, this.mult + 1);
+    this.multMax = Math.max(this.multMax, this.mult);
+    this.multTxt.setText(`×${this.mult}`).setScale(1.5);
+    this.tweens.add({ targets: this.multTxt, scale: 1, duration: 220, ease: "Back.out" });
+    this.snd.sync(this.mult);
+    // rayo que CRUZA el divisor: los dos mundos se tocan
+    const bolt = this.add.graphics().setDepth(30);
+    bolt.lineStyle(4, 0xffd94e, 0.95);
+    bolt.beginPath();
+    bolt.moveTo(this.E.x, CHAR_Y - 60);
+    bolt.lineTo(DIV_X, CHAR_Y - 100 + Math.random() * 60 - 30);
+    bolt.lineTo(this.F.x, CHAR_Y - 55);
+    bolt.strokePath();
+    this.tweens.add({ targets: bolt, alpha: 0, duration: 340, onComplete: () => bolt.destroy() });
+    this._toast(`SYNC! ×${this.mult}`, 0xffd94e);
+
+    const fill = this.skin === "fairy" ? 1.2 : 1;
+    this.meter = Math.min(METER_MAX, this.meter + fill);
+    this.meterSegs.forEach((s, i) => s.setFillStyle(i < this.meter ? 0xff9ed2 : 0xffffff, i < this.meter ? 0.95 : 0.18));
+    this._missionToast(report("syncs", 1));
+    this._missionToast(report("mult", this.mult));
+    if (this.meter >= METER_MAX && this.rushT <= 0) this._startRush();
+  }
+
+  _missStar(o) {
+    if (this.rushT > 0 || this.shieldT > 0) return;             // el rush/escudo perdona
+    if (o.pairId) this.pairs.delete(o.pairId);
+    this.mult = 1;
+    this.multTxt.setText("×1");
+    this.snd.deny();
+    // GRACIA de onboarding: los primeros 10s un fallo no cuesta corazón,
+    // solo enseña la regla (trip-not-death para la primera partida).
+    if (this.time_ < 10) {
+      if (!this._graceShown) { this._graceShown = true; this._toast("⭐ Catch EVERY star!", 0xffd94e); }
+      const miss = this.add.text(o.spr.x, CHAR_Y - 90, "MISS", { fontFamily: FONT, fontSize: "17px", color: "#ff9d8a", fontStyle: "bold", stroke: "#3a2260", strokeThickness: 4 }).setOrigin(0.5).setDepth(35);
+      this.tweens.add({ targets: miss, y: miss.y - 34, alpha: 0, duration: 700, onComplete: () => miss.destroy() });
+      o.spr.setTint(0x8b93a3);
+      this.tweens.add({ targets: o.spr, alpha: 0, y: o.y + 40, angle: 90, duration: 380 });
+      return;
+    }
+    // la estrella se rompe con pena (feedback cálido, castigo real)
+    o.spr.setTint(0x8b93a3);
+    this.tweens.add({ targets: o.spr, alpha: 0, y: o.y + 40, angle: 90, duration: 380 });
+    const miss = this.add.text(o.spr.x, CHAR_Y - 90, "MISS", { fontFamily: FONT, fontSize: "17px", color: "#ff9d8a", fontStyle: "bold", stroke: "#3a2260", strokeThickness: 4 }).setOrigin(0.5).setDepth(35);
+    this.tweens.add({ targets: miss, y: miss.y - 34, alpha: 0, duration: 700, onComplete: () => miss.destroy() });
+    this._loseHeart(o, "miss");
+  }
+
+  _hitOb(o) {
+    if (o.taken || this.invuln > 0 || this.rushT > 0) return;
+    o.taken = true;
+    if (this.shieldT > 0) {
+      this.shieldT = 0.01; // el escudo absorbe el golpe
+      this.snd.shield();
+      this._spark(o.spr.x, o.y, 0x7fd4ff);
+      this.tweens.add({ targets: o.spr, alpha: 0.25, duration: 150 });
+      return;
+    }
+    this.mult = 1;
+    this.multTxt.setText("×1");
+    this.snd.hit();
+    this.cameras.main.shake(160, 0.012);
+    // resalta QUÉ te golpeó (la lección de la pintura de Duet)
+    const ring = this.add.image(o.spr.x, o.y, "glow").setDepth(31).setScale(1.4).setTint(0xff5e5e);
+    this.tweens.add({ targets: ring, scale: 2.2, alpha: 0, duration: 500, onComplete: () => ring.destroy() });
+    o.spr.setTint(0xff8080);
+    this.slowmo = 0.3;
+    this._loseHeart(o, "hit");
+  }
+
+  _loseHeart(o, why) {
+    // log ligero de balance (leído por los bots de playtest)
+    (window.__ddLoss = window.__ddLoss || []).push({ t: +this.time_.toFixed(1), why, type: o?.type || "star", col: o?.col });
+    this.hearts--;
+    this.heartIcons.forEach((h, i) => h.setAlpha(i < this.hearts ? 1 : 0.22));
+    this.invuln = 1.2;
+    if (this.hearts <= 0) this._death(o, why);
+  }
+
+  _collectPickup(o) {
+    if (o.taken) return;
+    o.taken = true;
+    this.tweens.add({ targets: [o.spr, o.glow], scale: 0, alpha: 0, duration: 200, onComplete: () => { o.spr.destroy(); o.glow.destroy(); } });
+    if (o.type === "mama") {
+      if (this.hearts < 3) { this.hearts++; this.heartIcons.forEach((h, i) => h.setAlpha(i < this.hearts ? 1 : 0.22)); }
+      this.snd.heart();
+      this._toast("💛 Mamá: +1 heart!", 0xffd94e);
+    } else if (o.type === "papa") {
+      this.shieldT = SHIELD_SECS;
+      this.shieldE.setVisible(true); this.shieldF.setVisible(true);
+      this.snd.shield();
+      this._toast("🛡 Papá: shield!", 0x7fd4ff);
+    } else {
+      this.sweepT = 5;
+      // Cristian barre los obstáculos en pantalla
+      for (const x of this.objs) if (x.kind === "ob" && !x.taken) {
+        x.taken = true;
+        this.tweens.add({ targets: x.spr, x: x.spr.x + (x.col === 0 ? -240 : 240), angle: 60, alpha: 0, duration: 420 });
+      }
+      this.snd.dash();
+      this._toast("🛹 Cristian clears the way!", 0x8ef5c9);
+    }
+  }
+
+  _updateShield(dt) {
+    this.shieldT -= dt;
+    const blink = this.shieldT < 2 ? (Math.sin(this.tt * 16) > 0 ? 0.9 : 0.3) : 0.9;
+    this.shieldE.setAlpha(blink); this.shieldF.setAlpha(blink);
+    if (this.shieldT <= 0) { this.shieldE.setVisible(false); this.shieldF.setVisible(false); }
+  }
+
+  /* ================= FAIRY RUSH ================= */
+  _startRush() {
+    this.rushT = RUSH_SECS;
+    this.meter = 0;
+    this.snd.fanfare();
+    this.snd.setRush(true);
+    SDK.happyTime();
+    this._toast("✨ FAIRY RUSH!\nTHE WORLDS BECOME ONE ✨", 0xffd94e);
+    this.veilFlash.setAlpha(0.9);
+    this.tweens.add({ targets: this.veilFlash, alpha: 0, duration: 600 });
+    // el divisor se disuelve: un solo mundo de sueño
+    this.tweens.add({ targets: [this.divider, this.divGlow], alpha: 0.12, duration: 500 });
+    this.tweens.add({ targets: this.bgParkDream, alpha: 1, duration: 700 });
+    this.rainbow.setVisible(true).setAlpha(0);
+    this.tweens.add({ targets: this.rainbow, alpha: 1, duration: 700 });
+    // Elizabeth despliega las alas (canon fairy)
+    const fs = this.registry.get("scale:eliz-fairy") || this.E.scale;
+    this.E.spr.setTexture("eliz-fairy").setScale(fs);
+    this._missionToast(report("rush", 1));
+    this._rushBaseMeterSegs();
+  }
+
+  _rushBaseMeterSegs() {
+    this.meterSegs.forEach((s) => s.setFillStyle(0xffffff, 0.18));
+  }
+
+  _updateRush(dt) {
+    if (this.rushT <= 0) return;
+    this.rushT -= dt;
+    if (Math.random() < 0.3) this._spark(Phaser.Math.Between(0, W), Phaser.Math.Between(100, H - 100), 0xffd94e);
+    if (this.rushT <= 0) {
+      this.snd.setRush(false);
+      this.tweens.add({ targets: [this.divider, this.divGlow], alpha: 1, duration: 500 });
+      this.tweens.add({ targets: this.bgParkDream, alpha: 0, duration: 600 });
+      this.tweens.add({ targets: this.rainbow, alpha: 0, duration: 500, onComplete: () => this.rainbow.setVisible(false) });
+      this.E.spr.setTexture(this.E.keys[0]).setScale(this.E.scale);
+      this.invuln = Math.max(this.invuln, 0.8); // aterrizaje amable
+    }
+  }
+
+  /* ================= MUERTE / REVIVE ================= */
+  _death(o, why) {
+    this.dead = true;
+    this.snd.stopMusic();
+    SDK.gameplayStop();
+    const sv = Save.get();
+    sv.lastDeath = { dist: this.dist, lane: (o ? o.col * 2 + o.lane : 0) };
+    Save.persist();
+
+    // rewarded revive 1×run (o 100★) — requisito CG, siempre con alternativa
+    if (!this.usedRevive && (SDK.available || sv.stars >= REVIVE_STARS)) this._reviveOffer(sv);
+    else this._gameOver();
+  }
+
+  _reviveOffer(sv) {
+    const f = (s, e = {}) => ({ fontFamily: FONT, fontSize: s, color: "#fff", fontStyle: "bold", ...e });
+    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.7).setDepth(90).setInteractive();
+    const box = this.add.rectangle(W / 2, H / 2, 320, 300, 0x241a4a, 0.97).setStrokeStyle(3, 0xb9a6ff).setDepth(91);
+    const title = this.add.text(W / 2, H / 2 - 108, "KEEP DREAMING?", f("26px", { color: "#ff9ed2" })).setOrigin(0.5).setDepth(92);
+    const els = [veil, box, title];
+
+    let t = 4.0;
+    const count = this.add.text(W / 2, H / 2 - 66, "4", f("20px", { color: "#cbb7ff" })).setOrigin(0.5).setDepth(92);
+    els.push(count);
+
+    const done = (revived) => {
+      this._reviveTimer.remove();
+      els.forEach((e) => e.destroy());
+      if (revived) this._doRevive();
+      else this._gameOver();
+    };
+
+    if (SDK.available) {
+      const ad = this.add.text(W / 2, H / 2 - 10, "▶  REVIVE — watch ad", f("20px", { backgroundColor: "#8ef5c9", color: "#14351f" }))
+        .setOrigin(0.5).setPadding(22, 12, 22, 12).setDepth(92).setInteractive({ useHandCursor: true });
+      ad.on("pointerdown", () => SDK.rewardedAd(() => done(true), () => this.snd.deny()));
+      els.push(ad);
+    }
+    if (sv.stars >= REVIVE_STARS) {
+      const st = this.add.text(W / 2, H / 2 + 58, `★ REVIVE — ${REVIVE_STARS} stars`, f("18px", { backgroundColor: "#ffd94e", color: "#3a2260" }))
+        .setOrigin(0.5).setPadding(20, 10, 20, 10).setDepth(92).setInteractive({ useHandCursor: true });
+      st.on("pointerdown", () => { if (Save.spendStars(REVIVE_STARS)) done(true); });
+      els.push(st);
+    }
+    const skip = this.add.text(W / 2, H / 2 + 118, "no, sweet dreams…", f("15px", { color: "#8b93a3" }))
+      .setOrigin(0.5).setPadding(10, 6, 10, 6).setDepth(92).setInteractive({ useHandCursor: true });
+    skip.on("pointerdown", () => done(false));
+    els.push(skip);
+
+    this._reviveTimer = this.time.addEvent({
+      delay: 100, loop: true, callback: () => {
+        t -= 0.1;
+        count.setText(t > 0 ? t.toFixed(1) : "0");
+        if (t <= 0) done(false);
+      },
+    });
+  }
+
+  _doRevive() {
+    this.usedRevive = true;
+    this.dead = false;
+    this.hearts = 3;
+    this.heartIcons.forEach((h) => h.setAlpha(1));
+    this.invuln = 2;
+    this.snd.revive();
+    this.snd.startMusic();
+    SDK.gameplayStart();
+    // limpia peligros cercanos
+    for (const o of this.objs) if (o.kind === "ob" && !o.taken && o.y > 100) {
+      o.taken = true;
+      this.tweens.add({ targets: o.spr, alpha: 0, scale: 0, duration: 260 });
+    }
+    this.veilFlash.setAlpha(0.7);
+    this.tweens.add({ targets: this.veilFlash, alpha: 0, duration: 500 });
+  }
+
+  _gameOver() {
+    this.snd.gameOver();
+    this.scene.start("GameOver", {
+      score: Math.floor(this.score),
+      meters: Math.floor(this.dist / PX_PER_M),
+      stars: this.starsRun,
+      time: Math.floor(this.time_),
+      syncs: this.syncsRun,
+      multMax: this.multMax,
+    });
+  }
+
+  /* ================= FX ================= */
+  _missionToast(completed) {
+    if (!completed || !completed.length) return;
+    for (const m of completed) {
+      this._toast(`🏅 MISSION DONE!\n${m.label}  +★${m.reward}`, 0x8ef5c9);
+      this.snd.fanfare();
+    }
+  }
+
+  _tether() {
     this.tether.clear();
-    if (this.rushT > 0) return; // en el rush vuelan juntos, no hace falta
-    const ex = PLAYER_X, ey = this.E.y - this.E.spr.displayHeight * 0.55;
-    const fx = FLOFY_X, fy = this.F.y;
-    const cx = (ex + fx) / 2, cy = Math.min(ey, fy) - 26 + Math.sin(this.tt * 3) * 4;
-    // Bézier cuadrática manual (Phaser Graphics no tiene quadraticCurveTo).
-    this.tether.lineStyle(3, 0xfff2b0, 0.4);
+    if (this.rushT > 0) return;
+    const ex = this.E.x, ey = CHAR_Y - 70;
+    const fx = this.F.x, fy = CHAR_Y - 58;
+    const cx = (ex + fx) / 2, cy = Math.min(ey, fy) - 30 + Math.sin(this.tt * 3) * 4;
+    this.tether.lineStyle(2, 0xfff2b0, 0.3);
     this.tether.beginPath();
     this.tether.moveTo(ex, ey);
     for (let i = 1; i <= 10; i++) {
@@ -187,836 +826,24 @@ export class GameScene extends Phaser.Scene {
     this.tether.strokePath();
   }
 
-  /* ================= HUD ================= */
-  _buildHUD() {
-    const f = (size, extra = {}) => ({ fontFamily: FONT, fontSize: size, color: "#fff", fontStyle: "bold", ...extra });
-
-    this.heartIcons = [];
-    for (let i = 0; i < 3; i++) this.heartIcons.push(this.add.image(34 + i * 44, 34, "heart").setDepth(60).setScale(0.8));
-
-    if (this.mode === "level") {
-      // course progress bar with a little flag
-      this.add.rectangle(W / 2, 30, 420, 16, 0xffffff, 0.16).setStrokeStyle(2, 0xb9a6ff, 0.8).setDepth(60);
-      this.progFill = this.add.rectangle(W / 2 - 208, 30, 4, 10, 0xff9ed2).setOrigin(0, 0.5).setDepth(60);
-      this.add.text(W / 2 + 218, 30, "🏁", f("20px")).setOrigin(0, 0.5).setDepth(60);
-      this.levelTxt = this.add.text(W / 2 - 208, 48, `LEVEL ${this.levelNum}`, f("15px", { color: "#cbb7ff" })).setDepth(60);
-      this.starTxt = this.add.text(W - 196, 22, `0/${this.courseStars}`, f("24px", { color: "#ffd94e" })).setDepth(60);
-    } else {
-      this.scoreTxt = this.add.text(W / 2, 14, "0", f("38px", { stroke: "#3a2260", strokeThickness: 6 })).setOrigin(0.5, 0).setDepth(60);
-      this.starTxt = this.add.text(W - 196, 22, "0", f("24px", { color: "#ffd94e" })).setDepth(60);
-    }
-    this.starIcon = this.add.image(W - 220, 34, "star").setDepth(60).setScale(0.7);
-    this.multTxt = this.add.text(W / 2 + 230, 20, "×1", f("24px", { color: "#ffd94e" })).setOrigin(0, 0).setDepth(60);
-
-    this.meterSegs = [];
-    for (let i = 0; i < METER_MAX; i++) {
-      this.meterSegs.push(
-        this.add.rectangle(W / 2 - 84 + i * 36, 66, 30, 10, 0xffffff, 0.18).setStrokeStyle(2, 0xb9a6ff, 0.7).setDepth(60)
-      );
-    }
-    this.add.text(W / 2, 80, "DREAM METER", f("11px", { color: "#cbb7ff" })).setOrigin(0.5, 0).setDepth(60);
-
-    this.pauseBtn = this.add.text(W - 66, 14, "⏸", f("34px", { backgroundColor: "#3a2260cc" }))
-      .setPadding(14, 8, 14, 8).setDepth(60).setInteractive({ useHandCursor: true });
-    this.pauseBtn.on("pointerdown", () => this._togglePause());
-    this.muteBtn = this.add.text(W - 138, 14, this.snd.muted ? "🔇" : "🔊", f("28px", { backgroundColor: "#3a2260cc" }))
-      .setPadding(12, 10, 12, 10).setDepth(60).setInteractive({ useHandCursor: true });
-    this.muteBtn.on("pointerdown", () => {
-      this.snd.setMuted(!this.snd.muted);
-      if (!this.snd.muted) this.snd.startMusic();
-      this.muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
-    });
-
-    this.toastTxt = this.add.text(W / 2, 126, "", f("26px", { stroke: "#3a2260", strokeThickness: 5 })).setOrigin(0.5).setDepth(60).setAlpha(0);
-  }
-
-  _toast(msg, color = 0xffffff) {
-    this.toastTxt.setText(msg).setColor("#" + color.toString(16).padStart(6, "0")).setAlpha(1).setScale(0.7);
-    this.tweens.add({ targets: this.toastTxt, scale: 1, duration: 180, ease: "Back.out" });
-    this.tweens.add({ targets: this.toastTxt, alpha: 0, delay: 1600, duration: 400 });
-  }
-
-  _hint(side) {
-    const f = { fontFamily: FONT, fontSize: "22px", color: "#fff", fontStyle: "bold", align: "center", stroke: "#3a2260", strokeThickness: 5 };
-    const x = side === "left" ? W * 0.25 : W * 0.75;
-    const txt = side === "left"
-      ? "TAP HERE (or A)\nELIZABETH JUMPS"
-      : "TAP HERE (or L)\nFLOFY BOOSTS UP";
-    const t = this.add.text(x, H / 2 + 40, txt, f).setOrigin(0.5).setDepth(70);
-    const hand = this.add.text(x, H / 2 + 110, "👆", { fontSize: "42px" }).setOrigin(0.5).setDepth(70);
-    this.tweens.add({ targets: hand, y: H / 2 + 96, duration: 420, yoyo: true, repeat: -1 });
-    this[`_hint_${side}`] = [t, hand];
-  }
-  _clearHint(side) {
-    const h = this[`_hint_${side}`];
-    if (h) { h.forEach((o) => o.destroy()); this[`_hint_${side}`] = null; }
-  }
-
-  /* ================= INPUT ================= */
-  _bindInput() {
-    this.input.on("pointerdown", (p) => {
-      if (this.dead || this.paused || this.finishing) return;
-      if (p.y < 110 && p.x > W - 220) return; // HUD buttons
-      this.snd.resume();
-      if (p.x < W / 2) { this._pressE(); p._ddSide = "E"; }
-      else this._pressF();
-    });
-    this.input.on("pointerup", (p) => { if (p._ddSide === "E") this._releaseE(); });
-
-    const kb = this.input.keyboard;
-    kb.on("keydown-A", (e) => { if (!e.repeat) this._pressE(); });
-    kb.on("keydown-LEFT", (e) => { if (!e.repeat) this._pressE(); });
-    kb.on("keyup-A", () => this._releaseE());
-    kb.on("keyup-LEFT", () => this._releaseE());
-    kb.on("keydown-L", (e) => { if (!e.repeat) this._pressF(); });
-    kb.on("keydown-RIGHT", (e) => { if (!e.repeat) this._pressF(); });
-    kb.on("keydown-P", () => this._togglePause());
-    kb.on("keydown-ESC", () => this._togglePause());
-  }
-
-  _pressE() {
-    const E = this.E;
-    E.holding = true;
-    E.buffer = ELIZ.buffer;
-    if (this.rushT > 0 || this.finishing) return;
-    if (E.grounded || E.coyote > 0) {
-      E.vy = ELIZ.jump;
-      E.grounded = false; E.coyote = 0; E.buffer = 0;
-      E.spr.setTexture(this.E.fairySkin ? "eliz-fairy" : "eliz-jump");
-      this.snd.jumpE();
-      this._dust(PLAYER_X, GROUND);
-      this._clearHint("left");
-    }
-  }
-  _releaseE() {
-    const E = this.E;
-    E.holding = false;
-    if (!E.grounded && E.vy < ELIZ.cut) E.vy = ELIZ.cut;
-  }
-  _pressF() {
-    if (this.rushT > 0 || this.finishing) return;
-    const F = this.F;
-    F.vy = Math.min(F.vy, 0) + FLOFY.boost * 0.62;
-    this.snd.hopF();
-    for (let i = 0; i < 5; i++) this._spark(FLOFY_X + Phaser.Math.Between(-14, 14), F.y + 30, 0xfff2b0);
-    this._clearHint("right");
-  }
-
-  /* ================= PAUSE ================= */
-  _togglePause(force) {
-    if (this.dead || this.finishing) return;
-    this.paused = force === true ? true : !this.paused;
-    if (this.paused) {
-      this.snd.stopMusic();
-      this._pauseVeil = this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.72).setDepth(80).setInteractive();
-      const f = (s, e = {}) => ({ fontFamily: FONT, fontSize: s, color: "#fff", fontStyle: "bold", ...e });
-      this._pauseTxt = this.add.text(W / 2, H / 2 - 70, "PAUSED", f("52px")).setOrigin(0.5).setDepth(81);
-      this._resumeBtn = this.add.text(W / 2, H / 2 + 20, "▶ RESUME", f("30px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
-        .setOrigin(0.5).setPadding(30, 12, 30, 12).setDepth(81).setInteractive({ useHandCursor: true });
-      this._resumeBtn.on("pointerdown", () => this._togglePause());
-      this._menuBtn = this.add.text(W / 2, H / 2 + 96, "MENU", f("20px", { backgroundColor: "#3a2260" }))
-        .setOrigin(0.5).setPadding(22, 9, 22, 9).setDepth(81).setInteractive({ useHandCursor: true });
-      this._menuBtn.on("pointerdown", () => { this.dead = true; SDK.gameplayStop(); this.scene.start("Menu"); });
-    } else {
-      if (!this.snd.muted) this.snd.startMusic();
-      [this._pauseVeil, this._pauseTxt, this._resumeBtn, this._menuBtn].forEach((o) => o && o.destroy());
-    }
-  }
-
-  /* ================= SPAWNING ================= */
-  _spawnFromCourse() {
-    while (this._nextEvent < this.course.length && this.course[this._nextEvent].x < this.dist + W + 200) {
-      const e = this.course[this._nextEvent++];
-      const sx = e.x - this.dist + PLAYER_X; // world→screen
-      if (e.kind === "ob") this._addObstacle(e.lane, e.type, sx);
-      else if (e.kind === "pair") this._addPair(sx);
-      else if (e.kind === "line") this._addLine(e.lane, sx);
-      else if (e.kind === "pickup") this._addPickup(e.type, sx);
-    }
-  }
-
-  _spawnEndless() {
-    const m = this.dist / PX_PER_M;
-    this._obClock -= this.speed * 0.016;
-    // (endless uses px clocks driven in update; here for clarity)
-  }
-
-  _addObstacle(lane, type, x) {
-    let spr, w, h, extraV = 0, bob = null, air = lane === "air", cy = null;
-    const mk = (key, dispH, originY = 1) => {
-      const s = this.add.image(x, GROUND, key).setOrigin(0.5, originY).setDepth(8);
-      s.setScale(dispH / s.height);
-      return s;
-    };
-    switch (type) {
-      case "hedge": spr = mk("ob-hedge", 92); w = spr.displayWidth * 0.72; h = 88; break;
-      case "bench": spr = mk("ob-bench", 96); w = spr.displayWidth * 0.8; h = 90; break;
-      case "birdbath": spr = mk("ob-birdbath", 134); w = spr.displayWidth * 0.55; h = 130; break;
-      case "blocks": spr = mk("ob-blocks", 162); w = spr.displayWidth * 0.62; h = 158; break;
-      case "top": {
-        spr = mk("ob-top", 84); w = spr.displayWidth * 0.6; h = 80; extraV = 150;
-        this.tweens.add({ targets: spr, angle: { from: -8, to: 8 }, duration: 160, yoyo: true, repeat: -1 });
-        break;
-      }
-      case "pigeon": {
-        cy = HOVER + 6; // right on Flofy's hover line → BOOST to dodge
-        spr = this.add.image(x, cy, "ob-pigeon").setDepth(8);
-        spr.setScale(74 / spr.height);
-        w = spr.displayWidth * 0.6; h = 54; extraV = 170;
-        this.tweens.add({ targets: spr, y: cy - 12, duration: 380, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-        break;
-      }
-      case "cloud": {
-        cy = HOVER - 168; // up high → DON'T boost into it
-        spr = this.add.image(x, cy, "ob-cloud").setDepth(8);
-        spr.setScale(86 / spr.height);
-        w = spr.displayWidth * 0.72; h = 76;
-        break;
-      }
-      case "bubble": {
-        cy = HOVER - 60;
-        spr = this.add.image(x, cy, "ob-bubble").setDepth(8).setScale(0.95);
-        w = 76; h = 76; bob = { base: cy, amp: 84, ph: Math.random() * 6, sp: 1.6 };
-        break;
-      }
-    }
-    this.obstacles.push({ spr, lane, type, w, h, extraV, bob, air, cy });
-  }
-
-  _addPair(x) {
-    const id = ++this._pairSeq;
-    this._addStar("ground", x, GROUND - 152, id);
-    this._addStar("air", x, HOVER - 96, id);
-    this.pairs.set(id, { got: 0, timer: 0, active: false });
-  }
-
-  _addLine(lane, x) {
-    for (let i = 0; i < 3; i++) {
-      const y = lane === "ground" ? GROUND - (i === 1 ? 190 : 140) : HOVER - (i === 1 ? 60 : 10);
-      this._addStar(lane, x + i * 88, y, 0);
-    }
-  }
-
-  _addStar(lane, x, y, pairId) {
-    const spr = this.add.image(x, y, "star").setDepth(7).setScale(0.9);
-    this.tweens.add({ targets: spr, angle: 360, duration: 2600, repeat: -1 });
-    if (pairId) {
-      spr.setScale(1.05);
-      const glow = this.add.image(x, y, "glow").setDepth(6).setScale(1.1).setTint(0xffd94e);
-      this.tweens.add({ targets: glow, alpha: { from: 0.9, to: 0.4 }, duration: 500, yoyo: true, repeat: -1 });
-      spr._glow = glow;
-    }
-    this.stars.push({ spr, lane, pairId });
-  }
-
-  _addPickup(kind, x) {
-    const y = GROUND - 130;
-    const glow = this.add.image(x, y, "glow").setDepth(6).setScale(1.6).setTint(0xfff2b0);
-    const spr = this.add.image(x, y, `pw-${kind}`).setDepth(7);
-    spr.setScale((this.registry.get(`scale:pw-${kind}`) || 0.12) * 0.72);
-    this.tweens.add({ targets: [spr, glow], y: y - 14, duration: 700, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-    this.pickups.push({ spr, glow, kind });
-  }
-
-  /* ---- endless spawners (px clocks) ---- */
-  _endlessSpawn(dt) {
-    const m = this.dist / PX_PER_M;
-    this._obClock -= this.speed * dt;
-    if (this._obClock <= 0) {
-      const ground = ["hedge", "bench"];
-      if (m > 150) ground.push("birdbath");
-      if (m > 300) ground.push("top");
-      if (m > 500) ground.push("blocks");
-      const airPool = [];
-      if (m > 80) airPool.push("bubble");
-      if (m > 220) airPool.push("pigeon");
-      if (m > 420) airPool.push("cloud");
-      const roll = Math.random();
-      const gapOK = (lane) => this.dist - this._lastObDist[lane] > this.speed * 0.85 + 300;
-      if (roll < 0.62 && gapOK("ground")) {
-        this._addObstacle("ground", ground[(Math.random() * ground.length) | 0], W + 100);
-        this._lastObDist.ground = this.dist;
-      } else if (airPool.length && gapOK("air")) {
-        this._addObstacle("air", airPool[(Math.random() * airPool.length) | 0], W + 100);
-        this._lastObDist.air = this.dist;
-      }
-      this._obClock = this.speed * 0.45 + Math.max(300, 620 - m * 0.35) + Math.random() * 260;
-    }
-    this._starClock -= this.speed * dt;
-    if (this._starClock <= 0) {
-      const roll = Math.random();
-      if (roll < 0.5 && m > 25) this._addPair(W + 80);
-      else this._addLine(roll < 0.75 ? "ground" : "air", W + 80);
-      this._starClock = 520 + Math.random() * 420;
-    }
-    this._pickupClock -= this.speed * dt;
-    if (this._pickupClock <= 0) {
-      const kinds = ["mama", "papa", "cristian"];
-      this._addPickup(kinds[this._pickupIdx++ % 3], W + 90);
-      this._pickupClock = 4200 + Math.random() * 1600;
-    }
-  }
-
-  /* ================= UPDATE ================= */
-  update(_, dms) {
-    if (this.dead || this.paused) return;
-    const dt = Math.min(dms / 1000, 0.05);
-    this.tt += dt;
-
-    // speed
-    if (this.mode === "level") {
-      this.speed = BASE_SPEED * this.levelDef.speed * (this.dashT > 0 ? 1.5 : 1) * (this.rushT > 0 ? 1.12 : 1);
-    } else {
-      const ramp = Math.min(MAX_RAMP, 1 + this.dist / RAMP_DIST);
-      this.speed = BASE_SPEED * ramp * (this.dashT > 0 ? 1.55 : 1) * (this.rushT > 0 ? 1.15 : 1);
-      const m = this.dist / PX_PER_M;
-      const bi = ENDLESS_BIOME_AT.length - 1 - [...ENDLESS_BIOME_AT].reverse().findIndex((at) => m >= at);
-      if (bi !== this.biome) this._swapBiomeEndless(bi);
-    }
-    if (this.finishing) this.speed = Math.max(0, this.speed - 900 * dt * 3);
-    this.dist += this.speed * dt;
-
-    // parallax
-    this.bgA.tilePositionX += this.speed * dt * 0.32;
-    this.bgB.tilePositionX += this.speed * dt * 0.32;
-    this.dreamBg.tilePositionX += this.speed * dt * 0.4;
-
-    this._updateE(dt);
-    this._updateF(dt);
-    this._updateRush(dt);
-    if (this.shieldT > 0) this._updateShield(dt);
-    if (this.dashT > 0) this.dashT -= dt;
-    if (this.invuln > 0) {
-      this.invuln -= dt;
-      const blink = Math.sin(this.tt * 24) > 0 ? 1 : 0.35;
-      this.E.spr.setAlpha(blink); this.F.spr.setAlpha(blink);
-      if (this.invuln <= 0) { this.E.spr.setAlpha(1); this.F.spr.setAlpha(1); }
-    }
-
-    // spawning + goal
-    if (this.mode === "level") {
-      this._spawnFromCourse();
-      const prog = Math.min(1, this.dist / this.courseLen);
-      this.progFill.width = 4 + prog * 412;
-      if (!this.finishing && this.dist >= this.courseLen) this._reachGoal();
-    } else {
-      this._endlessSpawn(dt);
-      this.score += this.speed * dt * 0.012 * this.mult;
-      this.scoreTxt.setText(String(Math.floor(this.score)));
-    }
-
-    this._moveWorld(dt);
-    if (!this.finishing) this._collide();
-    this._updatePairs(dt);
-    this._drawTether();
-    this._trail(dt);
-  }
-
-  _updateE(dt) {
-    const E = this.E;
-    if (this.rushT > 0) return;
-    if (E.buffer > 0) {
-      E.buffer -= dt;
-      if (E.grounded) { E.buffer = 0; this._pressE(); }
-    }
-    if (!E.grounded) {
-      E.vy += ELIZ.grav * dt;
-      E.y += E.vy * dt;
-      if (E.y >= GROUND) {
-        E.y = GROUND; E.vy = 0; E.grounded = true; E.coyote = ELIZ.coyote;
-        this._dust(PLAYER_X, GROUND);
-        E.spr.setScale(E.scale * 1.06, E.scale * 0.94); // landing squash
-        this.time.delayedCall(90, () => { if (!this.dead) E.spr.setScale(E.scale); });
-      }
-    } else {
-      E.coyote = ELIZ.coyote;
-      // natural 4-phase stride, cadence tied to ground speed
-      E.animT += dt * (this.speed / 34);
-      const fr = Math.floor(E.animT) % 4;
-      if (fr !== E.frame && !E.fairySkin) {
-        E.frame = fr;
-        E.spr.setTexture(RUN_FRAMES[fr]);
-      }
-      // gentle run bob
-      E.spr.y = E.y - Math.abs(Math.sin(E.animT * Math.PI)) * 5;
-    }
-    if (!E.grounded) { E.coyote -= dt; E.spr.y = E.y; }
-    E.spr.rotation = E.grounded ? 0.02 : Phaser.Math.Clamp(E.vy / 4600, -0.14, 0.2);
-  }
-
-  _updateF(dt) {
-    const F = this.F;
-    if (this.rushT > 0) return;
-    // spring-hover: his magic pulls him back to the hover line
-    F.vy += (HOVER - F.y) * FLOFY.spring * dt;
-    F.vy -= F.vy * FLOFY.damp * dt;
-    if (F.vy > FLOFY.maxFall) F.vy = FLOFY.maxFall;
-    F.y += F.vy * dt;
-    if (F.y < HOVER_MIN) { F.y = HOVER_MIN; F.vy = Math.max(F.vy, 0); }
-    if (F.y > GROUND - 60) { F.y = GROUND - 60; F.vy = Math.min(F.vy, 0); }
-    F.spr.setTexture(F.vy < -40 ? "flofy-hop" : "flofy-fall");
-    F.spr.y = F.y + Math.sin(this.tt * 2.6) * 6; // idle float
-    F.spr.rotation = Phaser.Math.Clamp(F.vy / 2600, -0.18, 0.18);
-  }
-
-  /* ================= FAIRY RUSH — the world becomes the dream ================= */
-  _startRush() {
-    this.rushT = RUSH_SECS;
-    this.meter = 0;
-    this.snd.fanfare();
-    this.snd.setRush(true);
-    this._toast("✨ FAIRY RUSH — THE DREAM TAKES OVER! ✨", 0xffd94e);
-    this.veilFlash.setAlpha(0.9);
-    this.tweens.add({ targets: this.veilFlash, alpha: 0, duration: 550 });
-    this.dreamBg.setTexture(BIOMES[this.biome].dream);
-    this.tweens.add({ targets: this.dreamBg, alpha: 1, duration: 900 });
-    this.rainbow.setVisible(true).setAlpha(0);
-    this.tweens.add({ targets: this.rainbow, alpha: 1, duration: 900 });
-    // Elizabeth sprouts fairy wings and flies up BESIDE Flofy
-    this.E.spr.setTexture("eliz-fairy");
-    const fs = this.registry.get("scale:eliz-fairy") || this.E.scale;
-    this.E.spr.setScale(fs).setRotation(0);
-    this.tweens.add({ targets: this.E, y: HOVER + 60, duration: 900, ease: "Sine.inOut", onUpdate: () => { this.E.spr.y = this.E.y; } });
-    this.cameras.main.shake(240, 0.004);
-    SDK.happyTime();
-  }
-
-  _updateRush(dt) {
-    if (this.rushT <= 0) return;
-    this.rushT -= dt;
-    const bob = Math.sin(this.tt * 3.2) * 30;
-    this.E.y = HOVER + 70 + bob; this.E.spr.y = this.E.y; this.E.spr.x = PLAYER_X;
-    this.F.y = HOVER - 40 + bob; this.F.spr.y = this.F.y;
-    if (Math.random() < 0.5) this._spark(PLAYER_X - 20 + Phaser.Math.Between(-14, 14), this.E.y - 40 + Phaser.Math.Between(-20, 20), 0xffd94e);
-    // star magnet
-    for (const s of this.stars) {
-      const dx = s.spr.x - (PLAYER_X + 70), dy = s.spr.y - HOVER;
-      const d = Math.hypot(dx, dy);
-      if (d < 340) {
-        s.spr.x -= dx * 0.14; s.spr.y -= dy * 0.14;
-        if (s.spr._glow) { s.spr._glow.x = s.spr.x; s.spr._glow.y = s.spr.y; }
-      }
-    }
-    for (const o of this.obstacles) {
-      if (o.spr.x < PLAYER_X + 340 && !o._popped) { o._popped = true; this._popObstacle(o, true); }
-    }
-    if (this.rushT <= 0) this._endRush();
-  }
-
-  _endRush() {
-    this.snd.setRush(false);
-    this.tweens.add({ targets: [this.dreamBg, this.rainbow], alpha: 0, duration: 900, onComplete: () => this.rainbow.setVisible(false) });
-    if (!this.E.fairySkin) {
-      this.time.delayedCall(860, () => {
-        if (!this.dead) {
-          this.E.spr.setTexture("eliz-r1").setScale(this.E.scale);
-          if (this.skin === "golden") this.E.spr.setTint(0xffd57a);
-        }
-      });
-    }
-    this.tweens.add({ targets: this.E, y: GROUND, duration: 850, ease: "Sine.in", onUpdate: () => { this.E.spr.y = this.E.y; }, onComplete: () => { this.E.grounded = true; this.E.vy = 0; } });
-    this.invuln = Math.max(this.invuln, 1.2);
-  }
-
-  /* ================= WORLD MOVEMENT + COLLISIONS ================= */
-  _moveWorld(dt) {
-    for (let i = this.obstacles.length - 1; i >= 0; i--) {
-      const o = this.obstacles[i];
-      if (o._gone) { this.obstacles.splice(i, 1); continue; }
-      o.spr.x -= (this.speed + o.extraV) * dt;
-      if (o.bob) o.spr.y = o.bob.base + Math.sin(this.tt * o.bob.sp + o.bob.ph) * o.bob.amp;
-      if (o.spr.x < -240 && !o._popped) { o.spr.destroy(); this.obstacles.splice(i, 1); }
-    }
-    for (let i = this.stars.length - 1; i >= 0; i--) {
-      const s = this.stars[i];
-      s.spr.x -= this.speed * dt;
-      if (s.spr._glow) { s.spr._glow.x = s.spr.x; s.spr._glow.y = s.spr.y; }
-      if (s.spr.x < -80) this._removeStar(i);
-    }
-    for (let i = this.pickups.length - 1; i >= 0; i--) {
-      const p = this.pickups[i];
-      p.spr.x -= this.speed * dt; p.glow.x = p.spr.x;
-      if (p.spr.x < -120) { p.spr.destroy(); p.glow.destroy(); this.pickups.splice(i, 1); }
-    }
-    if (this.finish) {
-      this.finish.list.forEach(() => {});
-      this.finish.x -= this.speed * dt;
-    }
-  }
-
-  _rectE() {
-    const h = this.E.spr.displayHeight * 0.8;
-    return new Phaser.Geom.Rectangle(PLAYER_X - 26, this.E.y - h, 52, h);
-  }
-  _rectF() {
-    return new Phaser.Geom.Rectangle(FLOFY_X - 28, this.F.y - 34, 56, 68);
-  }
-  _obRect(o) {
-    if (o.air) return new Phaser.Geom.Rectangle(o.spr.x - o.w / 2, o.spr.y - o.h / 2, o.w, o.h);
-    return new Phaser.Geom.Rectangle(o.spr.x - o.w / 2, GROUND - o.h, o.w, o.h);
-  }
-
-  _collide() {
-    if (this.rushT > 0) return;
-    const rE = this._rectE(), rF = this._rectF();
-    if (this.invuln <= 0) {
-      for (const o of this.obstacles) {
-        if (o._popped) continue;
-        const px = o.air ? FLOFY_X : PLAYER_X;
-        if (o.spr.x > px + 220 || o.spr.x < px - 220) continue;
-        const r = o.air ? rF : rE;
-        if (Phaser.Geom.Rectangle.Overlaps(r, this._obRect(o))) { this._hit(o); break; }
-      }
-    }
-    for (let i = this.stars.length - 1; i >= 0; i--) {
-      const s = this.stars[i];
-      const px = s.lane === "ground" ? PLAYER_X : FLOFY_X;
-      if (Math.abs(s.spr.x - px) > 74) continue;
-      const r = s.lane === "ground" ? rE : rF;
-      if (Phaser.Geom.Rectangle.ContainsPoint(Phaser.Geom.Rectangle.Inflate(Phaser.Geom.Rectangle.Clone(r), 28, 28), { x: s.spr.x, y: s.spr.y })) {
-        this._collectStar(i);
-      }
-    }
-    for (let i = this.pickups.length - 1; i >= 0; i--) {
-      const p = this.pickups[i];
-      if (Math.abs(p.spr.x - PLAYER_X) > 84) continue;
-      if (Phaser.Geom.Rectangle.Overlaps(rE, new Phaser.Geom.Rectangle(p.spr.x - 42, p.spr.y - 64, 84, 128))) {
-        this._applyPickup(p.kind);
-        p.spr.destroy(); p.glow.destroy(); this.pickups.splice(i, 1);
-      }
-    }
-  }
-
-  _collectStar(i) {
-    const s = this.stars[i];
-    const golden = this.skin === "golden";
-    this.starsRun += 1 + (golden && Math.random() < 0.1 ? 1 : 0);
-    this.starsGot++;
-    this.score += 15 * this.mult;
-    this.snd.star(this.mult);
-    this._burst(s.spr.x, s.spr.y, 0xffd94e, 7);
-    if (s.pairId) {
-      const pair = this.pairs.get(s.pairId);
-      if (pair) {
-        pair.got++;
-        if (pair.got === 1) { pair.active = true; pair.timer = SYNC_WINDOW; }
-        else if (pair.got >= 2 && pair.active) this._sync(s.spr.x);
-      }
-    }
-    this._refreshStarTxt();
-    this._removeStar(i);
-  }
-
-  _refreshStarTxt() {
-    this.starTxt.setText(this.mode === "level" ? `${this.starsGot}/${this.courseStars}` : String(this.starsRun));
-  }
-
-  _removeStar(i) {
-    const s = this.stars[i];
-    if (s.spr._glow) s.spr._glow.destroy();
-    s.spr.destroy();
-    this.stars.splice(i, 1);
-  }
-
-  _sync(x) {
-    this.mult = Math.min(this.mult + 1, MAX_MULT);
-    const fill = this.skin === "fairy" ? 1.2 : 1;
-    this.meter = Math.min(METER_MAX, this.meter + fill);
-    this.snd.sync(this.mult);
-    this._toast(`SYNC ×${this.mult}!`, 0x8ef5c9);
-    // beam connecting Elizabeth and Flofy — their hearts in sync
-    const beam = this.add.rectangle(x, (GROUND - 150 + HOVER - 90) / 2, 6, GROUND - HOVER - 40, 0xfff2b0, 0.9).setDepth(9);
-    this.tweens.add({ targets: beam, alpha: 0, scaleX: 3, duration: 360, onComplete: () => beam.destroy() });
-    this._burst(x, GROUND - 152, 0x8ef5c9, 10);
-    this._burst(x, HOVER - 96, 0x8ef5c9, 10);
-    this.cameras.main.shake(120, 0.0022);
-    this._refreshMeter();
-    if (this.meter >= METER_MAX && this.rushT <= 0) this._startRush();
-  }
-
-  _updatePairs(dt) {
-    for (const [id, pair] of this.pairs) {
-      if (pair.active && pair.got === 1) {
-        pair.timer -= dt;
-        if (pair.timer <= 0) { pair.active = false; this.pairs.delete(id); }
-      } else if (pair.got >= 2) this.pairs.delete(id);
-    }
-    this._refreshMeter();
-  }
-
-  _refreshMeter() {
-    this.meterSegs.forEach((seg, i) => {
-      seg.fillColor = i < this.meter ? 0xb9a6ff : 0xffffff;
-      seg.fillAlpha = i < this.meter ? 0.95 : 0.18;
-    });
-    this.multTxt.setText("×" + this.mult).setColor(["#ffffff", "#ffd94e", "#8ef5c9", "#7fd4ff", "#ff9ed2"][this.mult - 1] || "#fff");
-  }
-
-  /* ================= FAMILY POWER-UPS ================= */
-  _applyPickup(kind) {
-    if (kind === "mama") {
-      if (this.hearts < 3) { this.hearts++; this._refreshHearts(); }
-      else this.score += 150;
-      this.snd.heart();
-      this._toast("MOM'S HUG! ♥", 0xff9ed2);
-      this._burst(PLAYER_X, GROUND - 120, 0xff9ed2, 14);
-    } else if (kind === "papa") {
-      this.shieldT = SHIELD_SECS;
-      this.snd.shield();
-      this._toast("DAD'S SHIELD!", 0x7fd4ff);
-      this.shieldE.setVisible(true); this.shieldF.setVisible(true);
-    } else {
-      this.dashT = DASH_SECS;
-      this.snd.dash();
-      this._toast("CRISTIAN'S DASH!", 0xffd94e);
-      const c = this.add.image(-80, GROUND, "pw-cristian").setOrigin(0.5, 1).setDepth(12);
-      c.setScale(this.registry.get("scale:pw-cristian") || 0.12);
-      this.tweens.add({ targets: c, x: W + 140, duration: 1100, ease: "Quad.in", onComplete: () => c.destroy() });
-      this.time.delayedCall(200, () => {
-        for (const o of this.obstacles) if (!o._popped && o.spr.x < W) { o._popped = true; this._popObstacle(o, true); }
-      });
-    }
-  }
-
-  _updateShield(dt) {
-    this.shieldT -= dt;
-    this.shieldE.setPosition(PLAYER_X, this.E.y - this.E.spr.displayHeight * 0.45);
-    this.shieldF.setPosition(FLOFY_X, this.F.y);
-    const blink = this.shieldT < 2 ? (Math.sin(this.tt * 16) > 0 ? 0.9 : 0.3) : 0.9;
-    this.shieldE.setAlpha(blink); this.shieldF.setAlpha(blink);
-    if (this.shieldT <= 0) { this.shieldE.setVisible(false); this.shieldF.setVisible(false); }
-  }
-
-  /* ================= DAMAGE / DEATH ================= */
-  _hit(o) {
-    if (this.shieldT > 0) {
-      o._popped = true; this._popObstacle(o, true);
-      this.shieldT = Math.min(this.shieldT, 1.2);
-      this.snd.shield();
-      return;
-    }
-    this.hearts--;
-    this._refreshHearts();
-    this.mult = 1;
-    // Un golpe resetea el multiplicador pero YA NO vacía el Dream Meter
-    // (auditoría: doble castigo hacía casi imposible llegar al FAIRY RUSH).
-    this._refreshMeter();
-    this.invuln = 1.4;
-    o._popped = true; this._popObstacle(o, false);
-    this.snd.hit();
-    this.cameras.main.shake(200, 0.006);
-    this.veilFlash.setFillStyle(0xff5e8a).setAlpha(0.35);
-    this.tweens.add({ targets: this.veilFlash, alpha: 0, duration: 350, onComplete: () => this.veilFlash.setFillStyle(0xffffff) });
-    if (this.hearts <= 0) this._die();
-  }
-
-  _refreshHearts() {
-    this.heartIcons.forEach((h, i) => h.setAlpha(i < this.hearts ? 1 : 0.22));
-  }
-
-  _popObstacle(o, joyful) {
-    this._burst(o.spr.x, o.air ? o.spr.y : GROUND - o.h / 2, joyful ? 0xffd94e : 0xffffff, joyful ? 12 : 8);
-    if (joyful) this.score += 5;
-    this.tweens.add({ targets: o.spr, alpha: 0, scale: o.spr.scale * 1.3, duration: 220, onComplete: () => { o.spr.destroy(); o._gone = true; } });
-  }
-
-  _die() {
-    this.dead = true;
-    SDK.gameplayStop();
-    this.snd.stopMusic();
-    this.snd.gameOver();
-    this.E.spr.setTexture(this.E.fairySkin ? "eliz-fairy" : "eliz-jump");
-    this.tweens.add({ targets: [this.E.spr, this.F.spr], angle: 10, duration: 400 });
-    if (!this.usedRevive && (SDK.available || Save.get().stars + this.starsRun >= REVIVE_STARS)) {
-      this._reviveOffer();
-    } else {
-      this.time.delayedCall(700, () => this._gameOver());
-    }
-  }
-
-  _reviveOffer() {
-    const f = (s, e = {}) => ({ fontFamily: FONT, fontSize: s, color: "#fff", fontStyle: "bold", ...e });
-    const veil = this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.66).setDepth(90).setInteractive();
-    const box = this.add.container(0, 0).setDepth(91);
-    box.add(this.add.text(W / 2, H / 2 - 110, "SAVE THE DUO?", f("42px")).setOrigin(0.5));
-    let countdown = 4;
-    const cd = this.add.text(W / 2, H / 2 - 58, "4", f("24px", { color: "#cbb7ff" })).setOrigin(0.5);
-    box.add(cd);
-    const done = (revived) => {
-      this.time.removeAllEvents();
-      veil.destroy(); box.destroy(true);
-      if (revived) this._doRevive();
-      else this._gameOver();
-    };
-    if (SDK.available) {
-      const b = this.add.text(W / 2, H / 2 + 6, "▶ REVIVE  (watch ad)", f("26px", { backgroundColor: "#8ef5c9", color: "#14351f" }))
-        .setOrigin(0.5).setPadding(26, 12, 26, 12).setInteractive({ useHandCursor: true });
-      b.on("pointerdown", () => SDK.rewardedAd(() => done(true), () => done(false)));
-      box.add(b);
-    }
-    const total = Save.get().stars + this.starsRun;
-    if (total >= REVIVE_STARS) {
-      const b2 = this.add.text(W / 2, H / 2 + 78, `★ REVIVE  (${REVIVE_STARS} stars)`, f("22px", { backgroundColor: "#ffd94e", color: "#3a2600" }))
-        .setOrigin(0.5).setPadding(22, 10, 22, 10).setInteractive({ useHandCursor: true });
-      b2.on("pointerdown", () => {
-        if (this.starsRun >= REVIVE_STARS) this.starsRun -= REVIVE_STARS;
-        else { const rest = REVIVE_STARS - this.starsRun; this.starsRun = 0; Save.spendStars(rest); }
-        this._refreshStarTxt();
-        done(true);
-      });
-      box.add(b2);
-    }
-    const skip = this.add.text(W / 2, H / 2 + 148, "NO THANKS", f("18px", { color: "#cbb7ff" }))
-      .setOrigin(0.5).setPadding(14, 8, 14, 8).setInteractive({ useHandCursor: true });
-    skip.on("pointerdown", () => done(false));
-    box.add(skip);
-    this.time.addEvent({
-      delay: 1000, repeat: 3,
-      callback: () => { countdown--; cd.setText(String(countdown)); if (countdown <= 0) done(false); },
-    });
-  }
-
-  _doRevive() {
-    this.usedRevive = true;
-    this.dead = false;
-    this.hearts = 1;
-    this._refreshHearts();
-    this.invuln = 2.5;
-    this.mult = 1; this._refreshMeter();
-    this.E.spr.setAngle(0); this.F.spr.setAngle(0);
-    if (!this.E.fairySkin) {
-      this.E.spr.setTexture("eliz-r1").setScale(this.E.scale);
-      if (this.skin === "golden") this.E.spr.setTint(0xffd57a);
-    }
-    for (const o of this.obstacles) if (!o._popped) { o._popped = true; this._popObstacle(o, true); }
-    this.snd.revive();
-    if (!this.snd.muted) this.snd.startMusic();
-    SDK.gameplayStart();
-    this._toast("BACK ON TRACK!", 0x8ef5c9);
-  }
-
-  _gameOver() {
-    Save.addStars(this.starsRun);
-    this.scene.start("GameOver", {
-      mode: this.mode,
-      level: this.levelNum,
-      score: Math.floor(this.score),
-      meters: Math.floor(this.dist / PX_PER_M),
-      stars: this.starsRun,
-    });
-  }
-
-  /* ================= LEVEL GOAL ================= */
-  _reachGoal() {
-    this.finishing = true;
-    this.invuln = 99;
-    SDK.gameplayStop();
-    // the family waits at the finish line
-    this.finish = this.add.container(W + 200, 0).setDepth(9);
-    const flag = this.add.text(0, GROUND + 4, "🏁", { fontSize: "64px" }).setOrigin(0.5, 1);
-    this.finish.add(flag);
-    ["pw-mama", "pw-papa", "pw-cristian"].forEach((k, i) => {
-      const s = this.add.image(90 + i * 95, GROUND, k).setOrigin(0.5, 1);
-      s.setScale((this.registry.get(`scale:${k}`) || 0.12) * 0.95);
-      this.finish.add(s);
-      this.tweens.add({ targets: s, y: GROUND - 12, duration: 420, yoyo: true, repeat: -1, delay: i * 130, ease: "Sine.inOut" });
-    });
-    this.snd.fanfare();
-    this.time.delayedCall(1400, () => this._levelComplete());
-  }
-
-  _levelComplete() {
-    this.dead = true; // freeze world updates
-    this.snd.stopMusic();
-    const pct = this.courseStars ? this.starsGot / this.courseStars : 1;
-    const rating = pct >= 0.8 ? 3 : pct >= 0.5 ? 2 : 1;
-    Save.completeLevel(this.levelNum, rating);
-    Save.addStars(this.starsRun);
-    SDK.happyTime();
-
-    const f = (s, e = {}) => ({ fontFamily: FONT, fontSize: s, color: "#fff", fontStyle: "bold", ...e });
-    this.add.rectangle(W / 2, H / 2, W, H, 0x14102b, 0.6).setDepth(90).setInteractive();
-    const box = this.add.container(0, 30).setDepth(91).setAlpha(0);
-    box.add(this.add.rectangle(W / 2, H / 2, 600, 470, 0x241a4a, 0.97).setStrokeStyle(3, 0xffd94e));
-    const art = this.add.image(W / 2 - 200, H / 2 - 90, "eliz-run-a");
-    art.setScale(140 / art.height);
-    box.add(art);
-    box.add(this.add.text(W / 2 + 40, H / 2 - 160, "LEVEL COMPLETE!", f("36px", { color: "#ffd94e" })).setOrigin(0.5));
-    // star rating
-    for (let i = 0; i < 3; i++) {
-      const st = this.add.image(W / 2 - 30 + i * 70, H / 2 - 84, "star").setScale(i < rating ? 1.3 : 1.1).setDepth(92);
-      if (i >= rating) st.setTint(0x555577).setAlpha(0.5);
-      box.add(st);
-      if (i < rating) this.tweens.add({ targets: st, scale: { from: 0.2, to: 1.3 }, delay: 300 + i * 220, duration: 320, ease: "Back.out" });
-    }
-    box.add(this.add.text(W / 2 + 40, H / 2 - 20, `Stars collected: ${this.starsGot}/${this.courseStars}   ·   ★ +${this.starsRun}`, f("18px", { color: "#cbb7ff" })).setOrigin(0.5));
-
-    const hasNext = this.levelNum < LEVELS.length;
-    const next = this.add.text(W / 2, H / 2 + 58, hasNext ? "▶  NEXT LEVEL" : "★  ALL LEVELS DONE!", f("28px", { backgroundColor: "#ff9ed2", color: "#3a2260" }))
-      .setOrigin(0.5).setPadding(36, 13, 36, 13).setInteractive({ useHandCursor: true });
-    next.on("pointerdown", () => {
-      if (!hasNext) { this.scene.start("LevelSelect"); return; }
-      const go = () => this.scene.start("Game", { mode: "level", level: this.levelNum + 1 });
-      if (this.levelNum % 3 === 0) SDK.midgameAd(go); else go();
-    });
-    box.add(next);
-
-    const replay = this.add.text(W / 2 - 110, H / 2 + 140, "↻ REPLAY", f("19px", { backgroundColor: "#3a2260" }))
-      .setOrigin(0.5).setPadding(18, 9, 18, 9).setInteractive({ useHandCursor: true });
-    replay.on("pointerdown", () => this.scene.start("Game", { mode: "level", level: this.levelNum }));
-    box.add(replay);
-    const map = this.add.text(W / 2 + 90, H / 2 + 140, "LEVELS", f("19px", { backgroundColor: "#3a2260", color: "#ffd94e" }))
-      .setOrigin(0.5).setPadding(18, 9, 18, 9).setInteractive({ useHandCursor: true });
-    map.on("pointerdown", () => this.scene.start("LevelSelect"));
-    box.add(map);
-
-    this.tweens.add({ targets: box, alpha: 1, y: 0, duration: 380, ease: "Back.out" });
-    this._confettiBurst();
-    this.snd.fanfare();
-  }
-
-  _confettiBurst() {
-    for (let i = 0; i < 50; i++) {
-      const p = this.add.image(Phaser.Math.Between(0, W), -20 - Math.random() * 240, "confetti")
-        .setScale(Phaser.Math.FloatBetween(0.5, 1)).setAngle(Math.random() * 360).setDepth(99);
-      p.setCrop(Phaser.Math.Between(0, 4) * 12, 0, 9, 14);
-      this.tweens.add({
-        targets: p, y: H + 30, angle: p.angle + Phaser.Math.Between(-360, 360),
-        x: p.x + Phaser.Math.Between(-80, 80),
-        duration: Phaser.Math.Between(1800, 3000), delay: Math.random() * 400,
-        onComplete: () => p.destroy(),
-      });
-    }
-  }
-
-  /* ================= FX ================= */
-  _dust(x, y, tint = 0xd8c9a8) {
-    for (let i = 0; i < 5; i++) {
-      const p = this.add.image(x + Phaser.Math.Between(-14, 14), y - 4, "px").setDepth(9).setTint(tint).setScale(Phaser.Math.FloatBetween(1, 2.4));
-      this.tweens.add({ targets: p, y: y - Phaser.Math.Between(10, 26), alpha: 0, duration: 320, onComplete: () => p.destroy() });
-    }
-  }
-  _spark(x, y, tint) {
-    const p = this.add.image(x, y, "sparkle").setDepth(9).setTint(tint).setScale(Phaser.Math.FloatBetween(0.6, 1.2));
-    this.tweens.add({ targets: p, y: y - 24, alpha: 0, angle: 90, duration: 480, onComplete: () => p.destroy() });
-  }
-  _burst(x, y, tint, n) {
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, sp = Phaser.Math.Between(60, 220);
-      const p = this.add.image(x, y, "sparkle").setDepth(9).setTint(tint).setScale(Phaser.Math.FloatBetween(0.5, 1.3));
-      this.tweens.add({
-        targets: p, x: x + Math.cos(a) * sp * 0.6, y: y + Math.sin(a) * sp * 0.6 - 20,
-        alpha: 0, duration: Phaser.Math.Between(280, 520), onComplete: () => p.destroy(),
-      });
-    }
-  }
   _trail(dt) {
     this._trailT -= dt;
     if (this._trailT > 0) return;
     this._trailT = 0.05;
-    let tint = this.trailTint;
-    if (tint === -1) tint = Phaser.Display.Color.HSLToColor((this.tt * 0.35) % 1, 0.9, 0.7).color;
-    const p = this.add.image(FLOFY_X - 34, this.F.y + 6, "sparkle").setDepth(6).setTint(tint).setScale(0.8);
-    this.tweens.add({ targets: p, x: p.x - 50, alpha: 0, duration: 420, onComplete: () => p.destroy() });
+    for (const who of [this.E, this.F]) {
+      let tint = this.trailTint;
+      if (tint === -1) tint = Phaser.Display.Color.HSLToColor((this.tt * 0.4) % 1, 0.8, 0.65).color;
+      const p = this.add.image(who.x + Phaser.Math.Between(-8, 8), CHAR_Y - 20 + Phaser.Math.Between(-6, 6), "sparkle")
+        .setDepth(7).setTint(tint).setScale(Phaser.Math.FloatBetween(0.5, 1));
+      this.tweens.add({ targets: p, y: p.y + 40, alpha: 0, duration: 420, onComplete: () => p.destroy() });
+    }
+  }
+
+  _spark(x, y, tint) {
+    const p = this.add.image(x, y, "sparkle").setDepth(30).setTint(tint).setScale(Phaser.Math.FloatBetween(0.7, 1.3));
+    this.tweens.add({
+      targets: p, x: x + Phaser.Math.Between(-30, 30), y: y + Phaser.Math.Between(-40, 10),
+      alpha: 0, duration: 400, onComplete: () => p.destroy(),
+    });
   }
 }

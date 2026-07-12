@@ -1,77 +1,78 @@
-# DREAM DUO — Elizabeth & Flofy · Diseño
+# DREAM DUO v2 — Elizabeth & Flofy · Diseño
 
-**Twist nombrable (recomendación #1 del estudio):**
-> *"One brain, two worlds — run Elizabeth through the park and her magic
-> plush bunny through the dream above… at the same time."*
+**Rework jul-2026** (la fundadora rechazó el v1 por calidad; pivote respaldado
+por el estudio de mercado del game-director del 2026-07-12): fórmula **Two
+Cars** con la piel Elizabeth & Flofy. Datos que sostienen el pivote: Two Button
+Bounce 4.2★/305k votos en Poki; hueco real en CrazyGames (ningún Two Cars-like
+pulido); los clones vagos puntúan 3.1–3.4 por falta de encanto/meta — nuestras
+tres diferencias ya pagadas: IP canon con historia, SYNC/RUSH como skill, y
+tienda+misiones.
 
-Fundamentado en `../../glitch-shift/docs/ESTUDIO-MERCADO.md` (listón CrazyGames
-jul-2026). Género: arcade/skill de reflejos con control dual — el linaje
-probado de *Two Cars / Duet / Fireboy & Watergirl solo-mode* (controlar 2
-entidades con un cerebro), que NO está saturado en runners y da la
-"singularidad" que CrazyGames exige.
+**El twist:** la pantalla se parte A PROPÓSITO.
+> *"One brain, two worlds. Elizabeth runs the park, Flofy hops the dream —
+> you guide both at the same time."*
 
-## El loop (sesión de 1-3 min, high-score)
+## Layout (portrait 390×844, mobile-first)
 
-Dos carriles horizontales apilados (landscape 1280×720):
+- **Columna izquierda = el parque** (sendero vertical). **Columna derecha =
+  el sueño** (camino de nubes). Divisor de luz en el centro.
+- 2 carriles por columna. Los personajes corren "hacia arriba" (retro-vista);
+  el mundo baja hacia ellos (telegraph ≈ 3.3s a velocidad base).
+- Desktop: pillarbox con el arte del sueño desenfocado (CG acepta portrait).
 
-- **Abajo — el parque (mundo real):** Elizabeth corre. Salto clásico con
-  gravedad (coyote + buffer + altura variable).
-- **Arriba — el sueño (mundo de los juguetes):** Flofy bota. Física FLOTANTE
-  (gravedad 45%, doble-brinco con aleteo de chispas). Dos manos, dos físicas
-  distintas = la dificultad viral tipo "pat your head, rub your belly".
+## Controles (un input binario por mano — ley nº1 del género)
 
-**Controles:** mitad izquierda de pantalla / `A` / `←` = Elizabeth ·
-mitad derecha / `L` / `→` = Flofy. Touch + ratón + teclado (requisito CG).
-Tutorial = overlays de gesto en la primera run, saltable (time-to-fun <10s).
+Tap mitad izquierda / `A` / `←` = Elizabeth cambia de carril.
+Tap mitad derecha / `L` / `→` = Flofy cambia de carril.
+Lerp 120ms + squash&stretch. Sin física de salto: cambio de estado discreto.
 
-**Corazones compartidos (3):** golpe = −1 corazón + invulnerabilidad breve
-(trip-not-death, validado en Hop & Run). 0 = fin. Kid-friendly sin ser fácil.
+## Reglas (legibles en un pantallazo)
 
-## Sistemas (contenido "no-prototipo", rec. #3)
+- **Estrellas OBLIGATORIAS**: fallar una = combo roto + 1 corazón (la mano
+  "vaga" del v1 se acabó — ley nº2: must-collect). GRACIA: los primeros 10s
+  un fallo solo enseña ("Catch EVERY star!"), no castiga.
+- **Obstáculos prohibidos**: parque (seto/banco/bebedero/paloma) · sueño
+  (nube/bloques/peonza/burbuja). Paloma y burbuja CRUZAN de carril (fase 3+).
+- **3 corazones compartidos**, invulnerabilidad breve, slow-mo 0.3s + resalte
+  rojo de QUÉ te golpeó + marca fantasma 💤 donde moriste la run anterior
+  (la lección de la pintura de Duet).
 
-- **SYNC STARS:** pares de estrellas aparecen alineados en ambos mundos;
-  recoger AMBAS en <0.7s = SYNC (rayo que conecta los dos mundos) → multiplica
-  la puntuación ×1→×5. Es el *graze scoring* de esta casa: expresión de
-  habilidad + profundidad de leaderboard.
-- **DREAM METER → FAIRY RUSH (el momento TikTok):** 5 syncs llenan el medidor
-  → Elizabeth despliega ALAS DE HADA (canon `elizabeth-skin-fairy`), vuela al
-  mundo del sueño con Flofy y durante ~8s los dos mundos SE FUNDEN: invencibles,
-  imán de estrellas, arcoíris, música a doble tiempo.
-- **Power-ups de la familia** (rotan cada ~400m):
-  - **Mamá** 💛 — +1 corazón y anima desde el fondo.
-  - **Papá** 🛡 — burbuja escudo 8s para los dos.
-  - **Cristian** 🛹 — pasa en monopatín (crossover Hop & Run) y limpia los
-    obstáculos de los próximos ~300m.
-- **8 tipos de obstáculo** en 2 mundos: parque (seto, banco, bebedero de
-  pájaros, paloma que cruza volando — se esquiva NO saltando) · sueño (nube
-  gruñona, torre de bloques — pide doble-brinco, peonza que embiste, burbuja
-  que sube y baja).
-- **3 biomas** con crossfade y paleta (día/pastel → atardecer/dorado →
-  noche/estrellado) a 400/900/1500m — pronto, para que se vean en la 1ª sesión.
-- **Meta-progresión (rec. #4):** estrellas = moneda persistente → TIENDA:
-  skins de Elizabeth (Clásica, HADA — sinergia: con el skin hada el Dream
-  Meter llena +20% —, Dorada) y estelas de Flofy (4 colores). 7 ítems.
+## Fases de una run (30–90s objetivo)
 
-## Anti-child-directed (rec. #9)
+0–6s solo estrellas + manos-guía (tutorial sin texto, saltable jugando) →
+6–20s obstáculos sueltos → 20–40s eventos simultáneos asimétricos (estrella
+izq + obstáculo dcha) → 40s+ movers, fintas y pares cruzados. Velocidad:
++5% cada 8s, tope ×2.4, SIEMPRE constante dentro del escalón. Fairness del
+spawner: nunca dos acciones exigidas a la misma mano en <0.55s.
 
-Arte adorable PERO dificultad arcade real: velocidad ×2.2 a los 1500m,
-patrones asimétricos crecientes, copy retador en inglés
-(*"Can your brain run two worlds at once?"*). High-score como métrica única.
+## SYNC · FAIRY RUSH · ambiente
 
-## Técnica (rec. #6, #7, #10)
+- **SYNC**: par de estrellas a la misma altura en ambos mundos (espejadas
+  hasta fase 3; cruzadas después). Ambas en <0.9s = rayo que cruza el divisor,
+  mult ×1→×5. Pares cada ~7s desde el segundo 8.
+- **FAIRY RUSH (3 syncs)**: el divisor SE DISUELVE, el parque se vuelve sueño,
+  Elizabeth despliega alas (canon fairy), imán de estrellas, invencible, música
+  a doble tiempo, 8s. El momento TikTok — alcanzable en la primera sesión.
+- Ambiente por tinte sin arte extra: día → GOLDEN HOUR (40s) → STARLIGHT (80s).
 
-Phaser 3.88 CDN, módulos ES, sin motor de físicas (dt manual acotado →
-consistente a 60/120Hz), 1280×720 `Scale.FIT`, arte Replicate comprimido
-≤20MB (portada móvil), audio synth completo (música + SFX nivelados + mute +
-pausa), SDK CrazyGames v3 con carga condicional por hostname (GDPR en dominio
-propio), botón 🏠 oculto en iframe, rewarded revive 1×run (o 100 estrellas —
-la alternativa requerida) + double-score + midgame cada 3ª muerte,
-`gameplayStart/Stop` + `happytime`. Inglés only (regla del estudio).
+## Meta y monetización (R7 CrazyGames)
 
-## Presupuesto de arte (≤€10 Replicate)
+- **Misiones diarias** (3/día, seed por fecha, recompensa ★ al instante):
+  syncs por run, tiempo, estrellas del día, ×5, rush, syncs del día.
+- **Tienda** (se conserva del v1): 3 skins con perk + 4 estelas.
+- **Rewarded**: revive 1×run (o 100★ — alternativa obligatoria CG) + double
+  stars en game over (si ≥10★) + midgame cada 3ª muerte.
+- Restart instantáneo (tap/SPACE) — "una más".
 
-~19 generaciones nano-banana (~$0.75) + ~17 recortes background-remover
-(~$0.12): frames side-view de Elizabeth (run×2/jump/fairy-fly) y Flofy
-(hop/fall), 7 obstáculos, 6 fondos 16:9 por bioma y mundo. Los cameos de la
-familia y el key-art reutilizan el canon existente de
-`games/elizabeth-flofy/assets/canon/`. Tope duro $10 en el script.
+## Verificación (bot de playtest en tools/bot-playtest.mjs)
+
+Bot competente: 59.8s, score 1560, 79★, 5 syncs, rush disparado, 3 misiones
+completadas, 0 pageerrors, 61 fps. Muertes repartidas en fase 3 (movers).
+
+## Arte v2 (Replicate, $0.26; total juego $1.42)
+
+Nuevo: retro-vistas (eliz-back-a/b, flofy-back-a/b) + 2 columnas verticales
+(bg-col-park, bg-col-dream) con **tileado espejo** (elimina la costura que en
+v1 parecía "pantalla partida rota"). Se conserva: obstáculos, familia, fairy,
+duo-hero, procedurales. El arte side-view y los fondos 16:9 del v1 siguen en
+assets/art/ (los usa el pillarbox y el shop).

@@ -1,23 +1,17 @@
-# CLAUDE.md — DREAM DUO (Elizabeth & Flofy)
+# CLAUDE.md — DREAM DUO v2 (Elizabeth & Flofy)
 
-**LEVEL-BASED duo runner** built for CrazyGames (reworked 2026-07-08 on
-founder feedback: natural running, ONE understandable world, and LEVELS —
-not an endless-only runner). **Elizabeth runs through a full-screen park**
-with a natural 4-phase stride (contact→passing→contact→kick-back frames,
-cadence tied to speed) while **Flofy, her magic plush bunny, floats BY HER
-SIDE** (spring-hover; boosts kick him up). Left half / `A` / `←` = Elizabeth
-jumps · right half / `L` / `→` = Flofy boosts. **12 seeded, learnable levels**
-(fixed courses, goal line where the family waits, 1-3 star rating by stars
-collected) + **Endless Dream** mode unlocked after 8 levels. **SYNC star
-pairs** (ground + air within 0.7s) build ×1→×5 and fill the Dream Meter;
-5 syncs = **FAIRY RUSH** — the whole world TRANSFORMS into Flofy's dream
-(dream bg takeover), Elizabeth sprouts fairy wings and they fly together,
-invincible with a star magnet (the TikTok moment). **Family power-ups**:
-Mamá (+1 heart), Papá (8s shield), Cristian (dash — Hop & Run crossover).
-3 hearts, 8 obstacle types (5 ground for Elizabeth, 3 air for Flofy),
-3 biomes. Stars → **Star Shop** (3 skins with perks + 4 trails). English
-only (studio rule). Design: [docs/DISENO.md](docs/DISENO.md), grounded in
-`../glitch-shift/docs/ESTUDIO-MERCADO.md`.
+**Endless dual-lane arcade** (rework jul-2026, fórmula Two Cars — ver
+[docs/DISENO.md](docs/DISENO.md)). La pantalla se parte a propósito:
+**columna izquierda = el parque de Elizabeth, columna derecha = el sueño de
+Flofy**, 2 carriles por columna, retro-vista, PORTRAIT 390×844. Tap izquierda
+/ `A` / `←` = Elizabeth cambia de carril · tap derecha / `L` / `→` = Flofy.
+**Estrellas obligatorias** (fallar = corazón, con gracia los primeros 10s),
+obstáculos prohibidos, 3 corazones. **SYNC** (par simultáneo <0.9s) sube
+×1→×5 y llena el Dream Meter; **3 syncs = FAIRY RUSH** (el divisor se
+disuelve, todo se vuelve sueño, Elizabeth hada, imán, 8s — el momento TikTok).
+**Misiones diarias** (3/día, seed fecha) + Star Shop (skins con perk +
+estelas) + power-ups de la familia (Mamá +❤ · Papá escudo · Cristian barre).
+Rewarded: revive (o 100★), double-stars, midgame cada 3ª muerte. English only.
 
 Part of the `glitchrushgg.com` monorepo — see root `CLAUDE.md`.
 
@@ -32,57 +26,56 @@ npx -y http-server -p 8080 -c-1 .   # from the repo root
 
 ## Architecture
 
-**Phaser 3.88 via CDN**, ES modules, landscape **1280×720** `Scale.FIT`,
-**no physics engine** — manual dt-capped movement (consistent at any Hz,
-CG requirement). `input.activePointers: 3` (two thumbs — multitouch lesson
-from Hop & Run). CrazyGames SDK v3 loads **conditionally by hostname**
-(crazygames domains + localhost only — no third-party contact on
-glitchrushgg.com; the CG submission zip may load it unconditionally).
+**Phaser 3.88 via CDN**, ES modules, **portrait 390×844** `Scale.FIT`
+(desktop = pillarbox con arte desenfocado vía CSS en index.html), **no
+physics engine** — manual dt-capped movement. `input.activePointers: 3`.
+CrazyGames SDK v3 loads **conditionally by hostname** (crazygames domains +
+localhost; no third-party contact on glitchrushgg.com).
 
-- **`src/const.js`** — lanes (`DREAM`/`PARK`), physics (`ELIZ`/`FLOFY`),
-  speed ramp, `BIOMES`, sync/meter/rush tunables.
-- **`src/items.js`** — shop catalogue (skins with perks + trails).
+- **`src/const.js`** — lanes/columnas, velocidad por escalones, sync/meter/
+  rush, tintes de ambiente.
+- **`src/missions.js`** — misiones diarias (pool de 6, 3/día por seed de
+  fecha; per-run vs acumuladas; recompensa auto).
+- **`src/items.js`** — shop catalogue (skins con perk + trails).
 - **`src/scenes/`**
-  - `BootScene.js` — loads `assets/art/`, procedural textures (star, heart,
-    bubble, shield, confetti, ribbon), **per-character shared frame scale**
-    (poses keep relative size), placeholder fallback for any missing file.
-  - `MenuScene.js` — duo-hero key art, PLAY (1 click to gameplay), shop,
-    share, mute, home 🏠 (hidden inside the CrazyGames iframe).
-  - `GameScene.js` — **core**: dual-lane spawner with fairness gaps
-    (`_spawnObstacles`: mirror/stagger/solo patterns, 8 types gated by
-    distance), sync pairs (`_sync`), FAIRY RUSH (`_startRush`), family
-    pickups (`_applyPickup`), revive offer (rewarded ad OR 100★ — the CG
-    alternative), gesture tutorial (first run, skippable), pause
-    (P/ESC/button + auto-pause on blur), biome crossfade (`_swapBiome`).
-  - `GameOverScene.js` — panel + confetti on best, double-stars rewarded,
-    retry (SPACE), shop/menu/share/home, midgame ad every 3rd retry.
-  - `ShopScene.js` — skins/trails: equip/buy with stars.
-- **`src/utils/`** — `Sound.js` (WebAudio synth: bouncy music sequencer,
-  double-time during rush, one SFX per action), `Save.js` (localStorage
-  `dreamDuo_v1`), `SDK.js` (CrazyGames wrapper, graceful fallback).
-- **`assets/art/`** — Replicate art, compressed **2.1MB total** (study
-  rec: ≤20MB). Sprites PNG (side-view frames of both characters, family
-  cameos, obstacles), backgrounds JPG 1280×720 **edge-blended for seamless
-  tiling**. `assets/art-src/` = uncompressed masters (gitignored).
-- **`tools/`** — `generate-art.mjs` (nano-banana pipeline, resumable,
-  $10 hard budget cap; spent **$1.16**), `gen-green.mjs` (white/pale
-  subjects on green chroma + local chroma key), `cutbg.mjs` (grey-studio
-  flood-fill cut), `compress-art.mjs` (canvas re-encode via headless
-  Chrome, seamless edge blend), `smoketest.mjs`, `stress.mjs`, `shots.mjs`.
+  - `BootScene.js` — carga `assets/art/`, texturas procedurales (star, heart,
+    bubble, shield, confetti, ribbonV, charShadow), escala compartida por
+    personaje, placeholders si falta un archivo.
+  - `MenuScene.js` — key art, PLAY, misiones del día, how-to, shop, share,
+    mute, home 🏠 (oculto en el iframe de CG).
+  - `GameScene.js` — **core**: spawner por fases con fairness (min 0.55s por
+    mano; movers desde fase 3; fintas; pares espejados→cruzados), estrellas
+    must-collect con gracia de onboarding, SYNC (`_sync`) + FAIRY RUSH
+    (`_startRush`), power-ups (`_collectPickup`), revive (ad o 100★),
+    fantasma 💤 de la muerte anterior, slow-mo + resalte del culpable,
+    tutorial de manos sin texto, pausa (P/ESC/botón + blur), tinte de
+    ambiente 40s/80s.
+  - `GameOverScene.js` — panel portrait + confetti en récord, double-stars
+    rewarded, misiones con progreso, retry (tap/SPACE), midgame cada 3ª.
+  - `ShopScene.js` — skins/trails en layout vertical.
+- **`src/utils/`** — `Sound.js` (synth: música + double-time en rush),
+  `Save.js` (localStorage `dreamDuo_v1` — los jugadores v1 CONSERVAN
+  estrellas/skins; campos de niveles ignorados), `SDK.js` (CG wrapper).
+- **`assets/art/`** — sprites PNG + columnas `bg-col-*.jpg` 512×2048 con
+  **tileado espejo** (sin costura). `assets/art-src/` = masters (gitignored).
+- **`tools/`** — `gen-v2.mjs` (arte v2 nano-banana), `cut-v2.mjs` (rembg con
+  fallback de modelos), `compress-v2.mjs` (re-encode + espejo vertical),
+  `bot-playtest.mjs` (bot competente: esquiva-primero, persigue estrellas,
+  verifica sync/rush/misiones), más el pipeline v1 (`generate-art.mjs`, etc.).
 
 ## Status / pending
 
-- **PUBLISHED** at `https://glitchrushgg.com/dream-duo/` (2026-07-08,
-  founder-ordered deploy).
-- Pending: CrazyGames package — vendor Phaser, unconditional SDK, no share
-  URL, 3 covers + videos (pipeline in `C:\Users\Rosselyn\Documents\crazygames\`).
-- Verified: smoketest clean (desktop+mobile), stress test 60fps / 0 errors /
-  12MB heap, pause/resume, revive both paths, shop buy/equip, save persists.
+- v2 EN RAMA `claude/dream-duo-v2` — pendiente de aprobación de la fundadora
+  (regla: ella juega antes de cualquier deploy).
+- Verificado (bot + manual headless): 61fps, 0 pageerrors, rush + revive +
+  misiones + tienda funcionando; run de referencia 59.8s / score 1560.
+- Pendiente tras aprobación: paquete CrazyGames (vendor Phaser, SDK
+  incondicional, portadas/vídeos), auditoría legal pre-portal.
 
 ## Debugging
 
-`window.__dd` exposes the live GameScene: `__dd.dist = 10000` (biome jump),
-`__dd.meter = 4; __dd._sync(600)` (instant FAIRY RUSH), `__dd.hearts = 1`,
-`__dd._spawnPickup()`, `__dd._showTutorial(4)` (skip tutorial). Audio starts
-on first gesture (autoplay policy). Art regen: `node tools/generate-art.mjs`
-(skips existing; ledger in `tools/.ledger.json`).
+`window.__dd` expone la GameScene viva: `__dd.meter = 3` + coger un par =
+FAIRY RUSH instantáneo; `__dd.hearts = 1`; `window.__ddLoss` = log de
+corazones perdidos {t, why, type, col}. Bot: `node tools/bot-playtest.mjs`
+(server en :8123). Arte: `node tools/gen-v2.mjs` → `cut-v2.mjs` →
+`compress-v2.mjs` (ledger compartido en `tools/.ledger.json`).

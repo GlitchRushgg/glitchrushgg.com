@@ -1,47 +1,38 @@
-// Shared constants (separate module to avoid circular imports).
+// Shared constants — DREAM DUO v2 (portrait, two worlds side by side).
+// Pivote validado por estudio de mercado jul-2026: fórmula Two Cars — un input
+// binario por mano, estrellas OBLIGATORIAS, obstáculos prohibidos, endless.
 
-export const W = 1280;
-export const H = 720;
+export const W = 390;
+export const H = 844;
 
-export const PLAYER_X = 250;   // Elizabeth
-export const FLOFY_X = 400;    // Flofy floats just ahead of her, same world
+// Dos columnas-mundo: parque (izquierda) y sueño (derecha), 2 carriles cada una.
+export const DIV_X = W / 2;
+export const LANES = [49, 146, 244, 341];   // abs: 0-1 = parque · 2-3 = sueño
+export const CHAR_Y = 700;                  // línea de los personajes
+export const HIT_WIN = 46;                  // ventana vertical de contacto (px)
+export const SPAWN_Y = -90;
+export const LERP_MS = 120;                 // cambio de carril (feel Two Cars)
 
-// ONE world: the park fills the whole screen (founder feedback — the split
-// worlds read as confusing; now Flofy visibly floats BY HER SIDE).
-export const GROUND = 642;     // Elizabeth's path
-// Flofy flota MÁS CERCA de Elizabeth (auditoría: 312px de separación hacían que
-// el ojo cruzara media pantalla = la queja de fondo "no los entiendo juntos").
-export const HOVER = 452;      // Flofy's hover baseline (his magic keeps him afloat)
-export const HOVER_MIN = 90;   // how high a boost can carry him
-export const SKY_TOP = 40;
-
-// Physics — two hands, two different feels.
-export const ELIZ = { grav: 2600, jump: -1010, cut: -440, coyote: 0.09, buffer: 0.12 };
-// Flofy: spring-hover — boosts kick him up, his magic floats him back down.
-export const FLOFY = { boost: -520, spring: 14, damp: 4.2, maxFall: 420 };
-
-// Speed & score
-export const BASE_SPEED = 340;      // px/s (× level speed multiplier)
-export const MAX_RAMP = 2.2;        // endless mode only
-export const RAMP_DIST = 15000;
+// Velocidad: constante dentro de cada escalón (ley de fairness nº3) —
+// +5% cada 8 s, tope ×2.4. Telegraph inicial ≈ 3.3 s de caída visible.
+export const SPEED0 = 240;
+export const RAMP_STEP = 0.05;
+export const RAMP_EVERY = 8;
+export const MAX_RAMP = 2.4;
 export const PX_PER_M = 10;
 
-// Biomes (level `biome` index / endless crossfades): park bg full-screen,
-// dream bg takes over ONLY during FAIRY RUSH (the world transforms).
-export const BIOMES = [
-  { park: "bg-park-day",    dream: "bg-dream-day",    name: "SUNNY PARK" },
-  { park: "bg-park-sunset", dream: "bg-dream-sunset", name: "GOLDEN HOUR" },
-  { park: "bg-park-night",  dream: "bg-dream-night",  name: "STARLIGHT" },
-];
-export const ENDLESS_BIOME_AT = [0, 400, 900]; // meters
-
-export const SYNC_WINDOW = 0.7;
+// SYNC & FAIRY RUSH (la profundidad de skill que los clones no tienen)
+export const SYNC_WINDOW = 0.9;             // s entre ambas estrellas del par
 export const MAX_MULT = 5;
-// 3 syncs para el FAIRY RUSH (auditoría: con 5 no se veía hasta el nivel ~6;
-// el momento TikTok debe alcanzarse en el nivel 1-2 y verlo todo el mundo).
-export const METER_MAX = 3;
+export const METER_MAX = 3;                 // syncs para el FAIRY RUSH (visible en la 1ª sesión)
 export const RUSH_SECS = 8;
 export const SHIELD_SECS = 8;
-export const DASH_SECS = 4;
+export const REVIVE_STARS = 100;            // alternativa al rewarded (req. CG)
 
-export const REVIVE_STARS = 100;
+// Ciclo de ambiente por tinte (sin arte extra): día → atardecer → noche
+export const TINTS = [
+  { t: 0xffffff, name: "" },
+  { t: 0xffc9a0, name: "GOLDEN HOUR" },
+  { t: 0xa9b4e8, name: "STARLIGHT" },
+];
+export const TINT_EVERY = 40;               // s por fase

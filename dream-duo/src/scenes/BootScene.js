@@ -1,23 +1,18 @@
 // Loads the Replicate art, normalizes character frames (shared scale per
-// character so poses keep their relative size; origin bottom-center) and
-// builds every procedural texture. Missing files fall back to placeholders
-// so the game NEVER breaks on a lost asset.
+// character; origin bottom-center) and builds every procedural texture.
+// Missing files fall back to placeholders so the game NEVER breaks.
 
 import { W, H } from "../const.js";
 import { SDK } from "../utils/SDK.js";
 
 const ART = [
-  "eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4", // natural 4-phase run cycle
-  "eliz-run-a", "eliz-jump", "eliz-fairy",
-  "flofy-hop", "flofy-fall", "flofy-front",
+  "eliz-back-a", "eliz-back-b", "eliz-fairy",   // retro-vista v2 + hada (rush)
+  "flofy-back-a", "flofy-back-b", "flofy-front",
   "ob-hedge", "ob-bench", "ob-birdbath", "ob-pigeon",
   "ob-cloud", "ob-blocks", "ob-top",
   "pw-mama", "pw-papa", "pw-cristian", "shop-fairy",
 ];
-const BGS = [
-  "bg-park-day", "bg-park-sunset", "bg-park-night",
-  "bg-dream-day", "bg-dream-sunset", "bg-dream-night", "duo-hero",
-];
+const BGS = ["bg-col-park", "bg-col-dream", "duo-hero"];
 
 export class BootScene extends Phaser.Scene {
   constructor() { super("Boot"); }
@@ -26,23 +21,21 @@ export class BootScene extends Phaser.Scene {
     this._missing = new Set();
     this.load.on("loaderror", (file) => this._missing.add(file.key));
 
-    const bar = this.add.rectangle(W / 2, H / 2, 10, 14, 0xff9ed2).setOrigin(0, 0.5).setX(W / 2 - 220);
-    this.add.rectangle(W / 2, H / 2, 448, 22).setStrokeStyle(2, 0xb9a6ff);
+    const bar = this.add.rectangle(W / 2 - 150, H / 2, 10, 14, 0xff9ed2).setOrigin(0, 0.5);
+    this.add.rectangle(W / 2, H / 2, 308, 22).setStrokeStyle(2, 0xb9a6ff);
     this.add.text(W / 2, H / 2 - 46, "DREAM DUO", {
-      fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "40px", color: "#ffd6ec", fontStyle: "bold",
+      fontFamily: "'Segoe UI', system-ui, sans-serif", fontSize: "34px", color: "#ffd6ec", fontStyle: "bold",
     }).setOrigin(0.5);
-    this.load.on("progress", (p) => { bar.width = 440 * p; });
+    this.load.on("progress", (p) => { bar.width = 300 * p; });
 
     for (const k of ART) this.load.image(k, `assets/art/${k}.png`);
     for (const k of BGS) this.load.image(k, `assets/art/${k}.jpg`);
   }
 
   create() {
-    // ---- placeholders for anything missing (game must never crash) ----
     for (const k of [...ART, ...BGS]) {
       if (!this.textures.exists(k) || this._missing.has(k)) this._placeholder(k);
     }
-
     this._procedural();
     SDK.loadingStop();
     this.scene.start("Menu");
@@ -51,7 +44,7 @@ export class BootScene extends Phaser.Scene {
   _placeholder(k) {
     const g = this.make.graphics({ add: false });
     const isBg = k.startsWith("bg-") || k === "duo-hero";
-    const w = isBg ? 1280 : 140, h = isBg ? 720 : 160;
+    const w = isBg ? 512 : 140, h = isBg ? 1024 : 160;
     g.fillStyle(k.includes("dream") ? 0x8f7bd8 : 0x63b46a, 1);
     g.fillRoundedRect(0, 0, w, h, isBg ? 0 : 24);
     g.generateTexture(k, w, h);
@@ -64,7 +57,7 @@ export class BootScene extends Phaser.Scene {
     // white pixel (particles / flashes / tint quads)
     let t = g(); t.fillStyle(0xffffff, 1); t.fillRect(0, 0, 4, 4); t.generateTexture("px", 4, 4); t.destroy();
 
-    // golden star (currency + sync pickups)
+    // golden star (currency + must-collect pickups)
     t = g();
     t.fillStyle(0xffd94e, 1);
     this._starPath(t, 26, 26, 24, 11, 5); t.fillPath();
@@ -114,14 +107,19 @@ export class BootScene extends Phaser.Scene {
     });
     t.generateTexture("confetti", 60, 14); t.destroy();
 
-    // dream ribbon (divider between worlds)
+    // divisor vertical entre mundos (cinta de luz que tilea en Y)
     t = g();
-    for (let x = 0; x < 128; x++) {
-      const a = 0.25 + 0.2 * Math.sin(x / 9);
+    for (let y = 0; y < 128; y++) {
+      const a = 0.28 + 0.22 * Math.sin(y / 9);
       t.fillStyle(0xcbb7ff, a);
-      t.fillRect(x, 6 + Math.sin(x / 7) * 3, 1, 10);
+      t.fillRect(6 + Math.sin(y / 7) * 3, y, 10, 1);
     }
-    t.generateTexture("ribbon", 128, 24); t.destroy();
+    t.generateTexture("ribbonV", 24, 128); t.destroy();
+
+    // sombra elíptica de personaje
+    t = g();
+    t.fillStyle(0x14102b, 0.3); t.fillEllipse(40, 12, 76, 20);
+    t.generateTexture("charShadow", 80, 24); t.destroy();
 
     // ---- normalize character frame scales (shared per character) ----
     const norm = (keys, targetH) => {
@@ -130,10 +128,10 @@ export class BootScene extends Phaser.Scene {
       const s = maxH ? targetH / maxH : 1;
       keys.forEach((k) => this.registry.set(`scale:${k}`, s));
     };
-    norm(["eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4", "eliz-run-a", "eliz-jump"], 178);
-    norm(["eliz-fairy"], 166);
-    norm(["flofy-hop", "flofy-fall"], 114);
-    norm(["pw-mama", "pw-papa", "pw-cristian"], 148);
+    norm(["eliz-back-a", "eliz-back-b"], 118);
+    norm(["eliz-fairy"], 116);
+    norm(["flofy-back-a", "flofy-back-b"], 88);
+    norm(["pw-mama", "pw-papa", "pw-cristian"], 92);
   }
 
   _starPath(t, cx, cy, R, r, n) {
