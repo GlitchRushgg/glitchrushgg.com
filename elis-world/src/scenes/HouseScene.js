@@ -205,11 +205,44 @@ export class HouseScene extends Phaser.Scene {
     }
   }
 
+  // Tocar a un personaje = ACCIÓN (feedback fundadora: deben poder saltar,
+  // agacharse...). El tap alterna saltar → agacharse → saludar para que la
+  // niña vea todo lo que saben hacer. Sentado = botecito en el sitio.
   _charTap(spr) {
     this.snd.giggle();
-    this.tweens.add({ targets: spr, y: spr.y - 46, duration: 190, yoyo: true, ease: "Quad.out", onUpdate: () => this._posAccessories(spr) });
-    // emoción variada (game-director #5): la mayoría corazones, a veces otra
-    const moods = ["heart", "😆", "🎵", "😍", "⭐"];
+    this._emote(spr);
+    if (spr._acting) return; // no encadenar acciones
+    if (spr._sitting) {
+      spr._acting = true;
+      this.tweens.add({ targets: spr, scaleY: spr._baseScale * 0.9, duration: 120, yoyo: true, onUpdate: () => this._posAccessories(spr), onComplete: () => { spr._acting = false; } });
+      return;
+    }
+    spr._actIx = ((spr._actIx || 0) + 1) % 3;
+    [this._jump, this._crouch, this._wave][spr._actIx].call(this, spr);
+  }
+
+  _jump(spr) {
+    spr._acting = true;
+    const bs = spr._baseScale;
+    this.tweens.add({ targets: spr, scaleX: bs * 1.12, scaleY: bs * 0.9, duration: 90, yoyo: true, ease: "Quad.out", onUpdate: () => this._posAccessories(spr) });
+    this._dust(spr.x, spr.y);
+    this.tweens.add({ targets: spr, y: spr.y - 92, duration: 260, yoyo: true, delay: 60, ease: "Quad.out", onUpdate: () => this._posAccessories(spr), onComplete: () => { spr._acting = false; } });
+  }
+
+  _crouch(spr) {
+    spr._acting = true;
+    const bs = spr._baseScale;
+    // origen (0.5,1) → escalar Y abajo mantiene los pies en el suelo = agacharse
+    this.tweens.add({ targets: spr, scaleY: bs * 0.58, scaleX: bs * 1.14, duration: 200, hold: 320, yoyo: true, ease: "Quad.out", onUpdate: () => this._posAccessories(spr), onComplete: () => { spr._acting = false; } });
+  }
+
+  _wave(spr) {
+    spr._acting = true;
+    this.tweens.add({ targets: spr, angle: { from: -9, to: 9 }, duration: 130, yoyo: true, repeat: 3, ease: "Sine.inOut", onUpdate: () => this._posAccessories(spr), onComplete: () => { spr.setAngle(0); spr._acting = false; } });
+  }
+
+  _emote(spr) {
+    const moods = ["😆", "🎵", "😍", "⭐"];
     const mood = Math.random() < 0.55 ? "heart" : Phaser.Utils.Array.GetRandom(moods);
     for (let i = 0; i < 4; i++) {
       const x = spr.x + Phaser.Math.Between(-30, 30), y = spr.y - spr.displayHeight - 8;
@@ -218,6 +251,23 @@ export class HouseScene extends Phaser.Scene {
         : this.add.text(x, y, mood, { fontSize: "26px" }).setOrigin(0.5).setDepth(41);
       this.tweens.add({ targets: o, y: y - 50, alpha: 0, duration: 700, delay: i * 90, onComplete: () => o.destroy() });
     }
+  }
+
+  // Comer: la comida vuela a la boca, se encoge y el personaje mastica (😋).
+  _eat(c, food) {
+    const mouthX = c.x, mouthY = c.y - c.displayHeight * 0.8;
+    this.tweens.killTweensOf(food);
+    food.disableInteractive();
+    this.tweens.add({
+      targets: food, x: mouthX, y: mouthY, scale: (food._baseScale || food.scale) * 0.45, duration: 280, ease: "Quad.in",
+      onComplete: () => {
+        this._removeItem(food, false);
+        this.snd.munch();
+        const bs = c._baseScale;
+        if (!c._sitting) this.tweens.add({ targets: c, scaleX: bs * 1.06, scaleY: bs * 0.94, duration: 100, yoyo: true, repeat: 2, onUpdate: () => this._posAccessories(c) });
+        this._floatEmoji(c.x, c.y - c.displayHeight - 6, "😋");
+      },
+    });
   }
 
   _sendCharTo(name, dir) {
@@ -361,15 +411,12 @@ export class HouseScene extends Phaser.Scene {
   }
 
   _dropItem(spr, x, y) {
-    // on a character → feed
-    for (const [name, c] of Object.entries(this.chars)) {
+    // on a character → EAT (la comida vuela a la boca + mastica + 😋).
+    // Vale para todos: en una casa de muñecas dar de comer al peluche o al
+    // cachorro también es juego.
+    for (const c of Object.values(this.chars)) {
       const r = new Phaser.Geom.Rectangle(c.x - c.displayWidth / 2, c.y - c.displayHeight, c.displayWidth, c.displayHeight);
-      if (r.contains(x, y)) {
-        this.snd.munch();
-        this._charTap(c);
-        this.tweens.add({ targets: spr, scale: 0, alpha: 0, duration: 200, onComplete: () => this._removeItem(spr, false) });
-        return;
-      }
+      if (r.contains(x, y)) { this._eat(c, spr); return; }
     }
     // on a drop-zone
     for (const { spr: z, f } of this._dropZones) {
