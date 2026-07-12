@@ -98,13 +98,18 @@
         obstacles.push({ type: 'spike', x: x + i * w, w, h: hh, top });
       width = n * w;
     } else if (t === 'block' || t === 'mover') {
-      const w = rand(42, 70) * u, h = rand(80, 150) * u;
-      const amp = t === 'mover' ? rand(50, 110) * u : 0;
-      const lo = TOPY() + h / 2 + amp + minGap();
-      const hi = BOTY() - h / 2 - amp - minGap();
-      if (hi > lo) {
-        obstacles.push({ type: 'block', x, w, h, cy: rand(lo, hi), amp, om: rand(1.2, 2.2), ph: rand(0, 6) });
-      }
+      // Muro ANCLADO al suelo o al techo (feedback playtest: los bloques
+      // flotantes dejaban hueco arriba Y abajo → se pasaban pegado al borde
+      // inferior). Ahora el hueco está en UN solo lado y obliga a subir/bajar.
+      const corridor = BOTY() - TOPY();
+      const gap = Math.max(minGap(), 130 * u);
+      const amp = t === 'mover' ? rand(30, 70) * u : 0;
+      const wallH = Math.max(60 * u, Math.min(rand(110, 240) * u, corridor - gap - amp));
+      const w = rand(46, 74) * u;
+      const thick = wallH + 300 * u;          // se extiende más allá del borde: sin hueco por ese lado
+      const floorAnchored = Math.random() < 0.5;
+      const cy = floorAnchored ? (BOTY() - wallH + thick / 2) : (TOPY() + wallH - thick / 2);
+      obstacles.push({ type: 'block', x, w, h: thick, cy, amp, om: rand(1.0, 1.8), ph: rand(0, 6) });
       width = w;
     } else if (t === 'bar') {
       const len = rand(140, 210) * u;
