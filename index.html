@@ -160,43 +160,39 @@
     .section-head h2 { font-weight: 900; font-size: clamp(28px, 4.4vw, 44px); letter-spacing: -1px; }
     .section-head p { color: var(--muted); font-weight: 600; margin-top: 8px; }
 
-    /* ── Game cards ─────────────────────────────────── */
-    .game { position: relative; text-decoration: none; color: #fff; border-radius: 26px; overflow: hidden;
-      box-shadow: 0 16px 44px rgba(12,14,20,0.16); transition: transform .2s, box-shadow .2s; isolation: isolate;
-      display: flex; flex-direction: column; justify-content: flex-end; }
-    .game:hover { transform: translateY(-7px); box-shadow: 0 28px 64px rgba(12,14,20,0.28); }
+    /* ── Game cards — el arte manda (feedback fundadora: menos letras) ── */
+    .game { position: relative; display: block; text-decoration: none; color: #fff; border-radius: 20px; overflow: hidden;
+      aspect-ratio: 3 / 4; box-shadow: 0 14px 36px rgba(12,14,20,0.16); transition: transform .2s, box-shadow .2s; isolation: isolate; }
+    .game:hover { transform: translateY(-6px); box-shadow: 0 24px 54px rgba(12,14,20,0.28); }
     .game .art { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
-    .game:hover .art { transform: scale(1.06); }
-    .game::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(to top, rgba(8,10,16,0.94) 2%, rgba(8,10,16,0.55) 40%, rgba(8,10,16,0.08) 70%); }
-    /* covers claras (rosa/beige): overlay más fuerte para que el texto blanco respire */
-    .game.light::after { background: linear-gradient(to top, rgba(8,10,16,0.95) 2%, rgba(8,10,16,0.72) 46%, rgba(8,10,16,0.22) 80%); }
-    .game .kicker, .game h3, .game p { text-shadow: 0 1px 10px rgba(8,10,16,0.6); }
-    .badges { position: absolute; top: 18px; left: 18px; display: flex; gap: 8px; z-index: 1; }
-    .badge { font-weight: 900; font-size: 11px; letter-spacing: 1px; padding: 6px 12px; border-radius: 100px; }
+    .game:hover .art { transform: scale(1.05); }
+    .game::after { content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(to top, rgba(8,10,16,0.88) 0%, rgba(8,10,16,0.42) 20%, rgba(8,10,16,0) 44%); }
+    /* covers claras: un poco más de escudo para el texto */
+    .game.light::after { background: linear-gradient(to top, rgba(8,10,16,0.92) 0%, rgba(8,10,16,0.55) 26%, rgba(8,10,16,0.06) 52%); }
+    .badge { position: absolute; top: 12px; left: 12px; z-index: 1; font-weight: 900; font-size: 10.5px; letter-spacing: 1px; padding: 5px 11px; border-radius: 100px; }
     .badge-new { background: var(--gold); color: #2a1d00; }
-    .badge-free { background: rgba(255,255,255,0.22); color: #fff; backdrop-filter: blur(4px); }
-    .game-body { padding: 30px; }
-    .game .kicker { font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #8fd6ff; margin-bottom: 8px; }
-    .game h3 { font-weight: 900; font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -0.5px; line-height: 1.04; margin-bottom: 10px; }
-    .game p { color: #d7dce6; font-weight: 600; font-size: 15.5px; margin-bottom: 20px; max-width: 42ch; }
-    .game .play { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #fff; font-weight: 800; font-size: 15px; padding: 13px 26px; border-radius: 100px; box-shadow: 0 8px 22px rgba(46,107,255,0.4); }
+    .game-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 56px 14px 16px; }
+    .game .genre { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #8fd6ff; margin-bottom: 3px; text-shadow: 0 1px 8px rgba(8,10,16,0.75); }
+    .game h3 { font-weight: 900; font-size: 20px; letter-spacing: -0.3px; line-height: 1.08; margin: 0; text-shadow: 0 1px 10px rgba(8,10,16,0.75); }
+    .game p { margin: 0; font-size: 13px; font-weight: 600; color: #d7dce6; max-height: 0; opacity: 0; overflow: hidden;
+      transition: max-height .25s, opacity .25s, margin .25s; text-shadow: 0 1px 8px rgba(8,10,16,0.75); }
+    @media (hover: hover) { .game:hover p { max-height: 52px; opacity: 1; margin-top: 5px; } }
+    .playdot { position: absolute; right: 12px; bottom: 12px; z-index: 1; width: 38px; height: 38px; border-radius: 50%;
+      background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none;
+      font-size: 13px; box-shadow: 0 6px 18px rgba(46,107,255,0.5); }
 
     /* ── Categories (CrazyGames-style) ──────────────── */
     .cat { margin-top: 46px; }
     .cat:first-of-type { margin-top: 0; }
     .cat-title { display: flex; align-items: center; gap: 12px; font-weight: 900; font-size: clamp(20px, 3vw, 28px); letter-spacing: -0.5px; margin-bottom: 18px; }
     .cat-title .count { font-size: 12px; font-weight: 800; color: var(--muted); background: var(--soft); padding: 5px 11px; border-radius: 100px; letter-spacing: 0.5px; }
-    .cat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 18px; }
-    .cat-row .game { min-height: 320px; }
-    .cat-row .game-body { padding: 22px; }
-    .cat-row .game h3 { font-size: clamp(20px, 2.6vw, 26px); }
-    .cat-row .game p { font-size: 14px; }
+    .cat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
     /* "in the works" card */
     .game.soon { cursor: default; background: linear-gradient(160deg, #1d2a44, #0c0e14); }
     .game.soon::after { display: none; }
-    .game.soon .ph { position: absolute; top: 16%; left: 0; right: 0; text-align: center; font-size: 78px; opacity: 0.22; z-index: -1; }
-    .badge-soon { background: #5b6675; color: #fff; }
-    .game.soon .play { background: rgba(255,255,255,0.16); box-shadow: none; }
+    .game.soon .ph { position: absolute; top: 22%; left: 0; right: 0; text-align: center; font-size: 72px; opacity: 0.22; z-index: -1; }
+    .game.soon p { max-height: none; opacity: 1; margin-top: 5px; }
 
     /* ── Studio (light gray) ────────────────────────── */
     .soft { background: var(--soft); }
@@ -301,65 +297,59 @@
     <div class="cat">
       <h3 class="cat-title">🕹️ Arcade &amp; Skill <span class="count">6 LIVE</span></h3>
       <div class="cat-row">
-        <a class="game" href="./hop-and-run/" style="background:radial-gradient(circle at 70% 25%, rgba(255,224,102,.4), transparent 50%), linear-gradient(160deg,#4aa8e0,#1d4a7a)">
-          <img class="art" src="assets/covers/hop-and-run.jpg" alt="Hop &amp; Run — rooftop runner with a guitar solo" loading="lazy" decoding="async" width="600" height="338" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./hop-and-run/" style="background:linear-gradient(160deg,#4aa8e0,#1d4a7a)" aria-label="Play Hop &amp; Run">
+          <img class="art" src="assets/covers/hop-and-run.jpg" alt="Hop &amp; Run gameplay" loading="lazy" decoding="async" width="600" height="338" />
           <div class="game-body">
-            <div class="kicker">One-button runner</div>
-            <h3>Hop &amp; Run 🎸</h3>
-            <p>Run the rooftops: fruit is fuel, animals need rescuing — and the guitar solo makes you unstoppable.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">One-button runner</span>
+            <h3>Hop &amp; Run</h3>
+            <p>Rooftops, fruit fuel — and a guitar solo.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./dream-duo/" style="background:radial-gradient(circle at 26% 30%, rgba(255,158,210,.45), transparent 50%), radial-gradient(circle at 74% 68%, rgba(185,166,255,.4), transparent 48%), linear-gradient(160deg,#2a1a4e,#14102b)">
-          <img class="art" src="assets/covers/dream-duo.jpg" alt="Dream Duo — Elizabeth and her magic bunny Flofy" loading="lazy" decoding="async" width="600" height="338" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./dream-duo/" style="background:linear-gradient(160deg,#2a1a4e,#14102b)" aria-label="Play Dream Duo">
+          <img class="art" src="assets/covers/dream-duo.jpg" alt="Dream Duo gameplay" loading="lazy" decoding="async" width="600" height="338" style="object-position:14% 50%" />
           <div class="game-body">
-            <div class="kicker">Two worlds · One brain</div>
-            <h3>Dream Duo 🌙</h3>
-            <p>Run Elizabeth through the park and her magic bunny through the dream above — at the same time.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Two worlds · One brain</span>
+            <h3>Dream Duo</h3>
+            <p>Guide Elizabeth and Flofy at the same time.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./glitch-shift/" style="background:radial-gradient(circle at 28% 26%, rgba(39,231,255,.4), transparent 48%), radial-gradient(circle at 74% 70%, rgba(255,62,165,.4), transparent 48%), linear-gradient(160deg,#14082e,#070a1a)">
-          <img class="art" src="assets/covers/glitch-shift.jpg" alt="Glitch Shift — neon one-tap arcade" loading="lazy" decoding="async" width="600" height="460" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./glitch-shift/" style="background:linear-gradient(160deg,#14082e,#070a1a)" aria-label="Play Glitch Shift">
+          <img class="art" src="assets/covers/glitch-shift.jpg" alt="Glitch Shift gameplay" loading="lazy" decoding="async" width="600" height="460" />
           <div class="game-body">
-            <div class="kicker">Neon arcade · One tap</div>
-            <h3>Glitch Shift ⚡</h3>
-            <p>Two realities, one tap: shift lanes to dodge, hold to overclock time.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Neon arcade</span>
+            <h3>Glitch Shift</h3>
+            <p>Shift lanes, dodge, overclock time.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./ricochet-rush/" style="background:radial-gradient(circle at 66% 32%, rgba(255,201,62,.45), transparent 48%), radial-gradient(circle at 28% 72%, rgba(255,94,42,.35), transparent 44%), linear-gradient(160deg,#1a1208,#0d0a06)">
-          <img class="art" src="assets/covers/ricochet-rush.jpg" alt="Ricochet Rush — survivor arena with bouncing bullets" loading="lazy" decoding="async" width="600" height="460" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./ricochet-rush/" style="background:linear-gradient(160deg,#1a1208,#0d0a06)" aria-label="Play Ricochet Rush">
+          <img class="art" src="assets/covers/ricochet-rush.jpg" alt="Ricochet Rush gameplay" loading="lazy" decoding="async" width="600" height="460" />
           <div class="game-body">
-            <div class="kicker">Survivor arena</div>
-            <h3>Ricochet Rush 🎱</h3>
-            <p>Every bullet ricochets — and hits harder with each bounce. Outlast the swarm.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Survivor arena</span>
+            <h3>Ricochet Rush</h3>
+            <p>Every bullet bounces. Outlast the swarm.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./pulse-drift/" style="background:radial-gradient(circle at 30% 70%, rgba(56,232,255,.35), transparent 50%), radial-gradient(circle at 75% 25%, rgba(124,255,94,.22), transparent 45%), linear-gradient(160deg,#071226,#04070f)">
-          <img class="art" src="assets/covers/pulse-drift.jpg" alt="Pulse Drift — hold to rise, release to fall" loading="lazy" decoding="async" width="600" height="750" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./pulse-drift/" style="background:linear-gradient(160deg,#071226,#04070f)" aria-label="Play Pulse Drift">
+          <img class="art" src="assets/covers/pulse-drift.jpg" alt="Pulse Drift gameplay" loading="lazy" decoding="async" width="600" height="750" style="object-position:30% 50%" />
           <div class="game-body">
-            <div class="kicker">One button · Graze to score</div>
-            <h3>Pulse Drift ✦</h3>
-            <p>Hold to rise, release to fall — skim the obstacles without touching to multiply your score.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Graze to score</span>
+            <h3>Pulse Drift</h3>
+            <p>Hold to rise, release to fall.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./noah/" style="background:linear-gradient(160deg,#2aa7e0,#0d4f80)">
-          <img class="art" src="assets/covers/noah.jpg" alt="Don't Drown, Noah! — vertical platformer" loading="lazy" decoding="async" width="347" height="750" />
-          <div class="badges"><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./noah/" style="background:linear-gradient(160deg,#2aa7e0,#0d4f80)" aria-label="Play Don't Drown, Noah!">
+          <img class="art" src="assets/covers/noah.jpg" alt="Don't Drown, Noah! gameplay" loading="lazy" decoding="async" width="347" height="750" />
           <div class="game-body">
-            <div class="kicker">Platform arcade</div>
-            <h3>Don't Drown, Noah! 🌊</h3>
-            <p>Jump up the platforms, rescue the animals and escape the rising flood.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Platform arcade</span>
+            <h3>Don't Drown, Noah!</h3>
+            <p>Outclimb the rising flood.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
       </div>
     </div>
@@ -368,25 +358,25 @@
     <div class="cat">
       <h3 class="cat-title">🧹 Sim &amp; Care <span class="count">2 LIVE</span></h3>
       <div class="cat-row">
-        <a class="game light" href="./elis-world/" style="background:radial-gradient(circle at 28% 26%, rgba(255,158,210,.5), transparent 52%), radial-gradient(circle at 74% 72%, rgba(255,227,166,.45), transparent 50%), linear-gradient(160deg,#f8c8dc,#e8a8c8)">
-          <img class="art" src="assets/covers/elis-world.jpg" alt="Eli's World — cozy dollhouse sandbox" loading="lazy" decoding="async" width="600" height="338" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game light" href="./elis-world/" style="background:linear-gradient(160deg,#f8c8dc,#e8a8c8)" aria-label="Play Eli's World">
+          <img class="art" src="assets/covers/elis-world.jpg" alt="Eli's World gameplay" loading="lazy" decoding="async" width="600" height="338" />
+          <span class="badge badge-new">NEW</span>
           <div class="game-body">
-            <div class="kicker">Cozy sandbox · Your stories</div>
-            <h3>Eli's World 🏠</h3>
-            <p>Move the family around the house, paint the walls, hang pictures, cook — and invent your own stories.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Cozy sandbox</span>
+            <h3>Eli's World</h3>
+            <p>Your house. Your stories.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game light" href="./hotel-dino-blu/" style="background:linear-gradient(160deg,#1aa0bd,#0e5566)">
-          <img class="art" src="assets/covers/hotel-dino-blu.jpg" alt="Hotel Dino Blu — 3D housekeeping simulator" loading="lazy" decoding="async" width="1000" height="625" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game light" href="./hotel-dino-blu/" style="background:linear-gradient(160deg,#1aa0bd,#0e5566)" aria-label="Play Hotel Dino Blu">
+          <img class="art" src="assets/covers/hotel-dino-blu.jpg" alt="Hotel Dino Blu gameplay" loading="lazy" decoding="async" width="1000" height="625" />
+          <span class="badge badge-new">NEW</span>
           <div class="game-body">
-            <div class="kicker">3D simulator · Mobile-first</div>
+            <span class="genre">3D simulator</span>
             <h3>Hotel Dino Blu</h3>
-            <p>Housekeeper at an Italian beach hotel. Leave the rooms spotless against the clock.</p>
-            <span class="play">▶ Play free</span>
+            <p>Leave every room spotless.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
       </div>
     </div>
@@ -395,35 +385,32 @@
     <div class="cat">
       <h3 class="cat-title">🧩 Puzzle &amp; Idle <span class="count">2 LIVE</span></h3>
       <div class="cat-row">
-        <a class="game" href="./moondrop/" style="background:radial-gradient(circle at 30% 25%, rgba(167,139,250,.4), transparent 50%), radial-gradient(circle at 72% 75%, rgba(255,110,160,.25), transparent 45%), linear-gradient(160deg,#141034,#0a0a1f)">
-          <img class="art" src="assets/covers/moondrop.jpg" alt="Moondrop — drop and merge celestial bodies" loading="lazy" decoding="async" width="600" height="750" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./moondrop/" style="background:linear-gradient(160deg,#141034,#0a0a1f)" aria-label="Play Moondrop">
+          <img class="art" src="assets/covers/moondrop.jpg" alt="Moondrop gameplay" loading="lazy" decoding="async" width="600" height="750" />
           <div class="game-body">
-            <div class="kicker">Drop &amp; merge physics</div>
-            <h3>Moondrop 🌙</h3>
-            <p>Drop celestial bodies and merge them up the cosmic ladder — reach the Black Hole.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Drop &amp; merge</span>
+            <h3>Moondrop</h3>
+            <p>Merge up to the Black Hole.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
-        <a class="game" href="./build-the-ark/" style="background:radial-gradient(circle at 72% 22%, rgba(255,233,166,.4), transparent 48%), linear-gradient(160deg,#2f7cb0,#0a1f30)">
-          <img class="art" src="assets/covers/build-the-ark.jpg" alt="Build the Ark — idle builder" loading="lazy" decoding="async" width="600" height="750" />
-          <div class="badges"><span class="badge badge-new">NEW</span><span class="badge badge-free">FREE</span></div>
+        <a class="game" href="./build-the-ark/" style="background:linear-gradient(160deg,#2f7cb0,#0a1f30)" aria-label="Play Build the Ark">
+          <img class="art" src="assets/covers/build-the-ark.jpg" alt="Build the Ark gameplay" loading="lazy" decoding="async" width="600" height="750" />
           <div class="game-body">
-            <div class="kicker">Idle builder</div>
-            <h3>Build the Ark ⛵</h3>
-            <p>Tap the driftwood, rescue survivors and raise the Ark part by part — it grows even while you're away.</p>
-            <span class="play">▶ Play free</span>
+            <span class="genre">Idle builder</span>
+            <h3>Build the Ark</h3>
+            <p>It grows while you're away.</p>
           </div>
+          <span class="playdot" aria-hidden="true">▶</span>
         </a>
         <div class="game soon">
           <div class="ph" aria-hidden="true">✨</div>
-          <div class="badges"><span class="badge badge-soon">IN THE WORKS</span></div>
           <div class="game-body">
-            <div class="kicker">Next release</div>
+            <span class="genre">Next release</span>
             <h3>The next game</h3>
-            <p>Always something new in the workshop. Join the list and be the first to play it.</p>
-            <a class="play" href="#join">Get early access</a>
+            <p>Join the list — play it first.</p>
           </div>
+          <a class="playdot" href="#join" aria-label="Get early access to the next game">★</a>
         </div>
       </div>
     </div>
