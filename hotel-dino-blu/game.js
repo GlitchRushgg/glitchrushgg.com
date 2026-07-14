@@ -105,6 +105,16 @@ const G = {
 
 const SOLID = {};   // colisiones por planta: SOLID[f] = [{x0,x1,z0,z1},...]
 const BOUNDS = {};  // límites andables por planta
+
+// Hook de debug/herramientas (patrón del estudio: __dd en Dream Duo, __hr en
+// Hop & Run): teletransporte para capturas y smoke tests. Sin efecto en juego.
+if (typeof window !== 'undefined') window.__hdb = {
+  G,
+  tp(f, x, z, yaw = Math.PI, pitch = 0) {
+    G.floor = f; setAreaVisibility(f);
+    G.px = x; G.pz = z; G.yaw = yaw; G.pitch = pitch;
+  },
+};
 const HOTSPOTS = [];
 const NPCS = [];
 const DRUMS = [];   // tambores de lavadoras que giran
