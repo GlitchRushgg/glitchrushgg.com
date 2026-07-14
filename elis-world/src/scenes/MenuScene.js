@@ -47,7 +47,7 @@ export class MenuScene extends Phaser.Scene {
       this.scene.start("House");
     });
 
-    this.add.text(W / 2 + 60, 570, "Paint the walls · hang pictures · cook · play with the family", {
+    this.add.text(W / 2 + 60, 570, "Paint the walls · cook · bathe your toys · pick the weather", {
       fontFamily: FONT, fontSize: "18px", color: "#b98aa0",
     }).setOrigin(0.5);
 

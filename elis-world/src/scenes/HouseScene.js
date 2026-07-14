@@ -1,24 +1,46 @@
 // ELI'S WORLD — the house. A cozy dollhouse sandbox:
-//   · move through 4 rooms (arrows; drag a family member onto an arrow to
-//     send them next door)
-//   · PAINT the walls (10 colors × 4 patterns; the garden paints its fence)
-//   · hang PICTURES from the art drawer, move them, tap to change artwork,
-//     drag them off the wall to remove
-//   · KITCHEN play: open the fridge, cook on the pan (bread→toast, egg→fried
-//     egg), blend fruit into juice, run the tap, feed everyone
-// Everything persists (walls, pictures, where the family is standing).
-// No goals, no fail state — Elizabeth directs the story.
+//   · 6 rooms (arrows; drag a toy onto an arrow to send it next door), the
+//     last one a BALCONY looking over the city
+//   · the HOUR of the day and the WEATHER are the player's to choose, and you
+//     see them through the windows, over the garden and from the balcony
+//   · PAINT the walls (the garden paints its fence, the balcony its deck)
+//   · hang PICTURES, move every piece of furniture and toy
+//   · KITCHEN: the oven and the drawers OPEN, utensils travel, the pan cooks,
+//     the blender juices, and the table seats you for dinner
+//   · BATHROOM: run the tub and the sink, bathe your toys, dry them with a towel
+//   · GARDEN: dig the sandbox, bounce, pick fruit, water the plants
+// Everything persists. No goals, no fail state — Eli directs the story.
 
 import {
   W, H, WALL_TOP, WALL_BOT, FLOOR_Y, CHAR_MIN_Y, CHAR_MAX_Y,
-  ROOM_ORDER, PAINTS, PATTERNS, ARTWORKS, ACCESSORIES,
+  ROOM_ORDER, TIMES, WEATHERS, PAINTS, PATTERNS, ARTWORKS, ACCESSORIES,
 } from "../const.js";
-import { ROOMS, CHAR_START, FOODS, FRIDGE_MENU } from "../data/rooms.js";
+import { ROOMS, FOODS, FRIDGE_MENU, UTENSILS } from "../data/rooms.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
 
 const FONT = "'Segoe UI', system-ui, sans-serif";
-const ROOM_LABEL = { living: "LIVING ROOM", kitchen: "KITCHEN", bathroom: "BATHROOM", bedroom: "BEDROOM", garden: "GARDEN" };
+const ROOM_LABEL = {
+  living: "LIVING ROOM", kitchen: "KITCHEN", bathroom: "BATHROOM",
+  bedroom: "BEDROOM", garden: "GARDEN", balcony: "BALCONY",
+};
+
+// Hora del día: cómo se ve el mundo a cada hora.
+const SKY = {
+  day:    { ov: 0x203a6a, ovA: 0,    win: 0xbfe4ff, orb: "sun",  gTop: 0x9fd8ff, gBot: 0xdff2ff, city: 0xffffff },
+  sunset: { ov: 0xff7a3c, ovA: 0.26, win: 0xffb27a, orb: "sun",  gTop: 0xff9a6a, gBot: 0xffd9a0, city: 0xffc7a0 },
+  night:  { ov: 0x0a1a44, ovA: 0.46, win: 0x3a4f8a, orb: "moon", gTop: 0x1b2a5e, gBot: 0x46589e, city: 0x7a86c4 },
+};
+// El clima ensucia el cielo de la hora que sea.
+const WEATHER_WASH = { clear: null, cloudy: [0x9aa8b8, 0.45], rain: [0x7f93a8, 0.55], snow: [0xd8e4f0, 0.45] };
+const TIME_ICON = { day: "☀️", sunset: "🌅", night: "🌙" };
+const WEATHER_ICON = { clear: "🌤️", rain: "🌧️", snow: "❄️", cloudy: "☁️" };
+
+const mix = (a, b, t) => {
+  const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  return (Math.round(ar + (br - ar) * t) << 16) | (Math.round(ag + (bg - ag) * t) << 8) | Math.round(ab + (bb - ab) * t);
+};
 
 export class HouseScene extends Phaser.Scene {
   constructor() { super("House"); }
@@ -31,17 +53,19 @@ export class HouseScene extends Phaser.Scene {
     this.events.once("shutdown", () => { this.snd.stopMusic(); this.snd.waterOff(); });
 
     this.room = "living";
-    this.mode = "none";           // none | paint | frames
-    this.items = [];              // draggable foods/spawns in the CURRENT room
+    this.mode = "none";           // none | paint | frames | dress
+    this.items = [];              // draggable foods/utensils in the CURRENT room
     this.paintSprites = [];       // hung pictures in the CURRENT room
-    this.chars = {};              // char sprites present in the CURRENT room
+    this.chars = {};              // Eli + toys present in the CURRENT room
     this._glowStates = {};
+    this._shadowed = [];
+    this._skyFx = [];
+    this._weatherFx = [];
 
     this._buildStatic();
     this._buildRoom();
     this._buildHUD();
     this._bindDrag();
-    if (Save.get().night) this._applyNight(false); // restaurar modo noche
 
     Save.get().visits++; Save.persist();
   }
@@ -51,8 +75,11 @@ export class HouseScene extends Phaser.Scene {
   _buildStatic() {
     // layers that survive room switches
     this.layerWall = this.add.container(0, 0).setDepth(1);
+    this.layerShadow = this.add.container(0, 0).setDepth(3);
     this.layerRoom = this.add.container(0, 0).setDepth(5);
     this.layerFx = this.add.container(0, 0).setDepth(40);
+    // velo de la hora del día (cubre toda la casa; las estrellas van encima)
+    this._skyOverlay = this.add.rectangle(W / 2, H / 2, W, H, SKY.day.ov, 0).setDepth(35);
   }
 
   _clearRoom() {
@@ -60,8 +87,9 @@ export class HouseScene extends Phaser.Scene {
     // Matar los tweens ANTES de destruir (Phaser no los cancela al destruir el
     // objeto): el tween infinito de "sentarse" (repeat:-1) seguía vivo sobre el
     // sprite muerto → fuga de memoria/CPU en sesiones largas (bug QA B3).
-    this.layerRoom.list.forEach((o) => this.tweens.killTweensOf(o));
+    this.layerRoom.list.forEach((o) => { this.tweens.killTweensOf(o); this._closeExtras(o); });
     this.layerWall.removeAll(true);
+    this.layerShadow.removeAll(true);
     this.layerRoom.removeAll(true);
     this.items.forEach((i) => { this.tweens.killTweensOf(i); i.destroy(); });
     this.items = [];
@@ -73,27 +101,40 @@ export class HouseScene extends Phaser.Scene {
       c.destroy();
     });
     this.chars = {};
+    this._skyFx.forEach((o) => o.destroy());
+    this._skyFx = [];
+    this._weatherFx.forEach((o) => o.destroy());
+    this._weatherFx = [];
+    this._shadowed = [];
     this._glowStates = {};
     this._dropZones = [];
     this._fridgeOpen = false;
+    this._drawersOpen = false;
+    this._ovenOpen = false;
     this._sinkOn = false;
+    this._tubOn = false;
+    this._winSky = null; this._winOrb = null; this._winFrame = null; this._winRect = null;
+    this._cityImg = null; this._gardenSky = null; this._deckPaint = null;
   }
 
   _buildRoom() {
     this._clearRoom();
     const def = ROOMS[this.room];
     const cfg = Save.get().rooms[this.room];
-    const garden = this.room === "garden";
 
-    // ---- wall / sky ----
-    if (garden) {
-      const sky = this.add.graphics();
-      sky.fillGradientStyle(0x9fd8ff, 0x9fd8ff, 0xdff2ff, 0xdff2ff, 1);
-      sky.fillRect(0, 0, W, 340);
-      this.layerWall.add(sky);
-      const sun = this.add.image(1120, 90, "glowdisc").setScale(2.2).setTint(0xffe27a);
-      this.layerWall.add(sun);
-      // paintable fence
+    // ---- fondo: ciudad (balcón) / cielo+valla (jardín) / pared+ventana ----
+    if (def.bg === "city") {
+      // BALCÓN (encargo fundadora): la vista ya trae baranda y tablas con
+      // perspectiva; pintar aquí tiñe el suelo de la terraza.
+      this._cityImg = this.add.image(W / 2, H / 2, "city");
+      this._cityImg.setDisplaySize(W, H);
+      this.layerWall.add(this._cityImg);
+      this._deckPaint = this.add.rectangle(W / 2, 660, W, 128, cfg.wall, 0.34);
+      this.layerWall.add(this._deckPaint);
+      this.wallRect = null; this.patternSpr = null;
+    } else if (def.outdoor) {
+      this._gardenSky = this.add.graphics();
+      this.layerWall.add(this._gardenSky);
       this.wallRect = this.add.tileSprite(W / 2, 425, W, 185, "fence").setTint(cfg.wall);
       this.layerWall.add(this.wallRect);
       this.patternSpr = null;
@@ -104,17 +145,17 @@ export class HouseScene extends Phaser.Scene {
         .setVisible(cfg.pattern !== "none");
       if (cfg.pattern !== "none") this.patternSpr.setTexture("pat-" + cfg.pattern);
       this.layerWall.add(this.patternSpr);
-      // baseboard + window
       const base = this.add.rectangle(W / 2, WALL_BOT - 8, W, 16, 0xffffff, 0.55);
       this.layerWall.add(base);
-      const win = this.add.image(this.room === "kitchen" ? 260 : 1080, 250, "window").setScale(1.35);
-      this.layerWall.add(win);
+      this._buildWindow(this.room === "kitchen" ? 260 : 1080, 250);
     }
 
-    // ---- floor ----
-    const floorKey = { wood: "floor-wood", tiles: "floor-tiles", grass: "floor-grass" }[def.floor];
-    const floor = this.add.tileSprite(W / 2, (FLOOR_Y + H) / 2, W, H - FLOOR_Y, floorKey);
-    this.layerWall.add(floor);
+    // ---- suelo EN PERSPECTIVA (el balcón ya lo trae dibujado) ----
+    if (def.floor !== "deck") {
+      const floorKey = { wood: "floor-wood", tiles: "floor-tiles", grass: "floor-grass" }[def.floor];
+      const floor = this.add.image(W / 2, (FLOOR_Y + H) / 2, floorKey);
+      this.layerWall.add(floor);
+    }
 
     // ---- furniture (TODO se puede mover — encargo fundadora) ----
     const moved = Save.get().rooms[this.room].moved || {};
@@ -126,25 +167,44 @@ export class HouseScene extends Phaser.Scene {
       spr._furn = f;
       spr.setInteractive({ useHandCursor: true, draggable: true });
       if (f.drop) this._dropZones.push({ spr, f });
-      if (f.key === "fridge") this._fridgeSpr = spr;
+      if (!f.wall && !f.flat) this._addShadow(spr);
     }
     this.layerRoom.sort("y");
 
     // ---- hung pictures ----
     for (const p of Save.get().paintings.filter((p) => p.room === this.room)) this._hangPainting(p, false);
 
-    // ---- family in this room ----
+    // ---- lo que la niña dejó por aquí (comida, cacharros) ----
+    for (const d of Save.get().items.filter((i) => i.room === this.room)) {
+      if (!this.textures.exists(d.kind)) continue;
+      this._spawnItem(d.kind, d.x, d.y, d);
+    }
+
+    // ---- Eli + sus juguetes ----
     for (const [name, st] of Object.entries(Save.get().chars)) {
       if (st.room === this.room) this._spawnChar(name, st.x, st.y || CHAR_MAX_Y - 20);
     }
 
-    // room label (small, fades)
+    this._applySky(false);
+    this._applyWeather();
+
     const label = this.add.text(W / 2, 548, ROOM_LABEL[this.room], {
       fontFamily: FONT, fontSize: "20px", color: "#ffffff", fontStyle: "bold", stroke: "#a05a78", strokeThickness: 5,
     }).setOrigin(0.5).setDepth(45);
     this.tweens.add({ targets: label, alpha: 0, delay: 1400, duration: 500, onComplete: () => label.destroy() });
 
     if (this.mode === "paint") this._refreshPaintUI();
+  }
+
+  // Ventana en dos piezas: el cielo se tiñe con la hora y el clima cae DENTRO;
+  // el marco va encima y nunca se tiñe.
+  _buildWindow(x, y) {
+    const S = 1.35;
+    this._winSky = this.add.image(x, y, "window-sky").setScale(S);
+    this._winOrb = this.add.image(x - 36, y - 30, "sun").setScale(0.78);
+    this._winFrame = this.add.image(x, y, "window-frame").setScale(S);
+    this.layerWall.add(this._winSky); this.layerWall.add(this._winOrb); this.layerWall.add(this._winFrame);
+    this._winRect = new Phaser.Geom.Rectangle(x - (150 * S) / 2 + 8, y - (120 * S) / 2 + 8, 150 * S - 16, 120 * S - 16);
   }
 
   _switchRoom(dir) {
@@ -159,6 +219,38 @@ export class HouseScene extends Phaser.Scene {
     });
   }
 
+  /* ================= PROFUNDIDAD: sombras de contacto =================
+     Feedback fundadora: "parece que el piso estuviese inclinado". Además del
+     suelo en perspectiva (BootScene), cada mueble y cada personaje proyecta
+     una sombra blanda a sus pies: es lo que los PEGA al suelo. */
+
+  _addShadow(spr, wide = 0.84) {
+    const sh = this.add.image(spr.x, spr.y, "shadow");
+    sh.displayWidth = Math.max(44, spr.displayWidth * wide);
+    sh.displayHeight = Math.max(15, spr.displayWidth * wide * 0.3);
+    sh.setAlpha(0.3);
+    this.layerShadow.add(sh);
+    spr._shadow = sh;
+    spr._groundY = spr.y;
+    this._shadowed.push(spr);
+    return sh;
+  }
+
+  _syncShadows() {
+    for (const spr of this._shadowed) {
+      const sh = spr._shadow;
+      if (!sh || !sh.active) continue;
+      if (!spr.active || spr._noShadow) { sh.setVisible(false); continue; }
+      sh.setVisible(true);
+      sh.x = spr.x;
+      const gy = spr._furn ? spr.y : (spr._groundY ?? spr.y);
+      sh.y = gy;
+      // al saltar (o al levantar un mueble) la sombra se queda abajo y se abre
+      const dy = Math.max(0, gy - spr.y);
+      sh.setAlpha(0.3 * Math.max(0.2, 1 - dy / 220));
+    }
+  }
+
   /* ============================ CHARACTERS ============================ */
 
   _spawnChar(name, x, y) {
@@ -171,10 +263,12 @@ export class HouseScene extends Phaser.Scene {
     spr._baseScale = spr.scale;
     spr._acc = [];
     this.chars[name] = spr;
+    this._addShadow(spr, 0.7);
     // re-apply a saved "sitting" pose (bug QA #4: antes aparecía de pie)
     if (st.sitting) {
       spr.y = Phaser.Math.Clamp(st.y || y, CHAR_MIN_Y, CHAR_MAX_Y);
       spr._sitting = true;
+      spr._noShadow = true;
       this.tweens.add({ targets: spr, y: spr.y - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     }
     this._drawAccessories(spr);
@@ -277,10 +371,12 @@ export class HouseScene extends Phaser.Scene {
     st.room = next;
     st.x = dir > 0 ? 140 : W - 140;
     st.y = CHAR_MAX_Y - 20;
+    st.sitting = false;
     Save.persist();
     const spr = this.chars[name];
     if (spr) {
       this.snd.swoosh();
+      spr._noShadow = true;
       this.tweens.add({
         targets: spr, x: dir > 0 ? W + 90 : -90, duration: 240, ease: "Quad.in",
         onComplete: () => { spr.destroy(); delete this.chars[name]; },
@@ -290,7 +386,7 @@ export class HouseScene extends Phaser.Scene {
 
   /* ============================ FURNITURE TAPS ============================ */
 
-  _tapFurniture(spr, f, p) {
+  _tapFurniture(spr, f) {
     switch (f.tap) {
       case "wiggle":
       case "rock": {
@@ -350,14 +446,6 @@ export class HouseScene extends Phaser.Scene {
         }
         break;
       }
-      case "toybox": {
-        this.snd.boing();
-        const t = this.add.image(spr.x, spr.y - spr.displayHeight * 0.7, "teddy").setDepth(13);
-        t.setScale(70 / t.height);
-        this.tweens.add({ targets: t, y: t.y - 80, duration: 260, yoyo: true, ease: "Quad.out", onComplete: () => t.destroy() });
-        this._sparkle(spr.x, spr.y - spr.displayHeight, 8);
-        break;
-      }
       case "fridge": {
         this._fridgeOpen = !this._fridgeOpen;
         this.snd.pick();
@@ -373,10 +461,112 @@ export class HouseScene extends Phaser.Scene {
         }
         break;
       }
+      // GAVETAS (encargo fundadora): abren y dan los cacharros para llevar
+      case "drawers": {
+        this._drawersOpen = !this._drawersOpen;
+        this.snd.pick();
+        spr.setTexture(this._drawersOpen ? "drawers-open" : "drawers");
+        spr.setScale(f.h / spr.height);
+        if (this._drawersOpen) {
+          UTENSILS.forEach((u, i) => {
+            if (this.items.length >= 12) return;
+            const it = this._spawnItem(u, spr.x - 34 + i * 68, spr.y - spr.displayHeight - 10);
+            this.tweens.add({ targets: it, y: it.y - 22, duration: 180, yoyo: true, ease: "Quad.out" });
+          });
+        }
+        break;
+      }
+      // HORNO (encargo fundadora): la puerta se abre y dentro se hornea
+      case "oven": {
+        this._ovenOpen = !this._ovenOpen;
+        this.snd.pick();
+        this._drawOven(spr);
+        break;
+      }
       case "sink": {
         this._sinkOn = !this._sinkOn;
         if (this._sinkOn) { this.snd.waterOn(); this._waterSpr = spr; }
         else this.snd.waterOff();
+        break;
+      }
+      // TINA (encargo fundadora): el agua corre si ella la enciende
+      case "tub": {
+        this._tubOn = !this._tubOn;
+        if (this._tubOn) { this.snd.waterOn(); this._fillTub(spr); }
+        else { this.snd.waterOff(); this._drainTub(spr); }
+        break;
+      }
+      // TOALLAS: seca a quien esté en la tina y lo deja sequito al lado
+      case "towel": {
+        this.snd.ui();
+        this.tweens.add({ targets: spr, angle: 4, duration: 100, yoyo: true, repeat: 1, onComplete: () => spr.setAngle(0) });
+        this._dryOff(spr);
+        break;
+      }
+      case "soap": {
+        this.snd.splash();
+        this.tweens.add({ targets: spr, angle: 12, duration: 90, yoyo: true, repeat: 2, onComplete: () => spr.setAngle(0) });
+        for (let i = 0; i < 8; i++) {
+          const b = this.add.image(spr.x + Phaser.Math.Between(-16, 16), spr.y - 10, "bubble").setDepth(41)
+            .setScale(Phaser.Math.FloatBetween(0.6, 1.4));
+          this.tweens.add({ targets: b, y: b.y - Phaser.Math.Between(50, 110), x: b.x + Phaser.Math.Between(-30, 30), alpha: 0, duration: 1100, delay: i * 70, onComplete: () => b.destroy() });
+        }
+        break;
+      }
+      case "brush": {
+        this.snd.ui();
+        this.tweens.add({ targets: spr, x: spr.x + 8, angle: -10, duration: 80, yoyo: true, repeat: 4, onComplete: () => { spr.setAngle(0); } });
+        this._sparkle(spr.x, spr.y - spr.displayHeight, 6);
+        this._floatEmoji(spr.x, spr.y - spr.displayHeight - 14, "✨");
+        break;
+      }
+      case "sand": {
+        this.snd.pick();
+        for (let i = 0; i < 10; i++) {
+          const d = this.add.image(spr.x + Phaser.Math.Between(-40, 40), spr.y - spr.displayHeight * 0.5, "px")
+            .setDepth(41).setTint(0xf0d8a0).setScale(Phaser.Math.FloatBetween(1.5, 3));
+          this.tweens.add({ targets: d, y: d.y - Phaser.Math.Between(20, 60), x: d.x + Phaser.Math.Between(-25, 25), alpha: 0, duration: 600, delay: i * 40, onComplete: () => d.destroy() });
+        }
+        this._floatEmoji(spr.x, spr.y - spr.displayHeight - 10, Phaser.Math.RND.pick(["🏰", "🪣", "⛱️"]));
+        break;
+      }
+      // REGAR (encargo fundadora): la regadera se inclina y lo verde de al lado florece
+      case "water": {
+        this.snd.waterOn();
+        this.time.delayedCall(1200, () => this.snd.waterOff());
+        this.tweens.add({ targets: spr, angle: -34, duration: 260, yoyo: true, hold: 900, ease: "Sine.inOut", onComplete: () => spr.setAngle(0) });
+        const sx = spr.x + spr.displayWidth * 0.55, sy = spr.y - spr.displayHeight * 0.55;
+        for (let i = 0; i < 16; i++) {
+          this.time.delayedCall(260 + i * 60, () => {
+            const d = this.add.image(sx + Phaser.Math.Between(-14, 14), sy, "px").setDepth(41).setTint(0x7fd4ff).setScale(2);
+            this.tweens.add({ targets: d, y: CHAR_MAX_Y - 10, alpha: 0.2, duration: 380, onComplete: () => d.destroy() });
+          });
+        }
+        // lo verde a menos de 220px florece
+        this.time.delayedCall(700, () => {
+          for (const o of this.layerRoom.list) {
+            if (!["flowerbed", "plant", "tree"].includes(o._furn?.key)) continue;
+            if (Math.abs(o.x - spr.x) > 220) continue;
+            this.snd.chime();
+            this.tweens.add({ targets: o, scaleY: o.scaleY * 1.08, duration: 260, yoyo: true, ease: "Sine.out" });
+            for (let i = 0; i < 5; i++) {
+              this._floatEmoji(o.x + Phaser.Math.Between(-40, 40), o.y - o.displayHeight * Phaser.Math.FloatBetween(0.3, 0.8), Phaser.Math.RND.pick(["🌸", "🌼", "🌺"]));
+            }
+          }
+        });
+        break;
+      }
+      case "ball": {
+        this.snd.boing();
+        this.tweens.add({ targets: spr, y: spr.y - 130, duration: 300, yoyo: true, ease: "Quad.out" });
+        this.tweens.add({ targets: spr, angle: spr.angle + 360, duration: 600 });
+        break;
+      }
+      case "dollhouse": {
+        this.snd.chime();
+        this.tweens.add({ targets: spr, scaleX: spr.scaleX * 1.05, scaleY: spr.scaleY * 0.96, duration: 130, yoyo: true, repeat: 1 });
+        this._sparkle(spr.x, spr.y - spr.displayHeight * 0.7, 10);
+        this._floatEmoji(spr.x, spr.y - spr.displayHeight - 10, "🏠");
         break;
       }
       case "duck": {
@@ -391,48 +581,185 @@ export class HouseScene extends Phaser.Scene {
     }
   }
 
-  /* ============================ ITEMS (foods) ============================ */
+  /* ============================ HORNO / TINA ============================ */
 
-  _spawnItem(kind, x, y) {
+  _drawOven(spr) {
+    if (spr._extra) { spr._extra.forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); }); spr._extra = null; }
+    if (!this._ovenOpen) return;
+    const dw = spr.displayWidth, dh = spr.displayHeight;
+    const w = dw * 0.58, hh = dh * 0.28;
+    const cx = spr.x, cy = spr.y - dh * 0.28;   // donde el arte del horno tiene su ventanita
+    const cavity = this.add.rectangle(cx, cy, w, hh, 0x3a2418).setDepth(6);
+    const rack = this.add.rectangle(cx, cy + hh * 0.3, w * 0.8, 3, 0x8a7460).setDepth(7);
+    const glow = this.add.image(cx, cy, "glowdisc").setScale(w / 44).setTint(0xffa54a).setAlpha(0).setDepth(7);
+    // La puerta se abate HACIA el jugador: no es un rectángulo que baja, es un
+    // panel en escorzo (más ancho por delante que por detrás).
+    const y0 = spr.y - dh * 0.13, pd = dh * 0.16;
+    const pts = [{ x: -w / 2, y: 0 }, { x: w / 2, y: 0 }, { x: w * 0.58, y: pd }, { x: -w * 0.58, y: pd }];
+    const door = this.add.graphics().setDepth(8);
+    door.fillStyle(0xe8e4dc, 1); door.fillPoints(pts, true);
+    door.lineStyle(2, 0xb0a89c, 1); door.strokePoints(pts, true, true);
+    door.fillStyle(0x6a5a4a, 0.5); door.fillRect(-w * 0.3, pd * 0.3, w * 0.6, pd * 0.4); // el cristal, tumbado
+    door.setPosition(cx, y0).setScale(1, 0);
+    spr._extra = [cavity, rack, glow, door];
+    this.tweens.add({ targets: door, scaleY: 1, duration: 260, ease: "Back.out" });
+    this.tweens.add({ targets: glow, alpha: 0.5, duration: 400 });
+    this._ovenZone = new Phaser.Geom.Rectangle(cx - w / 2, cy - hh / 2, w, hh);
+  }
+
+  _fillTub(spr) {
+    if (spr._extra) { spr._extra.forEach((o) => o.destroy()); spr._extra = null; }
+    const w = spr.displayWidth * 0.76, full = spr.displayHeight * 0.3;
+    const water = this.add.image(spr.x, spr.y - spr.displayHeight * 0.12, "px").setOrigin(0.5, 1)
+      .setTint(0x6ec8ff).setAlpha(0.55).setDepth(6);
+    water.displayWidth = w; water.displayHeight = 2;
+    spr._extra = [water];
+    this.tweens.add({ targets: water, displayHeight: full, duration: 2600, ease: "Sine.inOut" });
+    // chorro + burbujas mientras se llena
+    for (let i = 0; i < 14; i++) {
+      this.time.delayedCall(i * 180, () => {
+        if (!this._tubOn || !water.active) return;
+        const b = this.add.image(spr.x + Phaser.Math.Between(-50, 50), spr.y - spr.displayHeight * 0.36, "bubble").setDepth(41);
+        this.tweens.add({ targets: b, y: b.y - Phaser.Math.Between(30, 70), alpha: 0, duration: 800, onComplete: () => b.destroy() });
+      });
+    }
+  }
+
+  _drainTub(spr) {
+    if (!spr._extra) return;
+    const [water] = spr._extra;
+    spr._extra = null;
+    this.tweens.add({ targets: water, displayHeight: 1, alpha: 0, duration: 900, onComplete: () => water.destroy() });
+  }
+
+  // La toalla saca de la tina a quien se esté bañando y lo deja seco al lado.
+  _dryOff(rack) {
+    const bather = Object.values(this.chars).find((c) => c._bathing);
+    if (!bather) { this._floatEmoji(rack.x, rack.y - rack.displayHeight - 10, "🧺"); return; }
+    const tub = this.layerRoom.list.find((s) => s._furn?.key === "bathtub");
+    bather._bathing = false;
+    bather._noShadow = false;
+    if (bather.parentContainer) { bather.parentContainer.remove(bather); this.add.existing(bather); }
+    bather.setDepth(14).setAngle(0);
+    bather.x = Phaser.Math.Clamp((tub ? tub.x + tub.displayWidth * 0.66 : rack.x), 90, W - 90);
+    bather.y = CHAR_MAX_Y - 20;
+    bather._groundY = bather.y;
+    this.snd.chime();
+    this._sparkle(bather.x, bather.y - bather.displayHeight * 0.6, 10);
+    this._floatEmoji(bather.x, bather.y - bather.displayHeight - 8, "✨");
+    this.tweens.add({ targets: bather, angle: { from: -6, to: 6 }, duration: 90, yoyo: true, repeat: 3, onComplete: () => bather.setAngle(0) });
+    this._persistChar(bather._char, bather);
+  }
+
+  // Al arrastrar un mueble, lo que le colgaba (horno abierto, agua) se cierra.
+  _closeExtras(spr) {
+    if (!spr._extra) return;
+    spr._extra.forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
+    spr._extra = null;
+    if (spr._furn?.key === "stove") this._ovenOpen = false;
+    if (spr._furn?.key === "bathtub") { this._tubOn = false; this.snd.waterOff(); }
+  }
+
+  /* ============================ ITEMS (foods + utensils) ============================ */
+
+  // `data` = la entrada guardada (al reconstruir la sala); si no viene, es un
+  // objeto nuevo y se apunta en la casa.
+  _spawnItem(kind, x, y, data = null) {
     const spr = this.add.image(x, y, kind).setDepth(16);
-    spr.setScale(74 / spr.height);
+    // caber en una caja: solo por altura, una sartén (muy ancha) salía enorme
+    spr.setScale(Math.min(74 / spr.height, 150 / spr.width));
     spr.setInteractive({ useHandCursor: true, draggable: true });
     spr._item = kind;
+    spr._utensil = UTENSILS.includes(kind); // los cacharros no se comen
     spr._baseScale = spr.scale;
+    if (!data) {
+      data = { room: this.room, kind, x: Math.round(x), y: Math.round(y) };
+      Save.get().items.push(data);
+      Save.persist();
+    }
+    spr._data = data;
     this.items.push(spr);
     this.snd.pick();
     return spr;
   }
 
+  // Todo lo que la niña deja por la casa se queda donde lo dejó.
+  _persistItem(spr) {
+    const d = spr._data;
+    if (!d) return;
+    d.room = this.room; d.kind = spr._item;
+    d.x = Math.round(spr.x); d.y = Math.round(spr.y);
+    Save.persist();
+  }
+
   _removeItem(spr, poof = true) {
     if (poof) this._sparkle(spr.x, spr.y, 5);
     this.items = this.items.filter((i) => i !== spr);
+    if (spr._data) {
+      Save.get().items = Save.get().items.filter((d) => d !== spr._data);
+      Save.persist();
+    }
     spr.destroy();
   }
 
+  // Llevarse la merienda a otra habitación: igual que con los personajes,
+  // arrastra el objeto a la flecha (encargo fundadora: "trasladar utensilios y
+  // cosas... también comida de un lado para otro").
+  _sendItemTo(spr, dir) {
+    const d = spr._data;
+    const ix = ROOM_ORDER.indexOf(this.room);
+    if (d) {
+      d.room = ROOM_ORDER[Phaser.Math.Wrap(ix + dir, 0, ROOM_ORDER.length)];
+      d.x = dir > 0 ? 150 : W - 150;
+      d.y = CHAR_MAX_Y - 40;
+      Save.persist();
+    }
+    this.items = this.items.filter((i) => i !== spr);
+    this.snd.swoosh();
+    this.tweens.add({
+      targets: spr, x: dir > 0 ? W + 70 : -70, duration: 240, ease: "Quad.in",
+      onComplete: () => spr.destroy(),
+    });
+  }
+
   _dropItem(spr, x, y) {
+    // flechas → se lo lleva a la sala de al lado
+    if (x < 80) { this._sendItemTo(spr, -1); return; }
+    if (x > W - 80) { this._sendItemTo(spr, 1); return; }
     // on a character → EAT (la comida vuela a la boca + mastica + 😋).
     // Vale para todos: en una casa de muñecas dar de comer al peluche o al
-    // cachorro también es juego.
-    for (const c of Object.values(this.chars)) {
-      const r = new Phaser.Geom.Rectangle(c.x - c.displayWidth / 2, c.y - c.displayHeight, c.displayWidth, c.displayHeight);
-      if (r.contains(x, y)) { this._eat(c, spr); return; }
+    // cachorro también es juego. Los utensilios NO se comen.
+    if (!spr._utensil) {
+      for (const c of Object.values(this.chars)) {
+        const r = new Phaser.Geom.Rectangle(c.x - c.displayWidth / 2, c.y - c.displayHeight, c.displayWidth, c.displayHeight);
+        if (r.contains(x, y)) { this._eat(c, spr); return; }
+      }
     }
     // on a drop-zone
     for (const { spr: z, f } of this._dropZones) {
       const r = new Phaser.Geom.Rectangle(z.x - z.displayWidth / 2, z.y - z.displayHeight, z.displayWidth, z.displayHeight);
       if (!r.contains(x, y)) continue;
       if (f.drop === "cook") {
+        // ¿dentro del horno abierto? → se hornea ahí dentro
+        if (this._ovenOpen && this._ovenZone && this._ovenZone.contains(x, y)) { this._bake(spr); return; }
+        if (spr._utensil) { // una olla/sartén encima del fuego: solo se posa
+          spr.x = z.x; spr.y = z.y - z.displayHeight * 0.74;
+          this.snd.drop();
+          this._persistItem(spr);
+          return;
+        }
         const cooked = FOODS[spr._item]?.cooked;
         this.snd.sizzle();
         this._steam(z.x, z.y - z.displayHeight * 0.8, 5);
         spr.x = z.x; spr.y = z.y - z.displayHeight * 0.72;
+        this._persistItem(spr);
         if (cooked) {
           this.time.delayedCall(900, () => {
             if (!spr.active) return;
             spr.setTexture(cooked);
             spr._item = cooked;
-            spr.setScale(74 / spr.height);
+            spr.setScale(Math.min(74 / spr.height, 150 / spr.width));
+            this._persistItem(spr);
             this._sparkle(spr.x, spr.y, 6);
             this.snd.chime();
           });
@@ -440,6 +767,7 @@ export class HouseScene extends Phaser.Scene {
         return;
       }
       if (f.drop === "blend") {
+        if (spr._utensil) break;
         this.snd.whirr();
         this.tweens.add({ targets: z, angle: 4, duration: 70, yoyo: true, repeat: 5, onComplete: () => z.setAngle(0) });
         this._removeItem(spr, false);
@@ -455,15 +783,43 @@ export class HouseScene extends Phaser.Scene {
         spr.x = Phaser.Math.Clamp(x, z.x - z.displayWidth * 0.3, z.x + z.displayWidth * 0.3);
         spr.y = z.y - z.displayHeight * 0.82;
         this.snd.drop();
+        this._persistItem(spr);
         // CUMPLEAÑOS (game-director #4): tarta/cupcake en la mesa → velas +
-        // la familia de la sala se acerca + confeti + fanfarria.
+        // quien esté en la sala se acerca + confeti + fanfarria.
         if (spr._item === "cake" || spr._item === "cupcake") this._birthday(spr.x, spr.y);
+        return;
+      }
+      if (f.drop === "bathe" && !spr._utensil) {
+        // un juguete/comida en la tina: chapuzón
+        spr.x = z.x + Phaser.Math.Between(-30, 30); spr.y = z.y - z.displayHeight * 0.3;
+        this.snd.splash();
+        this._persistItem(spr);
         return;
       }
     }
     // default: settle on the floor band
     spr.y = Phaser.Math.Clamp(y, CHAR_MIN_Y - 20, CHAR_MAX_Y);
     this.snd.drop();
+    this._persistItem(spr);
+  }
+
+  _bake(spr) {
+    const z = this._ovenZone;
+    spr.x = z.centerX + Phaser.Math.Between(-20, 20);
+    spr.y = z.centerY + 6;
+    spr.setDepth(7);
+    this._persistItem(spr);
+    this.snd.sizzle();
+    const cooked = FOODS[spr._item]?.cooked;
+    this._steam(z.centerX, z.top, 4);
+    this.time.delayedCall(1400, () => {
+      if (!spr.active) return;
+      if (cooked) { spr.setTexture(cooked); spr._item = cooked; spr.setScale(Math.min(74 / spr.height, 150 / spr.width)); }
+      this._persistItem(spr);
+      this._sparkle(spr.x, spr.y, 6);
+      this.snd.chime();
+      this._floatEmoji(spr.x, z.top - 10, "😋");
+    });
   }
 
   _dropChar(spr, x, y) {
@@ -471,6 +827,7 @@ export class HouseScene extends Phaser.Scene {
     // arrows → next room
     if (x < 80) { this._sendCharTo(name, -1); return; }
     if (x > W - 80) { this._sendCharTo(name, 1); return; }
+    spr._bathing = false;
     // furniture reactions
     for (const { spr: z, f } of this._dropZones) {
       const r = new Phaser.Geom.Rectangle(z.x - z.displayWidth / 2, z.y - z.displayHeight, z.displayWidth, z.displayHeight);
@@ -478,6 +835,7 @@ export class HouseScene extends Phaser.Scene {
       if (f.drop === "lay") {
         spr.x = z.x; spr.y = z.y - z.displayHeight * 0.34;
         spr.setAngle(-84);
+        spr._noShadow = true;
         this.snd.zzz();
         this._floatEmoji(z.x, z.y - z.displayHeight - 16, "💤");
         this._persistChar(name, spr);
@@ -485,6 +843,7 @@ export class HouseScene extends Phaser.Scene {
       }
       if (f.drop === "swing") {
         spr.x = z.x; spr.y = z.y - z.displayHeight * 0.16;
+        spr._noShadow = true;
         this.snd.boing();
         this.tweens.add({ targets: spr, angle: { from: -10, to: 10 }, duration: 700, yoyo: true, repeat: 4, ease: "Sine.inOut", onComplete: () => spr.setAngle(0) });
         this._persistChar(name, spr);
@@ -492,22 +851,29 @@ export class HouseScene extends Phaser.Scene {
       }
       if (f.drop === "bounce") {
         spr.x = z.x; spr.y = z.y - z.displayHeight * 0.6;
+        spr._groundY = spr.y; spr._noShadow = false;
         this.snd.boing();
         this.tweens.add({ targets: spr, y: spr.y - 120, duration: 320, yoyo: true, repeat: 3, ease: "Quad.out", onComplete: () => { spr.y = z.y - z.displayHeight * 0.6; this._persistChar(name, spr); } });
         return;
       }
-      if (f.drop === "hide" && (name === "flofy" || name === "pet")) {
+      if (f.drop === "hide" && (name === "flofy" || name === "pet" || name === "rainbow")) {
         spr.x = z.x; spr.y = z.y - 14;
+        spr._noShadow = true;
         this.snd.giggle();
         this._floatEmoji(z.x, z.y - z.displayHeight - 10, "❤");
         this._persistChar(name, spr);
         return;
       }
       if (f.drop === "bathe") {
-        // BAÑO (game-director #1): el personaje se mete en la bañera, burbujas
-        // + patito de goma, tras el frente de la bañera (piernas ocultas).
-        spr.x = z.x; spr.y = z.y - z.displayHeight * 0.42;
+        // BAÑO: el personaje se mete en la tina, tras el frente de la bañera
+        // (piernas ocultas). Los juguetes pequeños (Flofy, Rainbow, el
+        // cachorro) van MÁS ALTOS o la tina se los tragaba enteros: así asoman
+        // de la espuma de cintura para arriba, como un peluche en su baño.
+        const small = spr.displayHeight <= z.displayHeight * 0.8;
+        spr.x = z.x; spr.y = z.y - z.displayHeight * (small ? 0.68 : 0.42);
         spr.setAngle(0);
+        spr._bathing = true;
+        spr._noShadow = true;
         this.layerRoom.add(spr);
         this.layerRoom.moveTo(spr, Math.max(0, this.layerRoom.getIndex(z)));
         this.snd.splash();
@@ -519,39 +885,47 @@ export class HouseScene extends Phaser.Scene {
         this._persistChar(name, spr);
         return;
       }
-      if (f.drop === "sit") {
-        // SENTARSE (encargo fundadora): el personaje queda sentado en el
-        // asiento, con las piernas ocultas tras el mueble (se mete en el
-        // contenedor justo debajo del asiento para el orden de dibujo).
-        const seatY = z.y - z.displayHeight * (f.seat ?? 0.4);
-        spr.x = Phaser.Math.Clamp(x, z.x - z.displayWidth * 0.32, z.x + z.displayWidth * 0.32);
-        spr.setAngle(0);
-        // Los altos se sientan DETRÁS del respaldo (piernas ocultas); los
-        // bajitos (Flofy) delante, sobre el cojín, para que se les vea.
-        if (spr.displayHeight > z.displayHeight * 0.8) {
-          spr.y = seatY + spr.displayHeight * 0.06;
-          this.layerRoom.add(spr);
-          this.layerRoom.moveTo(spr, Math.max(0, this.layerRoom.getIndex(z)));
-        } else {
-          spr.y = seatY + spr.displayHeight * 0.02;
-        }
-        this.snd.giggle();
-        this._floatEmoji(spr.x, seatY - spr.displayHeight * 0.9, "🙂");
-        this.tweens.add({ targets: spr, y: spr.y - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
-        spr._sitting = true;
-        this._persistChar(name, spr);
+      // "sit" = sofá/alfombra/picnic/arenero · "table" = COMEDOR (encargo
+      // fundadora: "que haya un comedor donde se puedan sentar")
+      if (f.drop === "sit" || f.drop === "table") {
+        this._sitAt(spr, z, f.drop === "table" ? 0.54 : (f.seat ?? 0.4), x);
         return;
       }
     }
     spr.setAngle(0);
     spr.y = Phaser.Math.Clamp(y, CHAR_MIN_Y, CHAR_MAX_Y);
+    spr._groundY = spr.y;
+    spr._noShadow = false;
     this.snd.drop();
     this._dust(spr.x, spr.y);
     this._persistChar(name, spr);
   }
 
+  // SENTARSE: el personaje queda en el asiento con las piernas ocultas tras el
+  // mueble (se mete en el contenedor justo debajo del asiento para el orden de
+  // dibujo). Los bajitos (Flofy, Rainbow) delante, sobre el cojín, para verlos.
+  _sitAt(spr, z, seat, x) {
+    const seatY = z.y - z.displayHeight * seat;
+    spr.x = Phaser.Math.Clamp(x, z.x - z.displayWidth * 0.32, z.x + z.displayWidth * 0.32);
+    spr.setAngle(0);
+    if (spr.displayHeight > z.displayHeight * 0.8) {
+      spr.y = seatY + spr.displayHeight * 0.06;
+      this.layerRoom.add(spr);
+      this.layerRoom.moveTo(spr, Math.max(0, this.layerRoom.getIndex(z)));
+    } else {
+      spr.y = seatY + spr.displayHeight * 0.02;
+    }
+    this.snd.giggle();
+    this._floatEmoji(spr.x, seatY - spr.displayHeight * 0.9, "🙂");
+    this.tweens.add({ targets: spr, y: spr.y - 5, duration: 900, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+    spr._sitting = true;
+    spr._noShadow = true;
+    this._persistChar(spr._char, spr);
+  }
+
   _persistChar(name, spr) {
     const st = Save.get().chars[name];
+    if (!st) return;
     st.room = this.room; st.x = Math.round(spr.x); st.y = Math.round(spr.y);
     st.sitting = !!spr._sitting; // pose sentado persiste (bug QA #4)
     Save.persist();
@@ -580,13 +954,12 @@ export class HouseScene extends Phaser.Scene {
 
   _dropPainting(spr, x, y) {
     const d = spr._painting;
-    const wallLimit = this.room === "garden" ? 470 : WALL_BOT - 40;
+    const wallLimit = ROOMS[this.room].outdoor ? 470 : WALL_BOT - 40;
     if (y < wallLimit && y > 70) {
       d.x = Math.round(x); d.y = Math.round(y); d.room = this.room;
       this.snd.hang();
       Save.persist();
     } else {
-      // off the wall → remove
       Save.get().paintings = Save.get().paintings.filter((p) => p !== d);
       Save.persist();
       this._sparkle(x, y, 8);
@@ -610,11 +983,10 @@ export class HouseScene extends Phaser.Scene {
     this._paintBtn = mkIcon(x, "🖌️", () => this._toggleMode("paint")); x += 92;
     this._frameBtn = mkIcon(x, "🖼️", () => this._toggleMode("frames")); x += 92;
     this._dressBtn = mkIcon(x, "👗", () => this._toggleMode("dress")); x += 92;
-    // día/noche (game-director #2): un botón que oscurece toda la casa
-    this._dayNight = mkIcon(x, Save.get().night ? "☀️" : "🌙", () => {
-      this._toggleNight();
-      this._dayNight.t.setText(Save.get().night ? "☀️" : "🌙");
-    }); x += 92;
+    // HORA y CLIMA (encargo fundadora): se ven por las ventanas, el balcón y
+    // el patio. Cada botón va pasando por sus opciones.
+    this._timeBtn = mkIcon(x, TIME_ICON[Save.get().sky], () => this._cycleSky()); x += 92;
+    this._weatherBtn = mkIcon(x, WEATHER_ICON[Save.get().weather], () => this._cycleWeather()); x += 92;
     const mute = mkIcon(W - 60, this.snd.muted ? "🔇" : "🔊", () => {
       this.snd.setMuted(!this.snd.muted);
       if (!this.snd.muted) this.snd.startMusic();
@@ -654,34 +1026,143 @@ export class HouseScene extends Phaser.Scene {
     if (this.mode === "dress") this._buildDressUI();
   }
 
-  /* ============================ DAY / NIGHT ============================ */
+  /* ==================== HORA DEL DÍA + CLIMA ====================
+     Encargo fundadora: "que por las ventanas, por el balcón y por el patio se
+     puedan ver los cambios de las horas del día y el clima que pueda cambiar
+     el jugador". */
 
-  _toggleNight() {
+  _cycleSky() {
     const sv = Save.get();
-    sv.night = !sv.night;
+    sv.sky = TIMES[(TIMES.indexOf(sv.sky) + 1) % TIMES.length];
     Save.persist();
     this.snd.chime();
-    this._applyNight(true);
+    this._timeBtn.t.setText(TIME_ICON[sv.sky]);
+    this._applySky(true);
   }
 
-  _applyNight(animate) {
-    const on = Save.get().night;
-    if (on && !this._nightOverlay) {
-      this._nightOverlay = this.add.rectangle(W / 2, H / 2, W, H, 0x0a1a44, 0).setDepth(35);
-      this._nightStars = [];
+  _cycleWeather() {
+    const sv = Save.get();
+    sv.weather = WEATHERS[(WEATHERS.indexOf(sv.weather) + 1) % WEATHERS.length];
+    Save.persist();
+    this.snd.chime();
+    this._weatherBtn.t.setText(WEATHER_ICON[sv.weather]);
+    this._applySky(true);
+    this._applyWeather();
+  }
+
+  // Colores de la hora, "lavados" por el clima que haga.
+  _skyColors() {
+    const sv = Save.get();
+    const s = { ...(SKY[sv.sky] || SKY.day) };
+    const wash = WEATHER_WASH[sv.weather];
+    if (wash) {
+      const [col, t] = wash;
+      s.win = mix(s.win, col, t);
+      s.gTop = mix(s.gTop, col, t);
+      s.gBot = mix(s.gBot, col, t);
+      s.city = mix(s.city, col, t * 0.7);
+      s.hideOrb = true; // con nubes no se ve ni el sol ni la luna
+    }
+    return s;
+  }
+
+  _applySky(animate = true) {
+    const s = this._skyColors();
+    const night = Save.get().sky === "night";
+
+    this._skyOverlay.setFillStyle(s.ov, this._skyOverlay.fillAlpha);
+    this.tweens.add({ targets: this._skyOverlay, fillAlpha: s.ovA, duration: animate ? 600 : 0 });
+
+    if (this._winSky) {
+      this._winSky.setTint(s.win);
+      this._winOrb.setTexture(s.orb).setVisible(!s.hideOrb);
+    }
+    if (this._gardenSky) {
+      this._gardenSky.clear();
+      this._gardenSky.fillGradientStyle(s.gTop, s.gTop, s.gBot, s.gBot, 1);
+      this._gardenSky.fillRect(0, 0, W, 340);
+    }
+    if (this._cityImg) this._cityImg.setTint(s.city);
+
+    // sol/luna + estrellas: solo fuera (dentro se ven por la ventana)
+    this._skyFx.forEach((o) => o.destroy());
+    this._skyFx = [];
+    if (!ROOMS[this.room].outdoor) return;
+    if (!s.hideOrb) {
+      // fuera del rincón del botón de sonido (arriba a la derecha)
+      const orb = this.add.image(1000, 118, s.orb).setDepth(2).setScale(1.5);
+      const halo = this.add.image(1000, 118, "glowdisc").setDepth(2).setScale(2.2)
+        .setTint(night ? 0xdfe8ff : 0xffe27a).setAlpha(0.75);
+      this._skyFx.push(halo, orb);
+    }
+    if (night && !s.hideOrb) { // con nubes/lluvia/nieve no se ven las estrellas
       for (let i = 0; i < 26; i++) {
-        const s = this.add.image(Phaser.Math.Between(30, W - 30), Phaser.Math.Between(30, 460), "sparkle")
-          .setDepth(36).setTint(0xfff2b0).setScale(Phaser.Math.FloatBetween(0.4, 0.9)).setAlpha(0);
-        this.tweens.add({ targets: s, alpha: { from: 0.3, to: 0.9 }, duration: Phaser.Math.Between(800, 1600), yoyo: true, repeat: -1 });
-        this._nightStars.push(s);
+        const st = this.add.image(Phaser.Math.Between(30, W - 30), Phaser.Math.Between(30, 380), "sparkle")
+          .setDepth(36).setTint(0xfff2b0).setScale(Phaser.Math.FloatBetween(0.4, 0.9));
+        this.tweens.add({ targets: st, alpha: { from: 0.3, to: 0.9 }, duration: Phaser.Math.Between(800, 1600), yoyo: true, repeat: -1 });
+        this._skyFx.push(st);
       }
-      this._moon = this.add.image(1130, 90, "glowdisc").setDepth(36).setScale(2.4).setTint(0xdfe8ff).setAlpha(0);
     }
-    if (this._nightOverlay) {
-      this.tweens.add({ targets: this._nightOverlay, fillAlpha: on ? 0.42 : 0, duration: animate ? 700 : 0 });
-      this._nightStars.forEach((s) => s.setVisible(on));
-      if (this._moon) this.tweens.add({ targets: this._moon, alpha: on ? 0.8 : 0, duration: animate ? 700 : 0 });
+  }
+
+  _applyWeather() {
+    this._weatherFx.forEach((o) => o.destroy());
+    this._weatherFx = [];
+    const w = Save.get().weather;
+    if (w === "clear") return;
+    const outdoor = ROOMS[this.room].outdoor;
+    // fuera: cae sobre toda la pantalla. Dentro: SOLO dentro de la ventana
+    // (sin recorte: la vida de cada gota se calcula para morir en el marco).
+    const zone = outdoor ? new Phaser.Geom.Rectangle(-40, -30, W + 80, H) : this._winRect;
+    if (!zone) return;
+    const depth = outdoor ? 30 : 1;
+
+    if (w === "cloudy") {
+      if (!outdoor) return; // dentro basta con el cielo gris de la ventana
+      for (let i = 0; i < 4; i++) {
+        const c = this.add.image(Phaser.Math.Between(0, W), Phaser.Math.Between(50, 180), "cloud")
+          .setDepth(2).setScale(Phaser.Math.FloatBetween(0.7, 1.3)).setAlpha(0.9).setTint(0xdfe6ee);
+        this.tweens.add({
+          targets: c, x: c.x + Phaser.Math.Between(120, 260), duration: Phaser.Math.Between(16000, 26000),
+          yoyo: true, repeat: -1, ease: "Sine.inOut",
+        });
+        this._weatherFx.push(c);
+      }
+      return;
     }
+
+    const cfg = w === "rain"
+      ? {
+        key: "raindrop", tint: 0xbfe8ff,
+        speedY: { min: 560, max: 780 }, speedX: { min: -70, max: -20 },
+        scaleX: outdoor ? 1 : 0.6, scaleY: outdoor ? { min: 1, max: 2 } : 0.7,
+        alpha: { start: 0.8, end: 0.3 },
+        // dentro no hay recorte: cada gota vive lo justo para morir en el marco
+        lifespan: outdoor ? 1300 : (zone.height / 780) * 1000,
+        frequency: outdoor ? 24 : 90, quantity: outdoor ? 3 : 1,
+      }
+      : {
+        key: "snowflake", tint: 0xffffff,
+        speedY: { min: 45, max: 95 }, speedX: { min: -30, max: 30 },
+        scale: outdoor ? { min: 0.5, max: 1.1 } : { min: 0.3, max: 0.6 },
+        alpha: { start: 0.95, end: 0.7 },
+        lifespan: outdoor ? 8000 : (zone.height / 95) * 1000,
+        frequency: outdoor ? 60 : 260, quantity: 1,
+      };
+
+    const em = this.add.particles(0, 0, cfg.key, {
+      x: { min: zone.x, max: zone.x + zone.width },
+      y: zone.y,
+      lifespan: cfg.lifespan,
+      speedX: cfg.speedX, speedY: cfg.speedY,
+      scale: cfg.scale, scaleX: cfg.scaleX, scaleY: cfg.scaleY,
+      alpha: cfg.alpha, tint: cfg.tint,
+      frequency: cfg.frequency, quantity: cfg.quantity,
+      blendMode: "NORMAL",
+    });
+    if (outdoor) em.setDepth(depth);
+    else this.layerWall.addAt(em, this.layerWall.getIndex(this._winFrame)); // bajo el marco
+    this._weatherFx.push(em);
   }
 
   _refreshPaintUI() {
@@ -690,16 +1171,14 @@ export class HouseScene extends Phaser.Scene {
     this._modeUI = c;
     const bar = this.add.rectangle(W / 2, H - 74, 900, 116, 0xffffff, 0.94).setStrokeStyle(4, 0xffb3cd);
     c.add(bar);
-    // colors
     PAINTS.forEach((col, i) => {
       const b = this.add.circle(W / 2 - 350 + i * 62, H - 92, 24, col).setStrokeStyle(3, 0xa05a78, 0.6)
         .setInteractive({ useHandCursor: true });
       b.on("pointerdown", () => this._applyPaint(col, null));
       c.add(b);
     });
-    // patterns (not for the garden fence) — botones más altos (qa #7: 34px era
-    // poco para dedos de niña; ahora 50px).
-    if (this.room !== "garden") {
+    // patrones: solo en paredes de verdad (la valla y la terraza son lisas)
+    if (this.wallRect && this.patternSpr) {
       PATTERNS.forEach((pat, i) => {
         const x = W / 2 - 330 + i * 180;
         const bg = this.add.rectangle(x, H - 38, 158, 50, 0xffeef5).setStrokeStyle(2, 0xffb3cd)
@@ -719,13 +1198,13 @@ export class HouseScene extends Phaser.Scene {
     if (pattern !== null) cfg.pattern = pattern;
     Save.persist();
     this.snd.splash();
-    if (this.room === "garden") this.wallRect.setTint(cfg.wall);
+    if (this._deckPaint) this._deckPaint.setFillStyle(cfg.wall, 0.34);
+    else if (ROOMS[this.room].outdoor) this.wallRect.setTint(cfg.wall);
     else {
       this.wallRect.setFillStyle(cfg.wall);
       this.patternSpr.setVisible(cfg.pattern !== "none");
       if (cfg.pattern !== "none") this.patternSpr.setTexture("pat-" + cfg.pattern);
     }
-    // splash of paint drops
     for (let i = 0; i < 10; i++) {
       const p = this.add.image(Phaser.Math.Between(200, W - 200), Phaser.Math.Between(60, 420), "px")
         .setDepth(41).setTint(color ?? cfg.wall).setScale(Phaser.Math.FloatBetween(2, 5));
@@ -749,8 +1228,8 @@ export class HouseScene extends Phaser.Scene {
     });
   }
 
-  // Vestidor (game-director #3): arrastra un accesorio sobre un personaje para
-  // ponérselo; tócalo de nuevo (mismo accesorio) para quitárselo. + botón reset.
+  // Vestidor: arrastra un accesorio sobre alguien para ponérselo; el mismo
+  // accesorio otra vez se lo quita. + botón reset.
   _buildDressUI() {
     const c = this.add.container(0, 0).setDepth(70);
     this._modeUI = c;
@@ -767,7 +1246,6 @@ export class HouseScene extends Phaser.Scene {
       img._drawerAcc = key;
       c.add(img);
     });
-    // reset suave (encargo/qa): re-ordena TODA la casa desde cero
     const reset = this.add.text(W - 150, H - 84, "↺ RESET", {
       fontFamily: FONT, fontSize: "18px", color: "#ffffff", fontStyle: "bold", backgroundColor: "#e08aa8",
     }).setOrigin(0.5).setPadding(16, 10, 16, 10).setInteractive({ useHandCursor: true });
@@ -789,7 +1267,6 @@ export class HouseScene extends Phaser.Scene {
   /* ============================ DRESS-UP / BIRTHDAY ============================ */
 
   _equipAccessory(key, x, y) {
-    // ¿sobre un personaje? → ponérselo (o quitárselo si ya lo lleva)
     for (const [name, spr] of Object.entries(this.chars)) {
       const r = new Phaser.Geom.Rectangle(spr.x - spr.displayWidth / 2, spr.y - spr.displayHeight, spr.displayWidth, spr.displayHeight);
       if (!r.contains(x, y)) continue;
@@ -811,22 +1288,25 @@ export class HouseScene extends Phaser.Scene {
     this.tweens.add({ targets: cake, y: cake.y - 10, scale: 1.15, duration: 500, yoyo: true, repeat: 2 });
     this.time.delayedCall(1900, () => cake.destroy());
     this._floatEmoji(x, y - 90, "🎉");
-    // la familia de la sala se acerca a celebrar
-    Object.values(this.chars).filter((c) => c._char !== "pet").slice(0, 3).forEach((c, i) => {
-      if (c._sitting) return;
-      this.tweens.add({ targets: c, x: Phaser.Math.Clamp(x + (i - 1) * 130, 90, W - 90), duration: 550, ease: "Sine.inOut",
-        onComplete: () => { this._charTap(c); this._persistChar(c._char, c); } });
+    Object.values(this.chars).slice(0, 3).forEach((c, i) => {
+      if (c._sitting || c._bathing) return;
+      this.tweens.add({
+        targets: c, x: Phaser.Math.Clamp(x + (i - 1) * 130, 90, W - 90), duration: 550, ease: "Sine.inOut",
+        onComplete: () => { this._charTap(c); this._persistChar(c._char, c); },
+      });
     });
     this._confetti();
   }
 
   _confetti() {
     for (let i = 0; i < 44; i++) {
-      const p = this.add.image(Phaser.Math.Between(0, W), -20, "confetti").setDepth(43)
-        .setScale(Phaser.Math.FloatBetween(0.5, 1)).setAngle(Math.random() * 360);
-      p.setCrop(Phaser.Math.Between(0, 4) * 12, 0, 9, 14);
-      this.tweens.add({ targets: p, y: H + 30, x: p.x + Phaser.Math.Between(-80, 80), angle: p.angle + Phaser.Math.Between(-360, 360),
-        duration: Phaser.Math.Between(1600, 2800), delay: Math.random() * 400, onComplete: () => p.destroy() });
+      const p = this.add.image(Phaser.Math.Between(0, W), -20, "px").setDepth(43)
+        .setTint(Phaser.Math.RND.pick([0xff6b96, 0xffd94e, 0x7fd4ff, 0xa2dd7e, 0xd8c3f0]))
+        .setScale(Phaser.Math.FloatBetween(2, 4)).setAngle(Math.random() * 360);
+      this.tweens.add({
+        targets: p, y: H + 30, x: p.x + Phaser.Math.Between(-80, 80), angle: p.angle + Phaser.Math.Between(-360, 360),
+        duration: Phaser.Math.Between(1600, 2800), delay: Math.random() * 400, onComplete: () => p.destroy(),
+      });
     }
   }
 
@@ -847,18 +1327,17 @@ export class HouseScene extends Phaser.Scene {
         this.snd.pick();
         this.tweens.killTweensOf(obj);
         obj._sitting = false;
+        obj._noShadow = false;
         if (obj.parentContainer) { obj.parentContainer.remove(obj); this.add.existing(obj); }
         obj.setDepth(34);
         this.tweens.add({ targets: obj, angle: obj._char ? 4 : 8, scale: obj._baseScale * 1.06, duration: 120 });
       } else if (obj._drawerArt) {
-        // pull a fresh painting out of the drawer
         const data = { room: this.room, x: p.worldX, y: p.worldY, art: obj._drawerArt };
         Save.get().paintings.push(data);
         obj._spawned = this._hangPainting(data, false);
         obj._spawned.setDepth(75);
         this.snd.pick();
       } else if (obj._drawerAcc) {
-        // fantasma del accesorio que sigue al dedo hasta soltarlo en alguien
         obj._accGhost = this.add.image(p.x, p.y, obj._drawerAcc).setDepth(80);
         obj._accGhost.setScale(Math.min(1.1, 100 / obj._accGhost.height));
         this.snd.pick();
@@ -872,6 +1351,7 @@ export class HouseScene extends Phaser.Scene {
       // un TOQUE para que la tele brille se leía como arrastre de 2px y no
       // disparaba la reacción. Por debajo del umbral = sigue siendo un tap.
       if (!obj._dragMoved && Math.hypot(p.x - obj._downX, p.y - obj._downY) < 10) return;
+      if (!obj._dragMoved && obj._furn) this._closeExtras(obj); // mover el horno/la tina lo cierra
       obj._dragMoved = true;
       if (obj._drawerArt && obj._spawned) { obj._spawned.x = dx; obj._spawned.y = dy; return; }
       if (obj._drawerAcc && obj._accGhost) { obj._accGhost.x = p.x; obj._accGhost.y = p.y; return; }
@@ -884,7 +1364,6 @@ export class HouseScene extends Phaser.Scene {
         const f = obj._furn;
         this.tweens.add({ targets: obj, scale: obj._baseScale, duration: 110 });
         if (!obj._dragMoved) { if (f.tap) this._tapFurniture(obj, f); return; }
-        // asentar: los de pared en la pared, el resto en la banda del suelo
         obj.x = Phaser.Math.Clamp(obj.x, 40, W - 40);
         if (f.wall) obj.y = Phaser.Math.Clamp(obj.y, 150, WALL_BOT - 10);
         else obj.y = Phaser.Math.Clamp(obj.y, FLOOR_Y + 24, H - 6);
@@ -962,9 +1441,10 @@ export class HouseScene extends Phaser.Scene {
   update(_, dms) {
     // los accesorios de disfraz siguen a su personaje cada frame
     for (const c of Object.values(this.chars)) if (c._acc && c._acc.length) this._posAccessories(c);
+    this._syncShadows();
 
     // running tap water
-    if (this._sinkOn && this._waterSpr && Math.random() < 0.5) {
+    if (this._sinkOn && this._waterSpr && this._waterSpr.active && Math.random() < 0.5) {
       const z = this._waterSpr;
       const wx = z.x + z.displayWidth * 0.16, wy = z.y - z.displayHeight * 0.62;
       const d = this.add.image(wx + Phaser.Math.Between(-3, 3), wy, "px").setDepth(15).setTint(0x7fd4ff).setScale(2);
@@ -977,8 +1457,11 @@ export class HouseScene extends Phaser.Scene {
   }
 
   _ambientEvent() {
-    if (this.mode !== "none" || this.dead) return;
-    const kind = this.room === "garden"
+    if (this.mode !== "none") return;
+    const outdoor = ROOMS[this.room].outdoor;
+    const bad = Save.get().weather === "rain" || Save.get().weather === "snow";
+    if (outdoor && bad) return; // con lluvia/nieve los bichos no salen
+    const kind = outdoor
       ? Phaser.Utils.Array.GetRandom(["butterfly", "bird", "apple"])
       : Phaser.Utils.Array.GetRandom(["butterfly", "note", "sparkle"]);
     if (kind === "butterfly" || kind === "bird") {
@@ -988,8 +1471,11 @@ export class HouseScene extends Phaser.Scene {
       if (kind === "bird") this.snd.giggle();
     } else if (kind === "apple") {
       const tree = this.layerRoom.list.find((s) => s._furn?.key === "tree");
-      if (tree) { const a = this.add.image(tree.x + Phaser.Math.Between(-60, 60), tree.y - tree.displayHeight * 0.5, "apple").setDepth(16).setScale(0.5); this.tweens.add({ targets: a, y: CHAR_MAX_Y, duration: 500, ease: "Bounce.out", onComplete: () => this.time.delayedCall(2500, () => a.destroy()) }); }
-    } else if (kind === "note" || kind === "sparkle") {
+      if (tree) {
+        const a = this.add.image(tree.x + Phaser.Math.Between(-60, 60), tree.y - tree.displayHeight * 0.5, "apple").setDepth(16).setScale(0.5);
+        this.tweens.add({ targets: a, y: CHAR_MAX_Y, duration: 500, ease: "Bounce.out", onComplete: () => this.time.delayedCall(2500, () => a.destroy()) });
+      }
+    } else {
       this._sparkle(Phaser.Math.Between(200, W - 200), Phaser.Math.Between(120, 360), 5);
     }
   }

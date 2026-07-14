@@ -10,7 +10,11 @@ export const FLOOR_Y = 520;          // top of the floor
 export const CHAR_MIN_Y = 560;       // characters stand between these
 export const CHAR_MAX_Y = 700;
 
-export const ROOM_ORDER = ["living", "kitchen", "bathroom", "bedroom", "garden"];
+export const ROOM_ORDER = ["living", "kitchen", "bathroom", "bedroom", "garden", "balcony"];
+
+// Hora del día + clima (el jugador los cambia; se ven por ventanas/balcón/patio).
+export const TIMES = ["day", "sunset", "night"];
+export const WEATHERS = ["clear", "rain", "snow", "cloudy"];
 
 // Accesorios de disfraz que se enganchan a un personaje (arrastrar y soltar
 // encima). offX/offY = posición relativa a la cabeza; h = altura de dibujo.
