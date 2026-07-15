@@ -133,7 +133,9 @@
   function genAhead() {
     while (genX < camX + W * 1.7) {
       const w = spawnPattern(genX);
-      const spacing = Math.max(200, 360 - meters() * 0.04) * u;
+      // densidad: antes 360u de base (~60m entre patrones) dejaba la pantalla
+      // vacía los primeros segundos de cada run (hallazgo de auditoría visual)
+      const spacing = Math.max(170, 265 - meters() * 0.04) * u;
       genX += w + spacing * rand(0.85, 1.25);
     }
     while (obstacles.length && obstacles[0].x + 700 * u < camX) obstacles.shift();
@@ -209,7 +211,9 @@
     sparksRun = 0; sparkAcc = 0;
     usedRevive = false; usedX2 = false; shield = 0;
     obstacles = []; particles = []; trail = [];
-    genX = 700 * u;
+    // 700u dejaba el primer obstáculo FUERA de pantalla hasta ~66m: se podía
+    // morir contra techo/suelo sin ver un solo obstáculo. Ahora entra a ~2s.
+    genX = 320 * u;
     slowmo = 0; shake = 0; flashA = 0; dieT = 0;
     isNewBest = false; bestBanner = 0;
     genAhead();
@@ -700,14 +704,17 @@
   /* ================= BOOT + LOOP ================= */
   (async function boot() {
     PD.SDK.loadingStart();
-    await PD.SDK.init();
-    PD.SDK.loadingStop();
+    // init del SDK en paralelo: bloqueaba el arranque (pantalla negra) fuera
+    // de CrazyGames — hallazgo de la auditoría visual de la cartera
+    const sdkReady = PD.SDK.init();
     $('menuBest').textContent = fmtNum(save.best);
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     renderSkins(); updateSparksUI();
     resetRun(); // pre-gen world visible behind menu
     state = ST.MENU;
     requestAnimationFrame(loop);
+    await sdkReady;
+    PD.SDK.loadingStop();
   })();
 
   function loop(now) {
