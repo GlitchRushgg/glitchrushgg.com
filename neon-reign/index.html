@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0c0a20" />
+  <title>NeonReign</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 18 5.5 8l4 4L12 5l2.5 7 4-4L20 18z' fill='%23ffd166'/%3E%3Crect x='4' y='18' width='16' height='2.6' rx='1.3' fill='%234de0ff'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◉ <b id="coins">0</b><em id="crownTag"></em></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runPct">0%</div>
+    <div class="run-sub">◉ <b id="runCoins">+0</b> · <span id="runKills">0 takedowns</span></div>
+    <div><span id="streakBadge" class="hidden">×2 STREAK</span></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (shop / court / reign) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnPlay" class="play-btn">▶ CLAIM YOUR TURF<small>drag to steer · close loops to conquer</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ GOLDEN CROWN<small>watch ad · 60s ×2 + armor</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0%</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="shop">SHOP</button>
+      <button class="stab" data-tab="court">THE COURT</button>
+      <button class="stab" data-tab="reign">REIGN</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== ROUND SUMMARY ===== -->
+  <div class="overlay hidden" id="sumModal">
+    <div class="modal">
+      <div class="m-label">THE SPOILS</div>
+      <div id="sumHot" class="tag-hot hidden">FIRST ROUND OF THE DAY ×3</div>
+      <div id="sumConq" class="tag-conq hidden">👑 TOTAL CONQUEST ×3</div>
+      <div id="sumHaul" class="m-big">0</div>
+      <div class="m-sub">Peak territory: <b id="sumPct">0%</b></div>
+      <div id="sumList" class="sum-list"></div>
+      <button id="btnDouble" class="m-btn ad">▶ DOUBLE THE SPOILS<small>watch ad</small></button>
+      <button id="btnCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== TRIBUTE (welcome back) ===== -->
+  <div class="overlay hidden" id="tribModal">
+    <div class="modal">
+      <div class="m-ico">👑</div>
+      <div class="m-label">THE REALM PAID TRIBUTE WHILE YOU WERE AWAY</div>
+      <p class="m-text">Gone <b id="tribTime">0m</b> — your subjects kept collecting.</p>
+      <div id="tribAmount" class="m-big">0</div>
+      <button id="tribDouble" class="m-btn ad">▶ DOUBLE IT<small>watch ad</small></button>
+      <button id="tribCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== SECOND CHANCE ===== -->
+  <div class="overlay hidden" id="scModal">
+    <div class="modal">
+      <div class="m-ico">⚔️</div>
+      <div class="m-label" id="scKiller">YOUR TRAIL WAS CUT…</div>
+      <p class="m-text">Take a <b>Second Chance</b> and keep your kingdom?<br><i>Once per round.</i></p>
+      <button id="scTake" class="m-btn ad">▶ SECOND CHANCE<small>watch ad · keep your land</small></button>
+      <button id="scDecline" class="m-btn">Surrender</button>
+    </div>
+  </div>
+
+  <!-- ===== A NEW REIGN (prestige confirm) ===== -->
+  <div class="overlay hidden" id="relModal">
+    <div class="modal">
+      <div class="m-ico">👑</div>
+      <div class="m-label">A NEW REIGN</div>
+      <p class="m-text">Abdicate. Coins &amp; upgrades reset.<br>Crowns and your Court are <b>forever</b>.</p>
+      <div id="relGain" class="m-big crown">+0 👑</div>
+      <button id="relGo" class="m-btn go">ABDICATE</button>
+      <button id="relCancel" class="m-btn">Not yet</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — come take my turf! 👑</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

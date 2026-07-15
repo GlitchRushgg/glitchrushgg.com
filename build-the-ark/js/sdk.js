@@ -14,9 +14,12 @@ Ark.SDK = (function () {
     try {
       if (window.CrazyGames && window.CrazyGames.SDK) {
         sdk = window.CrazyGames.SDK;
-        await sdk.init();
-        ready = true;
-        console.log('[Ark] CrazyGames SDK ready. Env:', sdk.environment);
+        // nunca dejar que un SDK colgado bloquee el juego (p.ej. file://)
+        ready = await Promise.race([
+          sdk.init().then(() => true),
+          new Promise(r => setTimeout(() => r(false), 3000)),
+        ]);
+        if (ready) console.log('[Ark] CrazyGames SDK ready. Env:', sdk.environment);
       } else {
         console.log('[Ark] CrazyGames SDK not present — local fallback mode.');
       }

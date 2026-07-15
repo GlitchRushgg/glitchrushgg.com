@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#141126" />
+  <title>Stormspire — Idle Storm Defense</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 5 14h5l-1 8 8-12h-5z' fill='%237fd4ff'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP CORNER (always) ===== -->
+  <div class="corner">
+    <button id="btnShare" class="mini-btn">⤴</button>
+    <button id="btnSound" class="mini-btn">🔊</button>
+  </div>
+
+  <!-- ===== RUN UI ===== -->
+  <div id="runUI" class="hidden">
+    <div class="run-top">
+      <div id="hudWave" class="wave-tag">WAVE 1</div>
+      <div class="cash-tag">⚡ <b id="hudCash">0</b></div>
+    </div>
+    <div id="arcBar"><div id="arcFill"></div><span>CONDUCTOR'S ARC — hold anywhere</span></div>
+    <button id="btnOver" class="over-btn">▶ OVERCHARGE<small>watch ad · 5min ×2 dmg</small></button>
+    <div class="runsheet">
+      <nav class="rtabs">
+        <button class="rtab active" data-tab="0">ATTACK</button>
+        <button class="rtab" data-tab="1">DEFENSE</button>
+        <button class="rtab" data-tab="2">STORM</button>
+      </nav>
+      <div id="runShop"></div>
+    </div>
+  </div>
+
+  <!-- ===== BASE SHEET (between runs) ===== -->
+  <div id="baseSheet" class="sheet">
+    <div class="base-head">
+      <span>⬡ <b id="baseCoins">0</b></span>
+      <span>BEST WAVE <b id="baseBest">0</b></span>
+      <span>◈ <b id="baseCores">0</b></span>
+    </div>
+    <button id="btnLaunch" class="launch-btn">⚡ LAUNCH DEFENSE<small>the armada approaches</small></button>
+    <nav class="btabs">
+      <button class="btab active" data-tab="ws">WORKSHOP</button>
+      <button class="btab" data-tab="lab">LAB</button>
+      <button class="btab" data-tab="tempest">TEMPEST</button>
+    </nav>
+    <div id="baseBody"></div>
+  </div>
+
+  <!-- ===== DRAFT ===== -->
+  <div class="overlay hidden" id="draftModal">
+    <div class="draft-wrap">
+      <div class="m-label">THE STORM OFFERS…</div>
+      <div id="draftCards"></div>
+    </div>
+  </div>
+
+  <!-- ===== RESULTS ===== -->
+  <div class="overlay hidden" id="resModal">
+    <div class="modal">
+      <div id="resBest" class="new-best hidden">★ NEW BEST ★</div>
+      <div class="m-label">STORM SURVIVED</div>
+      <div class="m-big">WAVE <span id="resWave">0</span></div>
+      <div class="m-sub">Cash earned <b id="resCash">0</b></div>
+      <div class="coin-line">⬡ <b id="resCoins">0</b> coins banked</div>
+      <button id="btnSalvage" class="m-btn ad">▶ STORM SALVAGE<small>watch ad · ×2 coins</small></button>
+      <button id="btnResCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== REVIVE ===== -->
+  <div class="overlay hidden" id="revModal">
+    <div class="modal">
+      <div class="m-ico">⚡</div>
+      <div class="m-label">THE SPIRE FALLS…</div>
+      <p class="m-text">Restore 50% HP and blast the raiders back?<br><i>Once per run.</i></p>
+      <button id="revAd" class="m-btn ad">▶ REVIVE<small>watch ad</small></button>
+      <button id="revCoins" class="m-btn">⬡ 300 COINS<small id="revAlt">or pay 300 coins</small></button>
+      <button id="revDecline" class="m-btn">Let it fall</button>
+    </div>
+  </div>
+
+  <!-- ===== OFFLINE HARVEST ===== -->
+  <div class="overlay hidden" id="offModal">
+    <div class="modal">
+      <div class="m-ico">🌩</div>
+      <div class="m-label">STORM HARVEST</div>
+      <p class="m-text">The storm raged for <b id="offTime">0m</b> while you were away.</p>
+      <div class="m-big gold">⬡ <span id="offAmount">0</span></div>
+      <button id="offDouble" class="m-btn ad">▶ DOUBLE IT<small>watch ad</small></button>
+      <button id="offCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== PRESTIGE CONFIRM ===== -->
+  <div class="overlay hidden" id="preModal">
+    <div class="modal">
+      <div class="m-ico">◈</div>
+      <div class="m-label">EYE OF THE STORM</div>
+      <p class="m-text">Coins & Workshop reset (10% refund).<br>Tempest Cores are <b>forever</b>: +5% damage & coins each.</p>
+      <div id="preGain" class="m-big bless">+0 ◈</div>
+      <button id="preGo" class="m-btn go">ENTER THE EYE</button>
+      <button id="preCancel" class="m-btn">Not yet</button>
+    </div>
+  </div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

@@ -12,8 +12,12 @@ MD.SDK = (function () {
     try {
       if (window.CrazyGames && window.CrazyGames.SDK) {
         sdk = window.CrazyGames.SDK;
-        await sdk.init();
-        avail = sdk.environment !== 'disabled';
+        // nunca dejar que un SDK colgado bloquee el juego (p.ej. file://)
+        const inited = await Promise.race([
+          sdk.init().then(() => true),
+          new Promise(r => setTimeout(() => r(false), 3000)),
+        ]);
+        avail = inited && !!sdk.environment && sdk.environment !== 'disabled';
       }
     } catch (e) { avail = false; }
   }

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#04070a" />
+  <title>HyperSlope</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 5l18 8-18 8z' fill='%2304070a' stroke='%235dff8a' stroke-width='1.6'/%3E%3Ccircle cx='9' cy='11' r='3.4' fill='%235dff8a'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◆ <b id="shards">0</b></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runKmh">0<small> km/h</small></div>
+    <div id="runDist"><b>0</b>m</div>
+    <div id="runShards">◆ <b>+0</b></div>
+    <div><span id="grazeBadge" class="hidden">×2 GRAZE</span></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (modes / balls / feats) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnPlay" class="play-btn">▶ DROP THE BALL<small>drag or ◀ ▶ to steer · don't stop</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ SHARD RUSH<small>watch ad · ×2 shards for 60s</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0m</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="modes">MODES</button>
+      <button class="stab" data-tab="balls">BALLS</button>
+      <button class="stab" data-tab="feats">FEATS</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== DEATH ===== -->
+  <div class="overlay hidden" id="deathModal">
+    <div class="modal">
+      <div class="m-label" id="dLabel">WIPED OUT AT</div>
+      <div class="d-dist" id="dDist">312m</div>
+      <div class="d-sub">top speed <b id="dKmh">184 km/h</b> · best <b id="dBest">0m</b></div>
+      <div class="d-shards" id="dShards">◆ +0 banked</div>
+      <button id="dRetry" class="m-btn go big">↻ ONE MORE RUN<small>tap anywhere</small></button>
+      <button id="dRevive" class="m-btn ad hidden">▶ KEEP ROLLING<small>watch ad · revive once per run</small></button>
+      <div class="m-row">
+        <button id="dDouble" class="m-btn ad">▶ ×2<small>shards</small></button>
+        <button id="dShare" class="m-btn">⤴ FLEX</button>
+        <button id="dMenu" class="m-btn">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — send it to the group chat 🎢</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

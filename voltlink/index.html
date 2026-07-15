@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#070b14" />
+  <title>Voltlink</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13 2 4.5 14H11l-1 8 8.5-12H12z' fill='%23ffd93b' stroke='%23ffd93b' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-score">
+        <div id="score">0</div>
+        <div class="hud-sub"><span id="modeTag">ENDLESS</span> · BEST <span id="best">0</span></div>
+      </div>
+    </div>
+    <div id="streakBadge" class="hidden">🔥 STREAK 2</div>
+    <div id="surgeBar"><div id="surgeFill"></div><span id="surgeLabel">SURGE</span></div>
+    <div class="hud-bottom">
+      <button id="btnHammer" class="tool-btn">🔨 <b>×1</b><small>break a node</small></button>
+      <button id="btnUndo" class="tool-btn">↩ <b>×2</b><small>undo · ad</small></button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== TITLE ===== -->
+  <div id="title" class="overlay">
+    <h1 class="logo">VOLT<span>LINK</span></h1>
+    <p class="tagline">Drag chains of equal-or-double numbers</p>
+    <p class="tagline accent">6+ links forge a ⚡ VOLT ORB · fill the SURGE</p>
+    <div class="menu-best">BEST <b id="titleBest">0</b></div>
+    <div class="title-btns">
+      <button id="btnEndless" class="big-btn go">ENDLESS<small>classic score chase</small></button>
+      <button id="btnDaily" class="big-btn daily">⚡ DAILY CIRCUIT<small>CIRCUIT #1 · not played</small></button>
+    </div>
+    <button id="btnShare" class="mini-btn">SHARE</button>
+  </div>
+
+  <!-- ===== GAME OVER ===== -->
+  <div id="over" class="overlay hidden">
+    <div class="panel over-panel">
+      <div id="overMode" class="over-mode">ENDLESS</div>
+      <div id="overNewBest" class="new-best hidden">★ NEW BEST ★</div>
+      <div class="over-label">SCORE</div>
+      <div id="overScore" class="over-score">0</div>
+      <div class="over-stats">
+        <span>BEST <b id="overBest">0</b></span>
+        <span>TOP TILE <b id="overTile">—</b></span>
+      </div>
+      <button id="btnRevive" class="big-btn ad">▶ RECHARGE<small>watch ad · clears static + lowest tier</small></button>
+      <button id="btnRetry" class="big-btn go">PLAY AGAIN</button>
+      <button id="btnHome" class="mini-btn wide">MENU</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — challenge your friends!</div>
+
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

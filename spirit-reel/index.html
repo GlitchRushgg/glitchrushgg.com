@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#101d22" />
+  <title>Spirit Reel</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3c4 0 6.5 2.8 6.5 6.5 0 3-1.5 5-1.5 7.5h-10C7 14.5 5.5 12.5 5.5 9.5 5.5 5.8 8 3 12 3z' fill='%234dd6c8' opacity='.9'/%3E%3Cellipse cx='9.5' cy='10' rx='1.2' ry='1.8' fill='%23101d22'/%3E%3Cellipse cx='14.5' cy='10' rx='1.2' ry='1.8' fill='%23101d22'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◉ <b id="coins">0</b><em id="blessTag"></em></div>
+    <div id="wantedChip" class="chip wanted hidden"></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runDepth">0m</div>
+    <div class="run-sub"><span class="cage">🏮 <b id="runCage">0/3</b></span> · <span id="runValue">+0</span></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (shop / museum / well) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnDive" class="dive-btn">⬇ LOWER THE LANTERN<small>tap the well · hold to steer</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ GOLDEN LANTERN<small>watch ad · 60s ×2 + magnet</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0m</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="shop">SHOP</button>
+      <button class="stab" data-tab="museum">MUSEUM</button>
+      <button class="stab" data-tab="well">THE WELL</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== RUN SUMMARY ===== -->
+  <div class="overlay hidden" id="sumModal">
+    <div class="modal">
+      <div class="m-label">HAUL SOLD</div>
+      <div id="sumX3" class="x3-tag hidden">FIRST DIVE OF THE DAY ×3</div>
+      <div id="sumHaul" class="m-big">0</div>
+      <div class="m-sub">Deepest: <b id="sumDepth">0m</b></div>
+      <div id="sumList" class="sum-list"></div>
+      <button id="btnDouble" class="m-btn ad">▶ DOUBLE HAUL<small>watch ad</small></button>
+      <button id="btnCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== SÉANCE (welcome back) ===== -->
+  <div class="overlay hidden" id="seaModal">
+    <div class="modal">
+      <div class="m-ico">🕯</div>
+      <div class="m-label">THE SÉANCE HELD WHILE YOU WERE AWAY</div>
+      <p class="m-text">Gone <b id="seaTime">0m</b> — the spirits kept coming.</p>
+      <div id="seaAmount" class="m-big">0</div>
+      <button id="seaDouble" class="m-btn ad">▶ DOUBLE IT<small>watch ad</small></button>
+      <button id="seaCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== SECOND WIND ===== -->
+  <div class="overlay hidden" id="swModal">
+    <div class="modal">
+      <div class="m-ico">💨</div>
+      <div class="m-label">YOU TOUCHED A SPIRIT…</div>
+      <p class="m-text">Take a <b>Second Wind</b> and keep descending?<br><i>Once per session.</i></p>
+      <button id="swTake" class="m-btn ad">▶ SECOND WIND<small>watch ad · keep going</small></button>
+      <button id="swDecline" class="m-btn">Reel up</button>
+    </div>
+  </div>
+
+  <!-- ===== GREAT RELEASE CONFIRM ===== -->
+  <div class="overlay hidden" id="relModal">
+    <div class="modal">
+      <div class="m-ico">☩</div>
+      <div class="m-label">THE GREAT RELEASE</div>
+      <p class="m-text">Every soul returns to the well. Coins & upgrades reset.<br>Blessings and your Museum are <b>forever</b>.</p>
+      <div id="relGain" class="m-big bless">+0 ☩</div>
+      <button id="relGo" class="m-btn go">RELEASE THEM</button>
+      <button id="relCancel" class="m-btn">Not yet</button>
+    </div>
+  </div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

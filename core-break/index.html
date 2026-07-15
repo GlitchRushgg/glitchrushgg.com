@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#12100c" />
+  <title>CoreBreak: Idle Ball Mining</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='9' r='6' fill='%23ffd24a'/%3E%3Cpath d='M4 19h16M6 22h12' stroke='%238a5f36' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ===== GAME VIEW ===== -->
+    <div id="stage">
+      <canvas id="game"></canvas>
+
+      <!-- HUD overlays -->
+      <div class="hud-top">
+        <div class="chip coins">🪙 <b id="coins">0</b><small id="cps">0/s</small></div>
+        <div class="depth-box">
+          <div id="depth">0m</div>
+          <div id="bestDepth">BEST 0m</div>
+        </div>
+        <div class="chip frags">◆ <b id="frags">0</b></div>
+      </div>
+
+      <button id="btnBoost" class="boost-btn">
+        <span>▶ 2× COINS</span><small>watch ad · 4 min</small>
+        <em id="boostPips">○○○</em>
+      </button>
+      <button id="btnSkipBoss" class="skip-btn hidden">▶ BLAST THE PLATE<small>watch ad</small></button>
+
+      <div class="hud-corner">
+        <button id="btnShare" class="mini-btn">⤴</button>
+        <button id="btnSound" class="mini-btn">🔊</button>
+      </div>
+    </div>
+
+    <!-- ===== TABS + PANEL ===== -->
+    <nav id="tabs">
+      <button class="tab active" data-tab="balls">⚪ Balls</button>
+      <button class="tab" data-tab="up">▲ Upgrades</button>
+      <button class="tab" data-tab="core">◆ Core</button>
+    </nav>
+    <section id="panel"><div id="panelBody"></div></section>
+  </div>
+
+  <!-- ===== MODALS ===== -->
+  <div class="overlay hidden" id="offlineModal">
+    <div class="modal">
+      <div class="m-ico">⛏</div>
+      <h2>Your balls kept digging…</h2>
+      <p>You were away <b id="offTime">0m</b></p>
+      <div class="m-coins">🪙 <b id="offCoins">0</b></div>
+      <button class="m-btn ad" id="offDouble">▶ DOUBLE IT<small>watch ad</small></button>
+      <button class="m-btn go" id="offClaim">COLLECT</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="prestigeModal">
+    <div class="modal">
+      <div class="m-ico">◆</div>
+      <h2>Shatter the Core?</h2>
+      <p>Depth, coins and balls reset.<br>Fragments are <b>forever</b>: +10% damage & coins each.</p>
+      <div class="m-coins frag" id="prestigeGain">+0 ◆</div>
+      <button class="m-btn go" id="prestigeGo">SHATTER IT</button>
+      <button class="m-btn" id="prestigeCancel">Not yet</button>
+    </div>
+  </div>
+
+  <script src="js/format.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

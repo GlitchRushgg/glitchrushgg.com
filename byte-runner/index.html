@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0c0518" />
+  <title>ByteRunner</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c3.5 0 6 2.6 6 6v3l-2 8h-8l-2-8V8c0-3.4 2.5-6 6-6z' fill='%23ff2d95'/%3E%3Crect x='8.5' y='8' width='7' height='2.8' rx='1.4' fill='%23d4ff3c'/%3E%3Crect x='9' y='19' width='2.4' height='4' rx='1.2' fill='%23ff2d95'/%3E%3Crect x='12.6' y='19' width='2.4' height='4' rx='1.2' fill='%23ff2d95'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">⬡ <b id="bits">0</b><em id="multTag">×1</em></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runScore">0</div>
+    <div id="runSub">⬡ <b>+0</b> · <i id="runMult">×1</i> · <span id="runDist">0m</span></div>
+    <div id="heatWrap" class="hidden"><div id="heatBar"></div></div>
+    <div><span id="powerTag" class="hidden">🧲 MAGNET</span></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (modes / missions / runners) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnPlay" class="play-btn">▶ THE GRID<small>swipe to dodge · up = jump · down = slide</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ OVERCLOCK<small>watch ad · ×2 bits for 60s</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="modes">MODES</button>
+      <button class="stab" data-tab="missions">MISSIONS</button>
+      <button class="stab" data-tab="runners">RUNNERS</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== BUSTED ===== -->
+  <div class="overlay hidden" id="deathModal">
+    <div class="modal">
+      <div class="m-label" id="dLabel">BUSTED</div>
+      <div class="d-score" id="dScore">0</div>
+      <div class="d-sub"><b id="dDist">0m</b> · ×<b id="dMult">1</b> · best <b id="dBest">0</b></div>
+      <div class="d-bits" id="dBits">⬡ +0 banked</div>
+      <div class="d-mission hidden" id="dMission">🎯 MISSION COMPLETE</div>
+      <button id="dRetry" class="m-btn go big">↻ RUN IT BACK<small>tap anywhere</small></button>
+      <button id="dRevive" class="m-btn ad hidden">▶ REBOOT<small>watch ad · keep the run alive · once</small></button>
+      <div class="m-row">
+        <button id="dDouble" class="m-btn ad">▶ ×2<small>bits</small></button>
+        <button id="dShare" class="m-btn">⤴ FLEX</button>
+        <button id="dMenu" class="m-btn">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — send it to the group chat 🏃</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

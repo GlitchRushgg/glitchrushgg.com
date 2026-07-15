@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#070812" />
+  <title>GlitchDash</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' rx='3' fill='%234de0ff'/%3E%3Crect x='7.5' y='9' width='3' height='4' rx='1' fill='%23070812'/%3E%3Crect x='13.5' y='9' width='3' height='4' rx='1' fill='%23070812'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◆ <b id="shards">0</b><em id="crownTag"></em></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="progWrap"><div id="progBar"></div></div>
+    <div id="runPct">0%</div>
+    <div id="runShards">◆ <b>+0</b></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (sectors / skins / feats) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnPlay" class="play-btn">▶ TUTORIAL IS A LIE<small>one tap to jump · hold to keep jumping</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ SHARD RUSH<small>watch ad · ×2 shards for 60s</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0%</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="sectors">SECTORS</button>
+      <button class="stab" data-tab="skins">SKINS</button>
+      <button class="stab" data-tab="feats">FEATS</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== DEATH ===== -->
+  <div class="overlay hidden" id="deathModal">
+    <div class="modal">
+      <div class="m-label" id="dLabel">CRASHED AT</div>
+      <div class="d-pct" id="dPct">47%</div>
+      <div class="d-att">ATTEMPT <b id="dAtt">1</b> · best <b id="dBest">0%</b></div>
+      <div class="d-shards" id="dShards">◆ +0 banked</div>
+      <button id="dRetry" class="m-btn go big">↻ ONE MORE TRY<small>tap anywhere</small></button>
+      <button id="dRevive" class="m-btn ad hidden">▶ CONTINUE FROM <span id="dCp">50%</span><small>watch ad · once per run</small></button>
+      <div class="m-row">
+        <button id="dDouble" class="m-btn ad">▶ ×2<small>shards</small></button>
+        <button id="dMenu" class="m-btn">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CLEAR ===== -->
+  <div class="overlay hidden" id="clearModal">
+    <div class="modal">
+      <div class="m-label">SECTOR CLEAR</div>
+      <div class="d-pct clear">100%</div>
+      <div class="m-sub" id="cName">TUTORIAL IS A LIE</div>
+      <div class="d-att">in <b id="cAtt">1</b> attempts</div>
+      <div class="d-shards" id="cShards">◆ +250</div>
+      <button id="cShare" class="m-btn go big">⤴ FLEX IT</button>
+      <button id="cDouble" class="m-btn ad">▶ DOUBLE THE BONUS<small>watch ad</small></button>
+      <button id="cMenu" class="m-btn">MENU</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — send it to the group chat 💀</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

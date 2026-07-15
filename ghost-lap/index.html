@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0d1f" />
+  <title>GhostLap</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3c4.4 0 7 3 7 7v8l-2.4-2-2.3 2-2.3-2-2.3 2-2.3-2L5 18v-8c0-4 2.6-7 7-7z' fill='%234de0ff' opacity='.95'/%3E%3Cellipse cx='9.4' cy='10' rx='1.3' ry='1.9' fill='%230b0d1f'/%3E%3Cellipse cx='14.6' cy='10' rx='1.3' ry='1.9' fill='%230b0d1f'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◉ <b id="coins">0</b><em id="starTag"></em></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runDist">0m</div>
+    <div class="run-sub">◉ <b id="runCoins">+0</b></div>
+    <div><span id="ghostChip" class="hidden"></span></div>
+    <div><span id="sparkBadge" class="hidden">×2 DRIFT RUSH</span></div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (shop / garage / legend) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnDrive" class="drive-btn">▶ IGNITION<small>hold to steer right · release to steer left</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ GOLDEN ENGINE<small>watch ad · 60s ×2 + magnet</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0m</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="shop">SHOP</button>
+      <button class="stab" data-tab="garage">GARAGE</button>
+      <button class="stab" data-tab="legend">LEGEND</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== RUN SUMMARY ===== -->
+  <div class="overlay hidden" id="sumModal">
+    <div class="modal">
+      <div class="m-label">RUN BANKED</div>
+      <div id="sumHot" class="tag-hot hidden">FIRST RUN OF THE DAY ×3</div>
+      <div id="sumGhost" class="tag-ghost hidden">👻 GHOST BEATEN +40%</div>
+      <div id="sumHaul" class="m-big">0</div>
+      <div class="m-sub">Distance: <b id="sumDist">0m</b></div>
+      <div id="sumList" class="sum-list"></div>
+      <button id="btnDouble" class="m-btn ad">▶ DOUBLE THE HAUL<small>watch ad</small></button>
+      <button id="btnCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== GHOST FUEL (welcome back) ===== -->
+  <div class="overlay hidden" id="fuelModal">
+    <div class="modal">
+      <div class="m-ico">👻</div>
+      <div class="m-label">THE GHOST DROVE WHILE YOU WERE AWAY</div>
+      <p class="m-text">Gone <b id="fuelTime">0m</b> — the meter kept running.</p>
+      <div id="fuelAmount" class="m-big">0</div>
+      <button id="fuelDouble" class="m-btn ad">▶ DOUBLE IT<small>watch ad</small></button>
+      <button id="fuelCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== SECOND WIND ===== -->
+  <div class="overlay hidden" id="swModal">
+    <div class="modal">
+      <div class="m-ico">💨</div>
+      <div class="m-label">YOU WENT OVER THE EDGE…</div>
+      <p class="m-text">Take a <b>Second Wind</b> and keep driving?<br><i>Once per run.</i></p>
+      <button id="swTake" class="m-btn ad">▶ SECOND WIND<small>watch ad · keep going</small></button>
+      <button id="swDecline" class="m-btn">Bank it</button>
+    </div>
+  </div>
+
+  <!-- ===== THE LEGEND RUN (prestige confirm) ===== -->
+  <div class="overlay hidden" id="relModal">
+    <div class="modal">
+      <div class="m-ico">⭐</div>
+      <div class="m-label">THE LEGEND RUN</div>
+      <p class="m-text">Retire this highway. Coins &amp; upgrades reset — a <b>new road</b> is drawn.<br>Legend Stars and your Garage are <b>forever</b>.</p>
+      <div id="relGain" class="m-big star">+0 ⭐</div>
+      <button id="relGo" class="m-btn go">BECOME LEGEND</button>
+      <button id="relCancel" class="m-btn">Not yet</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — race my ghost! 👻</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#08110f" />
+  <title>PocketRush</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='%233fe0d0'/%3E%3Ccircle cx='9' cy='9' r='2.4' fill='%23ffffff' opacity='.9'/%3E%3C/svg%3E" />
+  <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== TOP HUD (always) ===== -->
+  <div id="topHud">
+    <div class="chip coins">◉ <b id="coins">0</b><em id="repTag"></em></div>
+    <div class="corner">
+      <button id="btnShare" class="mini-btn">⤴</button>
+      <button id="btnSound" class="mini-btn">🔊</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN HUD ===== -->
+  <div id="runHud" class="hidden">
+    <div id="runRack">RACK <b id="rackNum">1</b></div>
+    <div class="shots-row" id="shotPips"></div>
+    <div id="comboBadge" class="hidden">×2 RUSH</div>
+  </div>
+
+  <!-- ===== SURFACE SHEET (shop / rack / house) ===== -->
+  <div id="sheet" class="sheet">
+    <button id="btnBreak" class="break-btn">▶ BREAK<small>drag from the cue ball · pull &amp; release</small></button>
+    <div class="sheet-inline">
+      <button id="btnGolden" class="gold-btn">▶ GOLDEN CUE<small>watch ad · 60s ×2 + magnet</small></button>
+      <div class="best-chip">BEST <b id="surfBest">0</b></div>
+    </div>
+    <nav class="stabs">
+      <button class="stab active" data-tab="shop">SHOP</button>
+      <button class="stab" data-tab="rack">THE RACK</button>
+      <button class="stab" data-tab="house">HOUSE</button>
+    </nav>
+    <div id="sheetBody"></div>
+  </div>
+
+  <!-- ===== RUN SUMMARY ===== -->
+  <div class="overlay hidden" id="sumModal">
+    <div class="modal">
+      <div class="m-label">BANK THE BREAK</div>
+      <div id="sumHot" class="tag-hot hidden">FIRST BREAK OF THE DAY ×3</div>
+      <div id="sumHaul" class="m-big">0</div>
+      <div class="m-sub">Reached <b id="sumRack">rack 1</b></div>
+      <div id="sumList" class="sum-list"></div>
+      <button id="btnDouble" class="m-btn ad">▶ DOUBLE THE BREAK<small>watch ad</small></button>
+      <button id="btnCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== THE HUSTLE (welcome back) ===== -->
+  <div class="overlay hidden" id="hustleModal">
+    <div class="modal">
+      <div class="m-ico">🎱</div>
+      <div class="m-label">YOU RAN THE TABLE WHILE AWAY</div>
+      <p class="m-text">Gone <b id="hustleTime">0m</b> — the hustle kept paying.</p>
+      <div id="hustleAmount" class="m-big">0</div>
+      <button id="hustleDouble" class="m-btn ad">▶ DOUBLE IT<small>watch ad</small></button>
+      <button id="hustleCollect" class="m-btn go">COLLECT</button>
+    </div>
+  </div>
+
+  <!-- ===== SECOND WIND ===== -->
+  <div class="overlay hidden" id="swModal">
+    <div class="modal">
+      <div class="m-ico">🎯</div>
+      <div class="m-label">OUT OF SHOTS…</div>
+      <p class="m-text">Take a <b>Second Wind</b> and keep the run alive?<br><i>Once per run.</i></p>
+      <button id="swTake" class="m-btn ad">▶ SECOND WIND<small>watch ad · +3 shots</small></button>
+      <button id="swDecline" class="m-btn">Bank it</button>
+    </div>
+  </div>
+
+  <!-- ===== RUN THE TABLE (prestige confirm) ===== -->
+  <div class="overlay hidden" id="relModal">
+    <div class="modal">
+      <div class="m-ico">⭐</div>
+      <div class="m-label">RUN THE TABLE</div>
+      <p class="m-text">Rack up and start fresh. Coins &amp; upgrades reset.<br>Reputation and your Rack are <b>forever</b>.</p>
+      <div id="relGain" class="m-big rep">+0 ⭐</div>
+      <button id="relGo" class="m-btn go">RACK 'EM UP</button>
+      <button id="relCancel" class="m-btn">Not yet</button>
+    </div>
+  </div>
+
+  <div id="shareToast">Copied — go break some racks! 🎱</div>
+
+  <script src="js/format.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
