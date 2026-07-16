@@ -36,6 +36,7 @@ export class BootScene extends Phaser.Scene {
     Object.values(ROOMS).forEach((r) => r.furniture.forEach((f) => keys.add(f.key)));
     keys.add("fridge-open");
     keys.add("drawers-open");
+    keys.add("fireplace-fire");
     keys.delete("rug"); // procedural (_procedural)
     for (const k of keys) this.load.image(k, `assets/art/${k}.png`);
     // utensilios de las gavetas

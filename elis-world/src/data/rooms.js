@@ -33,6 +33,8 @@ export const ROOMS = {
       { key: "dollhouse", x: 96, y: 700, h: 215, tap: "dollhouse" },
       { key: "ball", x: 255, y: 706, h: 84, tap: "ball", movable: true },
       { key: "teddy", x: 452, y: 704, h: 112, tap: "wiggle", movable: true },
+      // CHIMENEA (encargo fundadora, de sus referencias): tap = se enciende
+      { key: "fireplace", x: 870, y: 652, h: 215, tap: "fire" },
     ],
   },
   kitchen: {
@@ -103,6 +105,9 @@ export const ROOMS = {
       // del jardín"): tócalo y sirve un cucurucho. Va DELANTE del manzano
       // (y alta = se dibuja después): a 745 lo tragaba el trampolín.
       { key: "icecreamcart", x: 205, y: 700, h: 200, tap: "icecream" },
+      // INVERNADERO (encargo fundadora): tap = cultiva algo rico; asoma
+      // detrás del trampolín/flores (y baja = se dibuja antes)
+      { key: "greenhouse", x: 985, y: 648, h: 250, tap: "grow" },
     ],
   },
   // BALCÓN (encargo fundadora): terraza con vista a la ciudad; la hora y el

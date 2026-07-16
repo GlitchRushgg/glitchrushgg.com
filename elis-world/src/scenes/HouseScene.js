@@ -114,6 +114,7 @@ export class HouseScene extends Phaser.Scene {
     this._sinkOn = false;
     this._tubOn = false;
     this._hideWater(); // el chorro y su timer viven fuera de las capas
+    this._fireOff();   // ídem las ascuas/resplandor de la chimenea
     this._winSky = null; this._winOrb = null; this._winFrame = null; this._winRect = null;
     this._cityImg = null; this._gardenSky = null; this._deckPaint = null;
   }
@@ -470,6 +471,38 @@ export class HouseScene extends Phaser.Scene {
         }
         break;
       }
+      case "fire": {
+        // CHIMENEA (encargo fundadora): tap = se enciende de verdad — textura
+        // con llamas + resplandor pulsante + ascuas subiendo
+        this._fireOn = !this._fireOn;
+        spr.setTexture(this._fireOn ? "fireplace-fire" : "fireplace");
+        spr.setScale(f.h / spr.height);
+        this.snd.ui();
+        if (this._fireOn) {
+          this._fireGlow = this.add.ellipse(spr.x, spr.y - spr.displayHeight * 0.32, spr.displayWidth * 0.95, spr.displayHeight * 0.75, 0xffa550, 0.16).setDepth(30);
+          this.tweens.add({ targets: this._fireGlow, alpha: 0.28, duration: 620, yoyo: true, repeat: -1, ease: "Sine.inOut" });
+          this._fireT = this.time.addEvent({
+            delay: 850, loop: true, callback: () => {
+              if (!spr.active) return;
+              const e = this.add.circle(spr.x + Phaser.Math.Between(-16, 16), spr.y - spr.displayHeight * 0.3, Phaser.Math.Between(2, 4), 0xffc36b, 0.9).setDepth(31);
+              this.tweens.add({ targets: e, y: e.y - Phaser.Math.Between(28, 54), alpha: 0, duration: 800, onComplete: () => e.destroy() });
+            },
+          });
+        } else this._fireOff();
+        break;
+      }
+      case "grow": {
+        // INVERNADERO: cultiva algo rico que cae botando al césped
+        this.snd.chime();
+        this.tweens.add({ targets: spr, angle: 2, duration: 100, yoyo: true, repeat: 2, onComplete: () => spr.setAngle(0) });
+        if (this.items.length < 12) {
+          const kind = Phaser.Math.RND.pick(["strawberry", "carrot", "apple", "mango"]);
+          const it = this._spawnItem(kind, spr.x + Phaser.Math.Between(-30, 30), spr.y - spr.displayHeight * 0.55);
+          this.tweens.add({ targets: it, y: CHAR_MAX_Y - 6, duration: 420, ease: "Bounce.out" });
+          this._sparkle(spr.x, spr.y - spr.displayHeight * 0.72, 8);
+        }
+        break;
+      }
       case "icecream": {
         // el carrito SIRVE helados (función real, estilo Toca): cucurucho
         // recién hecho con chispas y campanita
@@ -724,6 +757,11 @@ export class HouseScene extends Phaser.Scene {
   _hideWater() {
     if (this._waterG) { this._waterG.destroy(); this._waterG = null; }
     if (this._waterDrops) { this._waterDrops.remove(); this._waterDrops = null; }
+  }
+  _fireOff() {
+    if (this._fireT) { this._fireT.remove(); this._fireT = null; }
+    if (this._fireGlow) { this.tweens.killTweensOf(this._fireGlow); this._fireGlow.destroy(); this._fireGlow = null; }
+    this._fireOn = false;
   }
 
   /* ============================ ITEMS (foods + utensils) ============================ */
