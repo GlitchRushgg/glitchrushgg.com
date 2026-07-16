@@ -3012,20 +3012,38 @@ camera.add(HANDS);
 HANDS.visible = false;
 {
   const skin = handSkinMat, sleeve = handSleeveMat, cloth = lamb(0xfff2b0);
+  // esfera con MATERIAL (el sph de la camarera es local suyo y recibe color)
+  const sph = (r, m, seg = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), m);
+  // Manos v2 (feedback Cristian: "se ven peor, mejorar"): geometría REDONDEADA
+  // — antebrazo cilíndrico con puño blanco, palma y dedos con puntas de esfera
+  // en vez de las cajas planas que se leían como bloques.
   const buildArm = (s) => {                // s = -1 izquierda, +1 derecha
     const a = new THREE.Group();
-    add(a, bx(0.13, 0.13, 0.36, sleeve), 0, 0, 0.04);         // manga del uniforme (antebrazo)
-    add(a, bx(0.1, 0.1, 0.14, skin), 0, 0, -0.19);            // muñeca (piel, más fina)
-    add(a, bx(0.13, 0.062, 0.15, skin), 0, 0, -0.33);         // palma
-    // 4 dedos (cajitas al frente de la palma) → mano reconocible, no un bloque
+    const fore = cyl(0.06, 0.072, 0.3, sleeve, 12);           // manga (más ancha al codo)
+    fore.rotation.x = Math.PI / 2; add(a, fore, 0, 0, 0.03);
+    const cuff = cyl(0.064, 0.064, 0.045, lamb(0xffffff), 12); // puño blanco del uniforme
+    cuff.rotation.x = Math.PI / 2; add(a, cuff, 0, 0, -0.13);
+    add(a, sph(0.052, skin, 12), 0, 0, -0.17);                // muñeca
+    const palm = add(a, sph(0.074, skin, 12), 0, 0, -0.29);   // palma (esfera achatada)
+    palm.scale.set(1, 0.6, 1.15);
+    // 4 dedos: cilindros finos con puntas redondas, en ligero abanico
     for (let i = 0; i < 4; i++) {
-      add(a, bx(0.026, 0.046, 0.12, skin), -0.045 + i * 0.03, 0, -0.45);
+      const x = -0.048 + i * 0.032;
+      const f = cyl(0.015, 0.018, 0.11, skin, 8);
+      f.rotation.x = Math.PI / 2; f.rotation.z = (i - 1.5) * 0.04;
+      add(a, f, x, 0.01, -0.4);
+      add(a, sph(0.017, skin, 8), x, 0.01, -0.455);
     }
-    const th = add(a, bx(0.036, 0.05, 0.1, skin), -s * 0.078, 0, -0.35); // pulgar
-    th.rotation.y = s * 0.5;
-    if (s > 0) add(a, bx(0.18, 0.03, 0.17, cloth), 0, -0.055, -0.43); // trapo amarillo en la mano derecha
-    a.position.set(s * 0.27, -0.36, -0.6);
-    a.rotation.set(-0.55, s * 0.16, s * 0.12);
+    const th = cyl(0.019, 0.022, 0.09, skin, 8);              // pulgar
+    th.rotation.x = Math.PI / 2; th.rotation.y = s * 0.6;
+    add(a, th, -s * 0.088, -0.01, -0.32);
+    add(a, sph(0.02, skin, 8), -s * 0.115, -0.01, -0.355);
+    if (s > 0) { // trapo amarillo en la mano derecha
+      const c = add(a, bx(0.17, 0.026, 0.16, cloth), 0, -0.06, -0.4);
+      c.rotation.z = 0.05;
+    }
+    a.position.set(s * 0.26, -0.34, -0.58);
+    a.rotation.set(-0.5, s * 0.14, s * 0.1);
     a.userData.base = { pos: a.position.clone(), rot: a.rotation.clone() };
     return a;
   };

@@ -602,7 +602,7 @@
         : `hsl(${hue},100%,60%)`;
       return `<button class="skin ${sel ? 'sel' : ''}" data-skin="${s.id}" title="${s.name}">
         <span class="skin-dot" style="background:${bg}"></span>
-        ${owned ? '' : `<span class="skin-cost">✦${s.cost}</span>`}
+        ${owned ? '' : `<span class="skin-cost">★${s.cost}</span>`}
       </button>`;
     }).join('');
   }

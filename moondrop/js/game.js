@@ -187,16 +187,20 @@
           const d2 = dx * dx + dy * dy;
           // "about to merge" tease for faces
           if (a.tier === c.tier && d2 < rs * rs * 2.2) { a.excited = c.excited = true; }
+
+          // iguales TOCANDO (o a <2px) → se unen SIEMPRE (feedback Cristian:
+          // dos bolas iguales en reposo quedan con solape 0 por la corrección
+          // de posición y con la regla vieja de "overlap > 1.5" jamás fundían)
+          if (a.tier === c.tier && it === 0 && d2 > 0 && d2 < (rs + 2) * (rs + 2)
+              && tt - a.born > 0.08 && tt - c.born > 0.08) {
+            mergePair(a, c);
+            continue;
+          }
+
           if (d2 >= rs * rs || d2 === 0) continue;
 
           const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
           const overlap = rs - d;
-
-          // same tier overlapping → merge (once per frame per pair)
-          if (a.tier === c.tier && overlap > 1.5 && it === 0 && tt - a.born > 0.08 && tt - c.born > 0.08) {
-            mergePair(a, c);
-            continue;
-          }
 
           // positional correction weighted by mass
           const ma = mass(a.r), mc = mass(c.r), tm = ma + mc;
@@ -768,6 +772,14 @@
     render();
     requestAnimationFrame(loop);
   }
+
+  // hook de QA del estudio (patrón __hr/__gs/__hdb): probar merges determinista
+  window.__md = {
+    spawn: (tier, x, y) => { const b = mkBody(tier, x, y, 0, 0); b.touched = true; bodies.push(b); return b; },
+    get bodies() { return bodies; },
+    get state() { return state; },
+    startRun,
+  };
 
   window.addEventListener('pagehide', persist);
   document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
