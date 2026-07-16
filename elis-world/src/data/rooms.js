@@ -136,8 +136,11 @@ export const FOODS = {
   bread: { cooked: "toast" },
   egg: { cooked: "friedegg" },
   sausage: {}, hotdog: {}, breakfast: {},
+  // Lote 2026-07-16: modelos CC0 que subió la fundadora ("te di bastantes
+  // imagenes para Elis World"), renderizados a sprite con scripts/render-glb.js
+  donut: {}, popcorn: {}, strawberry: {}, burger: {}, mango: {},
 };
-export const FRIDGE_MENU = ["milk", "egg", "cake", "carrot", "juice", "pizza", "cupcake", "bread", "sausage"];
+export const FRIDGE_MENU = ["milk", "egg", "cake", "carrot", "juice", "pizza", "cupcake", "bread", "sausage", "donut", "popcorn", "burger"];
 
 // RECETAS (referencia Bluey/Toca, orden fundadora): junta dos comidas y se
 // forma el plato — huevos + salchichas = desayuno; pan + salchicha = hot dog.

@@ -464,7 +464,7 @@ export class HouseScene extends Phaser.Scene {
       case "fruit": {
         this.snd.pick();
         if (this.items.length < 12) {
-          const kind = Phaser.Math.RND.pick(["apple", "banana", "orange"]);
+          const kind = Phaser.Math.RND.pick(["apple", "banana", "orange", "strawberry", "mango"]);
           const it = this._spawnItem(kind, spr.x + Phaser.Math.Between(-20, 20), spr.y - spr.displayHeight - 8);
           this.tweens.add({ targets: it, y: it.y - 26, duration: 160, yoyo: true, ease: "Quad.out" });
         }
