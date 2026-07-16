@@ -147,6 +147,20 @@ export class GameScene extends Phaser.Scene {
     this.player.body.setOffset((this.player.width - 70) / 2, this.player.height - 155);
     this.player.setDepth(10);
     this.player.play("run");
+    // Micro-polvo en las pisadas de CONTACTO (frames 1 y 4): la carrera
+    // "pisa" el tejado en vez de flotar (orden de la fundadora: mejorar
+    // el movimiento de correr de Cristian).
+    this.player.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => {
+      if (this.dead || this.paused) return;
+      const g = this.player.body.blocked.down || this.player.body.touching.down;
+      if (!g) return;
+      const k = this.player.texture.key;
+      if (k === "p-cristian-run-1" || k === "p-cristian-run-4") {
+        const d = this.add.image(PLAYER_X - 16, this.player.body.bottom, "dust")
+          .setDepth(5).setAlpha(0.45).setScale(0.45);
+        this.tweens.add({ targets: d, x: d.x - 26, y: d.y - 5, alpha: 0, scale: 0.85, duration: 260, onComplete: () => d.destroy() });
+      }
+    });
     // Contact shadow.
     this.shadow = this.add.ellipse(PLAYER_X, 520, 90, 18, 0x1a2a3a, 0.28).setDepth(5);
     this._groundY = 520;
@@ -494,7 +508,9 @@ export class GameScene extends Phaser.Scene {
     this.soloT = 7;   // algo más corto (auditoría: bajar el % de invencibilidad)
     this.superSolo = false;
     this.snd.soloStart();
-    this._playSoloAudio("guitarSolo", 0.8);   // solo de guitarra REAL (Pixabay)
+    // Nivelado ffmpeg: archivo normalizado a -16 LUFS y volumen bajado para
+    // que los SFX (saltos/frutas) se oigan POR ENCIMA del riff (orden fundadora)
+    this._playSoloAudio("guitarSolo", 0.66);   // solo de guitarra REAL (Pixabay)
     // Guitarra normal: FLASH rápido SIN congelar (el cut-in cinemático completo
     // se reserva para la SUPER — auditoría: proteger el flow del runner de un
     // botón y hacer el gran cut-in más raro/especial/clipeable).
@@ -506,7 +522,7 @@ export class GameScene extends Phaser.Scene {
     this.soloT = 13;   // la super dura más y ES el momento cinemático
     this.superSolo = true;
     this.snd.soloStart();
-    this._playSoloAudio("superGuitar", 0.85);   // rock potente (Pixabay)
+    this._playSoloAudio("superGuitar", 0.74);   // rock potente (Pixabay) — mantiene jerarquía sobre el solo normal
     this._soloCutIn(true);   // cut-in completo (freeze) solo aquí
   }
 
@@ -754,6 +770,16 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this._wasAir = !grounded;
+
+    // Carrera con vida (orden de la fundadora):
+    // 1) la cadencia de los pies sigue la velocidad del mundo — a 13fps
+    //    fijos los pies "patinaban" cuando el juego acelera
+    this.player.anims.timeScale = Math.min(1.8, this._speedNow() / 300);
+    // 2) inclinación hacia delante con la velocidad (pivota en los pies,
+    //    origin 0.5/1); en el aire endereza un pelín hacia atrás
+    const leanT = grounded ? Math.min(0.13, Math.max(0, (this._speedNow() - 300) / 2400)) : -0.05;
+    this.player.rotation += (leanT - this.player.rotation) * Math.min(1, dt * 10);
+
     if (this._jumpBuffer > 0) this._jumpBuffer -= dt;
     if (this._jumpBuffer > 0 && this._coyote > 0) {
       // Con la guitarra, Cristian salta MÁS ALTO (feedback fundadora); la super
