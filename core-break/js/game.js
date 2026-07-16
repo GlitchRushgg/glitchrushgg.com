@@ -540,7 +540,7 @@
     ctx.beginPath(); ctx.moveTo(LW - SX0, 0); ctx.lineTo(LW - SX0, H / u); ctx.stroke();
     // depth ruler ticks on walls
     ctx.fillStyle = 'rgba(255,255,255,.25)';
-    ctx.font = '700 9px "Segoe UI", sans-serif';
+    ctx.font = '700 9px "Rajdhani","Segoe UI", sans-serif';
     ctx.textAlign = 'left';
     for (let r = Math.floor(camY / TH); r < (camY + H / u) / TH + 1; r++) {
       if (r % 10 !== 0 || r < 0) continue;
@@ -597,7 +597,7 @@
     ctx.textAlign = 'center';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.5);
-      ctx.font = '800 ' + (f.big ? 19 : 14) + 'px "Segoe UI", sans-serif';
+      ctx.font = '800 ' + (f.big ? 19 : 14) + 'px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = f.big ? '#ffd24a' : '#fff';
       ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4;
       ctx.fillText(f.txt, f.x, f.y);
@@ -608,7 +608,7 @@
     // banner
     if (bannerT > 0) {
       ctx.globalAlpha = Math.min(1, bannerT * 2, (2.2 - bannerT) * 3);
-      ctx.font = '800 26px "Segoe UI", sans-serif';
+      ctx.font = '800 26px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd24a';
       ctx.shadowColor = '#ffd24a'; ctx.shadowBlur = 18;
       ctx.fillText(bannerTxt, LW / 2, 118);
@@ -675,7 +675,7 @@
     ctx.fillStyle = '#ff5a5a';
     ctx.fillRect(x + 60, y - 10, (LW - SX0 * 2 - 120) * f, 6);
     ctx.fillStyle = '#ffd24a';
-    ctx.font = '800 10px "Segoe UI", sans-serif';
+    ctx.font = '800 10px "Rajdhani","Segoe UI", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('⛏ BEDROCK PLATE', LW / 2, y - 14);
   }

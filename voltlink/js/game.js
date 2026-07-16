@@ -552,7 +552,7 @@
 
     // floats
     ctx.textAlign = 'center';
-    ctx.font = '800 21px "Segoe UI", sans-serif';
+    ctx.font = '800 21px "Rajdhani","Segoe UI", sans-serif';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
       ctx.fillStyle = '#fff';
@@ -565,7 +565,7 @@
     // banner
     if (bannerT > 0) {
       ctx.globalAlpha = Math.min(1, bannerT * 2, (1.8 - bannerT) * 4);
-      ctx.font = '800 28px "Segoe UI", sans-serif';
+      ctx.font = '800 28px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd93b';
       ctx.shadowColor = '#ffd93b'; ctx.shadowBlur = 20;
       ctx.fillText(bannerTxt, LW / 2, BY - 26);
@@ -615,7 +615,7 @@
       ctx.beginPath(); ctx.arc(0, 0, TILE * 0.42 * pulse, 0, 7); ctx.fill();
       ctx.shadowBlur = 0;
       ctx.fillStyle = '#7a4a00';
-      ctx.font = '800 26px "Segoe UI", sans-serif';
+      ctx.font = '800 26px "Rajdhani","Segoe UI", sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('⚡', 0, 2);
       ctx.restore();
@@ -641,7 +641,7 @@
     // value
     ctx.fillStyle = '#fff';
     const fs = t.v >= 10000 ? 19 : t.v >= 1000 ? 22 : 26;
-    ctx.font = '800 ' + fs + 'px "Segoe UI", sans-serif';
+    ctx.font = '800 ' + fs + 'px "Rajdhani","Segoe UI", sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 4;
     ctx.fillText(fmtNum(t.v), 0, 1);
@@ -673,7 +673,7 @@
         if (t.orb) sum += lastV; else { sum += t.v; lastV = t.v; }
       }
       const res = Math.pow(2, Math.max(1, Math.floor(Math.log2(sum))));
-      ctx.font = '800 18px "Segoe UI", sans-serif';
+      ctx.font = '800 18px "Rajdhani","Segoe UI", sans-serif';
       ctx.textAlign = 'center';
       const tx = pointerL.x, ty = pointerL.y - 42;
       ctx.fillStyle = 'rgba(7,11,20,.85)';

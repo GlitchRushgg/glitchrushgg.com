@@ -456,7 +456,7 @@
       const a = Math.min(1, bannerT, (2.2 - bannerT) * 3);
       ctx.globalAlpha = a;
       ctx.textAlign = 'center';
-      ctx.font = '800 22px "Segoe UI", sans-serif';
+      ctx.font = '800 22px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd166';
       ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 18;
       ctx.fillText(bannerTxt, LW / 2, 250);

@@ -496,7 +496,7 @@
     ctx.textAlign = 'center';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.5);
-      ctx.font = '800 18px "Segoe UI", sans-serif';
+      ctx.font = '800 18px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd88a';
       ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 4;
       ctx.fillText(f.txt, f.x, f.y);
@@ -507,7 +507,7 @@
     // combo text
     if (comboT > 0) {
       ctx.globalAlpha = Math.min(1, comboT * 2);
-      ctx.font = '800 30px "Segoe UI", sans-serif';
+      ctx.font = '800 30px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ff9d4d';
       ctx.shadowColor = '#ff9d4d'; ctx.shadowBlur = 16;
       ctx.fillText(comboTxt, LW / 2, BY - 14);
@@ -517,7 +517,7 @@
     // banner
     if (bannerT > 0) {
       ctx.globalAlpha = Math.min(1, bannerT * 2, (2 - bannerT) * 3);
-      ctx.font = '800 26px "Segoe UI", sans-serif';
+      ctx.font = '800 26px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd88a';
       ctx.shadowColor = '#ffd88a'; ctx.shadowBlur = 20;
       ctx.fillText(bannerTxt, LW / 2, BY + N * CELL + 40);
@@ -602,7 +602,7 @@
     // tier stamp
     if (w > 26) {
       ctx.fillStyle = 'rgba(0,0,0,.35)';
-      ctx.font = '800 ' + Math.max(9, w * 0.24) + 'px "Segoe UI", sans-serif';
+      ctx.font = '800 ' + Math.max(9, w * 0.24) + 'px "Rajdhani","Segoe UI", sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(tier, x + w / 2, y + h / 2 + 1);
     }

@@ -452,7 +452,7 @@
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
 
     // floats
-    ctx.textAlign = 'center'; ctx.font = '800 18px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center'; ctx.font = '800 18px "Rajdhani","Segoe UI", sans-serif';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
       ctx.fillStyle = f.c; ctx.shadowColor = f.c; ctx.shadowBlur = 10;
@@ -462,7 +462,7 @@
 
     if (bannerT > 0) {
       const a = Math.min(1, bannerT, (1.6 - bannerT) * 4);
-      ctx.globalAlpha = a; ctx.font = '800 34px "Segoe UI", sans-serif';
+      ctx.globalAlpha = a; ctx.font = '800 34px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#3fe0d0'; ctx.shadowColor = '#3fe0d0'; ctx.shadowBlur = 22;
       ctx.fillText(bannerTxt, 240, 130); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     }

@@ -679,7 +679,7 @@
       const a = Math.min(1, bannerT, (2.2 - bannerT) * 3);
       ctx.globalAlpha = a;
       ctx.textAlign = 'center';
-      ctx.font = '800 22px "Segoe UI", sans-serif';
+      ctx.font = '800 22px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd166';
       ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 18;
       ctx.fillText(bannerTxt, LW / 2, 236);
@@ -759,7 +759,7 @@
           ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7); ctx.fill();
           ctx.shadowBlur = 0;
           ctx.globalAlpha = fog;
-          ctx.font = '800 ' + Math.max(8, r * 1.1) + 'px "Segoe UI", sans-serif';
+          ctx.font = '800 ' + Math.max(8, r * 1.1) + 'px "Rajdhani","Segoe UI", sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText(pu.ico, p.x, p.y + r * 0.4);
         }
@@ -773,7 +773,7 @@
     // floating rewards above the runner
     if (floats.length) {
       ctx.textAlign = 'center';
-      ctx.font = '800 16px "Segoe UI", sans-serif';
+      ctx.font = '800 16px "Rajdhani","Segoe UI", sans-serif';
       for (let i = 0; i < floats.length; i++) {
         const f = floats[i];
         ctx.globalAlpha = Math.min(1, f.t * 1.8);

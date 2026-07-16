@@ -1,3 +1,7 @@
+/* Rajdhani vendorizada (autocontenida, sin CDN): la tipografía display
+   del estudio — 'Segoe UI' delataba "juego barato" (auditoría). */
+@font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;}
 /* ============================================================
    VOLTLINK — UI styles (board is canvas-rendered).
    Electric neon on dark circuit-board blue.
@@ -6,7 +10,7 @@
   --volt:#ffd93b; --cyan:#38e8ff; --pink:#ff3fd8;
   --txt:#eaf4ff; --dim:#7d94ad;
   --panel:rgba(9,14,26,.92);
-  --font:'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font:'Rajdhani','Segoe UI', system-ui, -apple-system, sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
 html,body{height:100%;overflow:hidden;background:#070b14;font-family:var(--font);color:var(--txt);}

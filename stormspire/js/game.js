@@ -753,7 +753,7 @@
     ctx.textAlign = 'center';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
-      ctx.font = '800 ' + (f.big ? 16 : 12) + 'px "Segoe UI", sans-serif';
+      ctx.font = '800 ' + (f.big ? 16 : 12) + 'px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = f.col;
       ctx.fillText(f.txt, f.x, f.y);
     }
@@ -762,7 +762,7 @@
     // banner
     if (bannerT > 0) {
       ctx.globalAlpha = Math.min(1, bannerT * 2, (2 - bannerT) * 3);
-      ctx.font = '800 24px "Segoe UI", sans-serif';
+      ctx.font = '800 24px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = bannerCol;
       ctx.shadowColor = bannerCol; ctx.shadowBlur = 18;
       ctx.fillText(bannerTxt, LW / 2, 106);

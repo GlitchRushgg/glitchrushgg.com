@@ -547,7 +547,7 @@
       ctx.shadowBlur = 0;
       if (c.golden) {
         ctx.fillStyle = 'rgba(58,40,0,.8)';
-        ctx.font = '800 9px "Segoe UI", sans-serif';
+        ctx.font = '800 9px "Rajdhani","Segoe UI", sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('★', c.x, c.y + bob + 3);
       }
@@ -590,7 +590,7 @@
 
     // floats
     ctx.textAlign = 'center';
-    ctx.font = '800 15px "Segoe UI", sans-serif';
+    ctx.font = '800 15px "Rajdhani","Segoe UI", sans-serif';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
       ctx.fillStyle = '#fff';
@@ -606,7 +606,7 @@
       const a = Math.min(1, bannerT, (2 - bannerT) * 3);
       ctx.globalAlpha = a;
       ctx.textAlign = 'center';
-      ctx.font = '800 26px "Segoe UI", sans-serif';
+      ctx.font = '800 26px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd166';
       ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 22;
       ctx.fillText(bannerTxt, offX + LW / 2 * scale, offY + 300 * scale);

@@ -529,7 +529,7 @@
 
     // floats
     ctx.textAlign = 'center';
-    ctx.font = '800 15px "Segoe UI", sans-serif';
+    ctx.font = '800 15px "Rajdhani","Segoe UI", sans-serif';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
       ctx.fillStyle = '#fff';
@@ -640,7 +640,7 @@
     // attempt tag in the world (the GD signature)
     if (state !== ST.SURFACE) {
       ctx.textAlign = 'left';
-      ctx.font = '800 26px "Segoe UI", sans-serif';
+      ctx.font = '800 26px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,.25)';
       ctx.fillText('ATTEMPT ' + fmtInt(attsOf(level.sector)), startPct * level.len + 40, GY - 120);
     }

@@ -482,7 +482,7 @@
     ctx.textAlign = 'center';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.5);
-      ctx.font = '800 17px "Segoe UI", sans-serif';
+      ctx.font = '800 17px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffe9b0';
       ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 4;
       ctx.fillText(f.txt, f.x, f.y - camY);
@@ -493,7 +493,7 @@
     // banner
     if (bannerT > 0) {
       ctx.globalAlpha = Math.min(1, bannerT * 2, (2 - bannerT) * 3);
-      ctx.font = '800 24px "Segoe UI", sans-serif';
+      ctx.font = '800 24px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = bannerCol;
       ctx.shadowColor = bannerCol; ctx.shadowBlur = 18;
       ctx.fillText(bannerTxt, LW / 2, 150);
@@ -528,7 +528,7 @@
     ctx.fillRect(LW - WALL - 8, 0, 8, LH);
     // depth ruler
     ctx.fillStyle = 'rgba(255,255,255,.3)';
-    ctx.font = '700 10px "Segoe UI", sans-serif';
+    ctx.font = '700 10px "Rajdhani","Segoe UI", sans-serif';
     ctx.textAlign = 'left';
     const step = 25 * PXM;
     for (let wy = Math.floor(camY / step) * step; wy < camY + LH + step; wy += step) {
@@ -589,7 +589,7 @@
     ctx.beginPath(); ctx.moveTo(WALL, wy); ctx.lineTo(LW - WALL, wy); ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(240,192,77,.6)';
-    ctx.font = '700 10px "Segoe UI", sans-serif';
+    ctx.font = '700 10px "Rajdhani","Segoe UI", sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText('BEST ' + save.bestDepth + 'm', LW - WALL - 6, wy - 5);
   }
@@ -618,7 +618,7 @@
     }
     if (caught.length > show) {
       ctx.fillStyle = '#fff';
-      ctx.font = '800 13px "Segoe UI", sans-serif';
+      ctx.font = '800 13px "Rajdhani","Segoe UI", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('+' + (caught.length - show), lx, ly - camY - 30 - show * 24);
     }

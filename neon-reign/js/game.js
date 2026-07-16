@@ -671,7 +671,7 @@
 
     // floats
     ctx.textAlign = 'center';
-    ctx.font = '800 16px "Segoe UI", sans-serif';
+    ctx.font = '800 16px "Rajdhani","Segoe UI", sans-serif';
     for (const f of floats) {
       ctx.globalAlpha = Math.min(1, f.t * 1.6);
       ctx.fillStyle = '#fff';
@@ -690,7 +690,7 @@
       const a = Math.min(1, bannerT, (2.2 - bannerT) * 3);
       ctx.globalAlpha = a;
       ctx.textAlign = 'center';
-      ctx.font = '800 24px "Segoe UI", sans-serif';
+      ctx.font = '800 24px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = '#ffd166';
       ctx.shadowColor = '#ffd166'; ctx.shadowBlur = 20;
       ctx.fillText(bannerTxt, offX + LW / 2 * scale, offY + 292 * scale);
@@ -732,7 +732,7 @@
     // name tags on rivals
     if (e.slot !== 0) {
       ctx.textAlign = 'center';
-      ctx.font = '700 10px "Segoe UI", sans-serif';
+      ctx.font = '700 10px "Rajdhani","Segoe UI", sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,.65)';
       ctx.fillText(e.rival.name, e.x, e.y - 22);
     }

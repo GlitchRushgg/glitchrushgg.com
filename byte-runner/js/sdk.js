@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    CrazyGames SDK v3 wrapper.
    On crazygames.com: real ads + platform signals.
    Anywhere else: silently no-ops and grants rewards instantly,

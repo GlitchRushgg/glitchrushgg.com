@@ -1,3 +1,7 @@
+/* Rajdhani vendorizada (autocontenida, sin CDN): la tipografía display
+   del estudio — 'Segoe UI' delataba "juego barato" (auditoría). */
+@font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;}
+@font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;}
 /* ============================================================
    GHOSTLAP — UI styles (the highway is canvas-rendered).
    Synthwave cyan-and-magenta neon on midnight darkness.
@@ -6,7 +10,7 @@
   --cyan:#4de0ff; --gold:#ffd166; --good:#5de08a; --rush:#ff5db0; --star:#c79bff;
   --txt:#eef4fb; --dim:#8090ab;
   --panel:rgba(9,11,26,.94);
-  --font:'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font:'Rajdhani','Segoe UI', system-ui, -apple-system, sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
 html,body{height:100%;overflow:hidden;background:#0b0d1f;font-family:var(--font);color:var(--txt);}
