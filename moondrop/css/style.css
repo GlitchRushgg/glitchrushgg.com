@@ -52,6 +52,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .overlay{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:16px;padding:20px;
   background:radial-gradient(ellipse at 50% 40%,rgba(10,10,31,.3),rgba(10,10,31,.82));}
+/* menú título: esfera cósmica (imagen CC0 aportada por la fundadora) con
+   velo radial para que el logo y los botones sigan legibles */
+#title{background:
+  radial-gradient(ellipse at 50% 42%,rgba(10,10,31,.28),rgba(10,10,31,.88) 78%),
+  url("../assets/nebula.jpg") center/cover no-repeat #0a0a1f;}
 
 .logo{font-size:min(16vw,74px);font-weight:800;letter-spacing:6px;color:#fff;line-height:1;
   text-shadow:0 0 30px var(--lav),0 0 70px rgba(167,139,250,.5);}

@@ -625,6 +625,11 @@
   const rainDrops = [];
   for (let i = 0; i < 70; i++) rainDrops.push({ x: Math.random(), y: Math.random() });
 
+  // nebulosa cósmica de fondo (imagen CC0 aportada por la fundadora):
+  // se funde con "screen" sobre el degradado de tormenta
+  const NEBULA = new Image();
+  NEBULA.src = 'assets/nebula.jpg';
+
   function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // sky: darkens with wave
@@ -634,6 +639,16 @@
     g.addColorStop(1, `rgb(${30 + 26 * wv | 0},${22 - 6 * wv | 0},${58 - 20 * wv | 0})`);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
+    if (NEBULA.complete && NEBULA.naturalWidth) {
+      // cover del canvas, centrada un poco alta (donde vive la aguja)
+      const s = Math.max(W / NEBULA.width, H / NEBULA.height);
+      const nw = NEBULA.width * s, nh = NEBULA.height * s;
+      ctx.save();
+      ctx.globalAlpha = 0.34 - 0.10 * wv;
+      ctx.globalCompositeOperation = 'screen';
+      ctx.drawImage(NEBULA, (W - nw) / 2, (H - nh) / 2 - H * 0.06, nw, nh);
+      ctx.restore();
+    }
 
     ctx.save();
     ctx.translate(offX, offY);
