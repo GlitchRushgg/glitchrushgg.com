@@ -1011,6 +1011,37 @@ function buildLobby() {
     add(g, new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.56), (VIEW.sea ||= viewMat(true))), BX0 + 0.22, 1.8, z, Math.PI / 2);
   }
 
+  // ── rincón "caffè al mare" (referencia mediterránea de la fundadora):
+  // mesitas redondas con mantel blanco, copas y sillas de forja ─────────
+  for (const [tx, tz] of [[-9.6, -4.6], [-11.0, -2.2]]) {
+    add(g, cyl(0.05, 0.07, 0.72, MAT.steel, 8), tx, 0.36, tz);                    // pie central
+    add(g, new THREE.Mesh(new THREE.ConeGeometry(0.62, 0.36, 14), MAT.white), tx, 0.84, tz); // mantel que cae
+    add(g, cyl(0.55, 0.55, 0.04, MAT.white, 16), tx, 1.03, tz);                   // tablero
+    add(g, cyl(0.045, 0.055, 0.17, lamb(0x8a2438), 8), tx + 0.17, 1.13, tz);      // copa de vino
+    add(g, cyl(0.04, 0.05, 0.12, lamb(0xe8b84a), 8), tx - 0.17, 1.11, tz + 0.1);  // refresco
+    for (const a of [0.4, 2.6]) {                                                 // 2 sillas negras
+      const cxp = tx + Math.cos(a) * 0.95, czp = tz + Math.sin(a) * 0.95;
+      add(g, cyl(0.28, 0.28, 0.05, MAT.black, 10), cxp, 0.45, czp);
+      add(g, bx(0.46, 0.55, 0.05), cxp + Math.cos(a) * 0.26, 0.76, czp + Math.sin(a) * 0.26).material = MAT.black;
+      for (const [lx2, lz2] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]])
+        add(g, cyl(0.02, 0.02, 0.45, MAT.black, 6), cxp + lx2, 0.22, czp + lz2);
+    }
+    addSolid(f, tx - 0.72, tx + 0.72, tz - 0.72, tz + 0.72);
+  }
+  // jardineras de buganvilla (rosa fucsia) bajo los cuadros de la pared oeste
+  for (const z of [-3.4, 0.2, 3.4]) {
+    add(g, bx(0.36, 0.3, 1.1), BX0 + 0.36, 0.55, z).material = MAT.woodDark;
+    add(g, new THREE.Mesh(new THREE.SphereGeometry(0.17, 6, 5), MAT.green), BX0 + 0.36, 0.8, z);
+    for (let i = 0; i < 5; i++)
+      add(g, new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 5), lamb([0xe25580, 0xd8467a, 0xc23a68][i % 3])),
+        BX0 + 0.36 + ((i % 2) ? 0.1 : -0.08), 0.82 + (i % 3) * 0.09, z + (i - 2) * 0.2);
+  }
+  // farolillos cálidos en las paredes (luz acogedora de atardecer)
+  for (const [sx, sz] of [[BX1 - 0.15, 2.7], [BX1 - 0.15, -2.7], [BX0 + 0.15, -5.2], [BX0 + 0.15, 5.2]]) {
+    add(g, new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.22, 10), MAT.champagne), sx, 2.14, sz);
+    add(g, new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffe6b0 })), sx, 2.0, sz);
+  }
+
   // ── personas que dan vida al lobby ────────────────────────────────────
   // recepcionista tras el mostrador (blazer azul marino, mira al lobby)
   spawnStatic(g, makePerson({ shirt: 0x24344a, pants: 0x1a2330, skin: 0xc89a68, hair: 0x241a12, trim: 0xcdd6e0 }), 9, 2.75, Math.PI);
