@@ -18,6 +18,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('water', 'assets/water.png');
     this.load.image('background', 'assets/background.png');
     this.load.image('raindrop', 'assets/raindrop.png');
+    // islas flotantes decorativas (pack CC0 aportado por la fundadora)
+    for (const n of [1, 2, 4, 5, 6]) this.load.image('island-' + n, `assets/island-${n}.png`);
 
     ANIMALS.forEach((name) => {
       this.load.image(name, `assets/images/${name}.png`);

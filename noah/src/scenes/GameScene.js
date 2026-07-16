@@ -105,6 +105,10 @@ export default class GameScene extends Phaser.Scene {
 
     this._animalsCollected = 0;
 
+    // Islas flotantes de fondo (pack CC0 de la fundadora): vida y profundidad
+    // en la subida sin tocar el gameplay
+    this._addIslands();
+
     // Ark near top
     this.arkImage = this.add.image(195, ARK_Y, 'ark').setScale(1.6).setDepth(3);
 
@@ -190,6 +194,23 @@ export default class GameScene extends Phaser.Scene {
     this.events.emit('heightUpdate', 0);
     this.events.emit('waterUpdate',  0);
   } // end _createGame
+
+  // ── Islas flotantes decorativas (detrás de las plataformas) ─────────
+  _addIslands() {
+    const spots = [
+      ['island-4', 338, 2440, 120], ['island-5', 48, 2020, 100],
+      ['island-2', 344, 1580, 118], ['island-6', 62, 1230, 72],
+      ['island-4', 330, 830, 104], ['island-5', 52, 400, 88],
+    ];
+    spots.forEach(([key, x, y, w], i) => {
+      const img = this.add.image(x, y, key).setDepth(1).setAlpha(0.92);
+      img.setScale(w / img.width);
+      this.tweens.add({
+        targets: img, y: y - (i % 2 ? -10 : 12), duration: 2600 + i * 320,
+        yoyo: true, repeat: -1, ease: 'Sine.inOut',
+      });
+    });
+  }
 
   // ── Clouds ──────────────────────────────────────────────────────────
   _addClouds() {

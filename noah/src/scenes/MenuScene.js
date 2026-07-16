@@ -23,6 +23,11 @@ export default class MenuScene extends Phaser.Scene {
       this.cloudList.push({ img: cloud, speed });
     }
 
+    // ── isla flotante con el gran árbol (pack CC0 de la fundadora) ──────
+    const isle = this.add.image(322, 470, 'island-1').setDepth(1).setAlpha(0.95);
+    isle.setScale(150 / isle.width);
+    this.tweens.add({ targets: isle, y: 458, duration: 3200, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+
     // ── rising water at the bottom (the flood!) ──────────────────────────
     const water = this.add.image(W / 2, H - 22, 'water').setDisplaySize(W, 90).setDepth(2);
     this.tweens.add({ targets: water, y: H - 14, alpha: { from: 0.9, to: 1 }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
