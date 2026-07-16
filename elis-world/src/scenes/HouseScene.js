@@ -15,7 +15,7 @@ import {
   W, H, WALL_TOP, WALL_BOT, FLOOR_Y, CHAR_MIN_Y, CHAR_MAX_Y,
   ROOM_ORDER, TIMES, WEATHERS, PAINTS, PATTERNS, ARTWORKS, ACCESSORIES,
 } from "../const.js";
-import { ROOMS, FOODS, FRIDGE_MENU, UTENSILS } from "../data/rooms.js";
+import { ROOMS, FOODS, FRIDGE_MENU, UTENSILS, COMBOS } from "../data/rooms.js";
 import { Save } from "../utils/Save.js";
 import { Sound } from "../utils/Sound.js";
 
@@ -113,6 +113,7 @@ export class HouseScene extends Phaser.Scene {
     this._ovenOpen = false;
     this._sinkOn = false;
     this._tubOn = false;
+    this._hideWater(); // el chorro y su timer viven fuera de las capas
     this._winSky = null; this._winOrb = null; this._winFrame = null; this._winRect = null;
     this._cityImg = null; this._gardenSky = null; this._deckPaint = null;
   }
@@ -157,14 +158,19 @@ export class HouseScene extends Phaser.Scene {
       this.layerWall.add(floor);
     }
 
-    // ---- furniture (TODO se puede mover — encargo fundadora) ----
+    // ---- furniture: FIJOS como en una casa de verdad (ajuste profundo,
+    // referencia Toca Life World — orden fundadora 2026-07-16). Solo las
+    // cositas pequeñas con `movable: true` se arrastran; el resto FUNCIONA
+    // con tap/drop, que es donde vive el juego. ----
     const moved = Save.get().rooms[this.room].moved || {};
     for (const f of def.furniture) {
-      const pos = moved[f.key] || { x: f.x, y: f.y };
+      const pos = f.movable ? (moved[f.key] || { x: f.x, y: f.y }) : { x: f.x, y: f.y };
       const spr = this.add.image(pos.x, pos.y, f.key).setOrigin(0.5, 1);
       spr.setScale(f.h / spr.height);
       this.layerRoom.add(spr);
       spr._furn = f;
+      // draggable SIEMPRE: el tap se detecta en dragend (umbral 10px). Los
+      // fijos simplemente no se desplazan en el handler de "drag".
       spr.setInteractive({ useHandCursor: true, draggable: true });
       if (f.drop) this._dropZones.push({ spr, f });
       if (!f.wall && !f.flat) this._addShadow(spr);
@@ -419,12 +425,30 @@ export class HouseScene extends Phaser.Scene {
         break;
       }
       case "radio": {
-        this.snd.fanfare();
-        for (let i = 0; i < 5; i++) {
-          const n = this.add.text(spr.x + Phaser.Math.Between(-20, 20), spr.y - spr.displayHeight, ["♪", "♫"][i % 2], {
-            fontFamily: FONT, fontSize: "26px", color: "#ff6b96",
-          }).setDepth(41);
-          this.tweens.add({ targets: n, y: n.y - 80, alpha: 0, duration: 900, delay: i * 120, onComplete: () => n.destroy() });
+        // MÚSICA DE VERDAD (ajuste profundo): la radio ENCIENDE/APAGA la
+        // cajita de música — el personaje "escucha música si desea".
+        this._radioOn = !this._radioOn;
+        if (this._radioOn) {
+          this.snd.startMusic();
+          this._radioNotes = this.time.addEvent({
+            delay: 620, loop: true, callback: () => {
+              // la música suena por toda la casa, pero las notas solo brotan
+              // de la radio: en otra sala el sprite no existe y no se dibujan
+              const r = this.layerRoom.list.find((o) => o._furn?.key === "radio");
+              if (!r || !r.active) return;
+              const n = this.add.text(r.x + Phaser.Math.Between(-20, 20), r.y - r.displayHeight, ["♪", "♫"][Phaser.Math.Between(0, 1)], {
+                fontFamily: FONT, fontSize: "26px", color: "#ff6b96",
+              }).setDepth(41);
+              this.tweens.add({ targets: n, y: n.y - 80, alpha: 0, duration: 900, onComplete: () => n.destroy() });
+            },
+          });
+          if (!this._radioHooked) {
+            this._radioHooked = true;
+            this.events.once("shutdown", () => { if (this._radioOn) this.snd.stopMusic(); });
+          }
+        } else {
+          this.snd.stopMusic();
+          if (this._radioNotes) { this._radioNotes.remove(); this._radioNotes = null; }
         }
         break;
       }
@@ -485,8 +509,8 @@ export class HouseScene extends Phaser.Scene {
       }
       case "sink": {
         this._sinkOn = !this._sinkOn;
-        if (this._sinkOn) { this.snd.waterOn(); this._waterSpr = spr; }
-        else this.snd.waterOff();
+        if (this._sinkOn) { this.snd.waterOn(); this._waterSpr = spr; this._showWater(spr); }
+        else { this.snd.waterOff(); this._hideWater(); }
         break;
       }
       // TINA (encargo fundadora): el agua corre si ella la enciende
@@ -660,6 +684,35 @@ export class HouseScene extends Phaser.Scene {
     if (spr._furn?.key === "bathtub") { this._tubOn = false; this.snd.waterOff(); }
   }
 
+  /* ============================ AGUA VISIBLE ============================ */
+  // El agua SE VE correr (ajuste profundo — "el agua corre para lavarse las
+  // manos"): chorro desde el grifo + gotitas que salpican mientras esté abierto.
+  _showWater(spr) {
+    this._hideWater();
+    // offsets afinados MIRANDO los PNG: el chorro nace en la boca del grifo
+    // de cada modelo (baño: grifo a la derecha del lavabo, más bajo)
+    const isBath = spr._furn?.key === "bathsink";
+    const fx = spr.x + spr.displayWidth * (isBath ? 0.13 : 0.15);
+    const top = spr.y - spr.displayHeight * (isBath ? 0.5 : 0.68);
+    const len = spr.displayHeight * (isBath ? 0.16 : 0.3);
+    const g = this.add.graphics().setDepth(40);
+    g.fillStyle(0x9fd8ff, 0.85);
+    g.fillRoundedRect(fx - 5, top, 10, len, 5);
+    g.fillStyle(0xffffff, 0.55);
+    g.fillRoundedRect(fx - 1.5, top, 3, len, 1.5);
+    this._waterG = g;
+    this._waterDrops = this.time.addEvent({
+      delay: 150, loop: true, callback: () => {
+        const d = this.add.circle(fx + Phaser.Math.Between(-9, 9), top + len, 3, 0x9fd8ff, 0.9).setDepth(40);
+        this.tweens.add({ targets: d, y: d.y + 12, alpha: 0, scaleX: 1.7, duration: 260, onComplete: () => d.destroy() });
+      },
+    });
+  }
+  _hideWater() {
+    if (this._waterG) { this._waterG.destroy(); this._waterG = null; }
+    if (this._waterDrops) { this._waterDrops.remove(); this._waterDrops = null; }
+  }
+
   /* ============================ ITEMS (foods + utensils) ============================ */
 
   // `data` = la entrada guardada (al reconstruir la sala); si no viene, es un
@@ -733,6 +786,30 @@ export class HouseScene extends Phaser.Scene {
       for (const c of Object.values(this.chars)) {
         const r = new Phaser.Geom.Rectangle(c.x - c.displayWidth / 2, c.y - c.displayHeight, c.displayWidth, c.displayHeight);
         if (r.contains(x, y)) { this._eat(c, spr); return; }
+      }
+      // RECETAS (ajuste profundo, referencia Bluey/Toca — orden fundadora):
+      // junta dos comidas y SE FORMA EL PLATO — huevos + salchichas = desayuno,
+      // pan + salchicha = hot dog.
+      for (const other of this.items) {
+        if (other === spr || other._utensil || !other.active) continue;
+        const r = other.getBounds();
+        if (!r.contains(x, y)) continue;
+        const combo = COMBOS[[spr._item, other._item].sort().join("+")];
+        if (!combo) continue;
+        const cx2 = other.x, cy2 = other.y;
+        this._removeItem(other, false);
+        this._removeItem(spr, false);
+        const it = this._spawnItem(combo.result, cx2, cy2);
+        const base = it.scale;
+        it.setScale(base * 0.2);
+        this.tweens.add({ targets: it, scale: base, duration: 280, ease: "Back.out" });
+        this._sparkle(cx2, cy2 - 24, 10);
+        this.snd.chime();
+        const t = this.add.text(cx2, cy2 - 74, combo.label, {
+          fontFamily: FONT, fontSize: "30px", color: "#ff6b96", stroke: "#ffffff", strokeThickness: 5,
+        }).setOrigin(0.5).setDepth(45);
+        this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1100, onComplete: () => t.destroy() });
+        return;
       }
     }
     // on a drop-zone
@@ -889,6 +966,30 @@ export class HouseScene extends Phaser.Scene {
       // fundadora: "que haya un comedor donde se puedan sentar")
       if (f.drop === "sit" || f.drop === "table") {
         this._sitAt(spr, z, f.drop === "table" ? 0.54 : (f.seat ?? 0.4), x);
+        return;
+      }
+      // LAVARSE LAS MANOS (ajuste profundo): suéltalo junto al lavamanos —
+      // el agua corre de verdad, frota con burbujas y queda limpio y feliz.
+      if (f.drop === "wash") {
+        spr.x = z.x - z.displayWidth * 0.46;
+        spr.y = CHAR_MAX_Y - 4;
+        spr.setAngle(0); spr._groundY = spr.y; spr._noShadow = false;
+        const wasOn = this._sinkOn;
+        if (!wasOn) { this._sinkOn = true; this.snd.waterOn(); this._waterSpr = z; this._showWater(z); }
+        const hx = z.x - z.displayWidth * 0.12, hy = z.y - z.displayHeight * 0.42;
+        for (let i = 0; i < 10; i++) {
+          const b = this.add.image(hx + Phaser.Math.Between(-16, 16), hy + Phaser.Math.Between(-8, 8), "bubble").setDepth(41).setScale(0.55);
+          this.tweens.add({ targets: b, y: b.y - Phaser.Math.Between(24, 60), alpha: 0, duration: 800, delay: i * 90, onComplete: () => b.destroy() });
+        }
+        this.tweens.add({ targets: spr, angle: 4, duration: 140, yoyo: true, repeat: 5, onComplete: () => spr.setAngle(0) });
+        this.snd.splash();
+        this._floatEmoji(z.x, z.y - z.displayHeight - 10, "🧼");
+        this.time.delayedCall(1700, () => {
+          if (!spr.active) return;
+          this._sparkle(spr.x, spr.y - spr.displayHeight * 0.6, 6);
+          if (!wasOn && this._sinkOn) { this._sinkOn = false; this.snd.waterOff(); this._hideWater(); }
+        });
+        this._persistChar(name, spr);
         return;
       }
     }
@@ -1320,6 +1421,9 @@ export class HouseScene extends Phaser.Scene {
         if (this.mode !== "none") { obj._noDrag = true; return; }
         obj._noDrag = false;
         obj._baseScale = obj._baseScale || obj.scale;
+        // MUEBLES FIJOS (ajuste profundo): no se levantan ni suben de plano —
+        // el gesto solo puede acabar en tap.
+        if (!obj._furn.movable) return;
         this.snd.pick();
         this.layerRoom.bringToTop(obj);
         this.tweens.add({ targets: obj, scale: obj._baseScale * 1.04, duration: 110 });
@@ -1347,6 +1451,8 @@ export class HouseScene extends Phaser.Scene {
     });
     this.input.on("drag", (p, obj, dx, dy) => {
       if (obj._noDrag) return;
+      // los muebles fijos NO se mueven (una cocina no se arrastra por la casa)
+      if (obj._furn && !obj._furn.movable) return;
       // Umbral de 10px (bug QA #1): dedos de niña dan micro-movimiento; sin esto
       // un TOQUE para que la tele brille se leía como arrastre de 2px y no
       // disparaba la reacción. Por debajo del umbral = sigue siendo un tap.
@@ -1443,13 +1549,7 @@ export class HouseScene extends Phaser.Scene {
     for (const c of Object.values(this.chars)) if (c._acc && c._acc.length) this._posAccessories(c);
     this._syncShadows();
 
-    // running tap water
-    if (this._sinkOn && this._waterSpr && this._waterSpr.active && Math.random() < 0.5) {
-      const z = this._waterSpr;
-      const wx = z.x + z.displayWidth * 0.16, wy = z.y - z.displayHeight * 0.62;
-      const d = this.add.image(wx + Phaser.Math.Between(-3, 3), wy, "px").setDepth(15).setTint(0x7fd4ff).setScale(2);
-      this.tweens.add({ targets: d, y: wy + 70, alpha: 0.2, duration: 300, onComplete: () => d.destroy() });
-    }
+    // (el agua del grifo ahora la pinta _showWater: chorro + gotas propias)
 
     // eventos ambientales (game-director #7): el mundo se siente vivo al volver
     this._ambientT = (this._ambientT || 6) - (dms || 16) / 1000;

@@ -4,7 +4,11 @@
 //         | "sink" | "duck" | "fruit" | "rock" | "oven" | "drawers" | "tub"
 //         | "towel" | "soap" | "brush" | "sand" | "water" | "ball" | "dollhouse"
 //   drop: "cook" | "blend" | "table" | "lay" | "swing" | "bounce" | "hide"
-//         | "bathe" | "sit"  (drop:"table" also seats a character = dining)
+//         | "bathe" | "sit" | "wash"  (drop:"table" also seats a character)
+// AJUSTE PROFUNDO (referencia Toca Life World, orden fundadora 2026-07-16):
+// los MUEBLES son FIJOS como en una casa de verdad — solo las cositas
+// pequeñas marcadas con `movable: true` se arrastran. Todo lo demás FUNCIONA
+// (tap/drop), que es donde vive el juego.
 // Garden paints its FENCE; the balcony paints its DECK (handled by HouseScene).
 
 export const ROOMS = {
@@ -27,8 +31,8 @@ export const ROOMS = {
       // RINCÓN DE JUGUETES (encargo fundadora: "coloca juguetes para jugar,
       // más peluches, pelota, casa de muñecas"). Fuera la caja de Halloween.
       { key: "dollhouse", x: 96, y: 700, h: 215, tap: "dollhouse" },
-      { key: "ball", x: 255, y: 706, h: 84, tap: "ball" },
-      { key: "teddy", x: 452, y: 704, h: 112, tap: "wiggle" },
+      { key: "ball", x: 255, y: 706, h: 84, tap: "ball", movable: true },
+      { key: "teddy", x: 452, y: 704, h: 112, tap: "wiggle", movable: true },
     ],
   },
   kitchen: {
@@ -43,7 +47,8 @@ export const ROOMS = {
       // encima de la encimera de las gavetas
       { key: "blender", x: 540, y: 480, h: 112, drop: "blend", tap: "wiggle" },
       { key: "teapot", x: 646, y: 478, h: 78, tap: "wiggle" },
-      { key: "sink", x: 830, y: 654, h: 225, tap: "sink" },
+      // el agua CORRE (visual + sonido) y suelta a alguien = se lava las manos
+      { key: "sink", x: 830, y: 654, h: 225, tap: "sink", drop: "wash" },
       // COMEDOR: suelta comida encima = mesa puesta; suelta a alguien = se sienta
       { key: "ktable", x: 1090, y: 674, h: 215, drop: "table" },
       { key: "fruitbowl", x: 1090, y: 516, h: 76, tap: "fruit" },
@@ -55,15 +60,15 @@ export const ROOMS = {
       // la tina se LLENA de agua si la abre (tap) y baña a quien le suelte
       { key: "bathtub", x: 340, y: 690, h: 250, drop: "bathe", tap: "tub" },
       { key: "toilet", x: 1146, y: 668, h: 230, tap: "wiggle" },
-      { key: "bathsink", x: 806, y: 664, h: 300, tap: "sink" },
+      { key: "bathsink", x: 806, y: 664, h: 300, tap: "sink", drop: "wash" },
       { key: "towelrack", x: 596, y: 560, h: 240, wall: true, tap: "towel" },
       { key: "duck", x: 340, y: 470, h: 62, tap: "duck" },
       // Cositas que se mueven (arrastrar) — encargo fundadora. Van DELANTE (y
       // alta): el orden de dibujo es por y, así que sobre una repisa quedarían
       // tapadas por la propia tina o el lavamanos.
-      { key: "soap", x: 545, y: 672, h: 66, tap: "soap" },
-      { key: "toothbrush", x: 626, y: 676, h: 96, tap: "brush" },
-      { key: "cream", x: 700, y: 670, h: 70, tap: "wiggle" },
+      { key: "soap", x: 545, y: 672, h: 66, tap: "soap", movable: true },
+      { key: "toothbrush", x: 626, y: 676, h: 96, tap: "brush", movable: true },
+      { key: "cream", x: 700, y: 670, h: 70, tap: "wiggle", movable: true },
     ],
   },
   bedroom: {
@@ -74,7 +79,7 @@ export const ROOMS = {
       { key: "desk", x: 900, y: 650, h: 210, tap: "wiggle" },
       { key: "rockinghorse", x: 640, y: 668, h: 180, tap: "rock" },
       { key: "starlamp", x: 760, y: 590, h: 130, tap: "glow" },
-      { key: "slippers", x: 450, y: 700, h: 60, tap: "wiggle" },
+      { key: "slippers", x: 450, y: 700, h: 60, tap: "wiggle", movable: true },
       { key: "moonmobile", x: 640, y: 260, h: 170, wall: true, tap: "wiggle" },
     ],
   },
@@ -90,8 +95,8 @@ export const ROOMS = {
       { key: "sandbox", x: 350, y: 705, h: 120, tap: "sand", drop: "sit", seat: 0.3 },
       { key: "picnic", x: 660, y: 706, h: 110, drop: "sit", seat: 0.12 },
       // tócala y RIEGA: las plantas cercanas florecen
-      { key: "wateringcan", x: 940, y: 690, h: 90, tap: "water" },
-      { key: "ball", x: 440, y: 695, h: 80, tap: "ball" },
+      { key: "wateringcan", x: 940, y: 690, h: 90, tap: "water", movable: true },
+      { key: "ball", x: 440, y: 695, h: 80, tap: "ball", movable: true },
       { key: "doghouse", x: 60, y: 680, h: 170, drop: "hide" },
       { key: "bbq", x: 1230, y: 665, h: 180, drop: "cook" },
     ],
@@ -105,10 +110,10 @@ export const ROOMS = {
     furniture: [
       { key: "armchair", x: 268, y: 700, h: 200, tap: "wiggle", drop: "sit", seat: 0.45 },
       { key: "coffeetable", x: 460, y: 706, h: 112, tap: "wiggle", drop: "table" },
-      { key: "teapot", x: 460, y: 640, h: 76, tap: "wiggle" },
+      { key: "teapot", x: 460, y: 640, h: 76, tap: "wiggle", movable: true },
       { key: "plant", x: 1156, y: 700, h: 200, tap: "wiggle" },
-      { key: "ball", x: 880, y: 708, h: 82, tap: "ball" },
-      { key: "teddy", x: 700, y: 706, h: 110, tap: "wiggle" },
+      { key: "ball", x: 880, y: 708, h: 82, tap: "ball", movable: true },
+      { key: "teddy", x: 700, y: 706, h: 110, tap: "wiggle", movable: true },
     ],
   },
 };
@@ -130,8 +135,19 @@ export const FOODS = {
   pancakes: {}, carrot: {},
   bread: { cooked: "toast" },
   egg: { cooked: "friedegg" },
+  sausage: {}, hotdog: {}, breakfast: {},
 };
-export const FRIDGE_MENU = ["milk", "egg", "cake", "carrot", "juice", "pizza", "cupcake", "bread"];
+export const FRIDGE_MENU = ["milk", "egg", "cake", "carrot", "juice", "pizza", "cupcake", "bread", "sausage"];
+
+// RECETAS (referencia Bluey/Toca, orden fundadora): junta dos comidas y se
+// forma el plato — huevos + salchichas = desayuno; pan + salchicha = hot dog.
+// Clave = los dos ingredientes ordenados alfabéticamente con "+".
+export const COMBOS = {
+  "egg+sausage": { result: "breakfast", label: "Eggs & sausages!" },
+  "friedegg+sausage": { result: "breakfast", label: "Eggs & sausages!" },
+  "bread+sausage": { result: "hotdog", label: "Hot dog!" },
+  "sausage+toast": { result: "hotdog", label: "Hot dog!" },
+};
 
 // Utensilios que salen de las gavetas (se arrastran como la comida, pero no
 // se comen: son cacharros de cocina).
