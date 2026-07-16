@@ -470,6 +470,19 @@ export class HouseScene extends Phaser.Scene {
         }
         break;
       }
+      case "icecream": {
+        // el carrito SIRVE helados (función real, estilo Toca): cucurucho
+        // recién hecho con chispas y campanita
+        this.snd.chime();
+        this.tweens.add({ targets: spr, angle: 3, duration: 100, yoyo: true, repeat: 2, onComplete: () => spr.setAngle(0) });
+        if (this.items.length < 12) {
+          // sale del mostrador y cae botando al suelo, como las manzanas
+          const it = this._spawnItem("icecream", spr.x + Phaser.Math.Between(50, 90), spr.y - spr.displayHeight * 0.55);
+          this.tweens.add({ targets: it, y: CHAR_MAX_Y - 6, duration: 420, ease: "Bounce.out" });
+          this._sparkle(spr.x + 60, spr.y - spr.displayHeight * 0.6, 6);
+        }
+        break;
+      }
       case "fridge": {
         this._fridgeOpen = !this._fridgeOpen;
         this.snd.pick();

@@ -99,6 +99,10 @@ export const ROOMS = {
       { key: "ball", x: 440, y: 695, h: 80, tap: "ball", movable: true },
       { key: "doghouse", x: 60, y: 680, h: 170, drop: "hide" },
       { key: "bbq", x: 1230, y: 665, h: 180, drop: "cook" },
+      // CARRITO DE HELADOS (GLB CC0 de la fundadora, "me gusta la idea de lo
+      // del jardín"): tócalo y sirve un cucurucho. Va DELANTE del manzano
+      // (y alta = se dibuja después): a 745 lo tragaba el trampolín.
+      { key: "icecreamcart", x: 205, y: 700, h: 200, tap: "icecream" },
     ],
   },
   // BALCÓN (encargo fundadora): terraza con vista a la ciudad; la hora y el
@@ -139,6 +143,7 @@ export const FOODS = {
   // Lote 2026-07-16: modelos CC0 que subió la fundadora ("te di bastantes
   // imagenes para Elis World"), renderizados a sprite con scripts/render-glb.js
   donut: {}, popcorn: {}, strawberry: {}, burger: {}, mango: {},
+  icecream: {},
 };
 export const FRIDGE_MENU = ["milk", "egg", "cake", "carrot", "juice", "pizza", "cupcake", "bread", "sausage", "donut", "popcorn", "burger"];
 
