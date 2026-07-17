@@ -1612,9 +1612,11 @@ export class HouseScene extends Phaser.Scene {
     const outdoor = ROOMS[this.room].outdoor;
     const bad = Save.get().weather === "rain" || Save.get().weather === "snow";
     if (outdoor && bad) return; // con lluvia/nieve los bichos no salen
+    // feedback fundadora: NADA de bichos volando dentro de la casa —
+    // mariposas/pájaros solo en jardín y balcón; dentro, brillitos sutiles
     const kind = outdoor
       ? Phaser.Utils.Array.GetRandom(["butterfly", "bird", "apple"])
-      : Phaser.Utils.Array.GetRandom(["butterfly", "note", "sparkle"]);
+      : Phaser.Utils.Array.GetRandom(["note", "sparkle"]);
     if (kind === "butterfly" || kind === "bird") {
       const fromL = Math.random() < 0.5, y = Phaser.Math.Between(140, 420);
       const e = this.add.text(fromL ? -30 : W + 30, y, kind === "bird" ? "🐦" : "🦋", { fontSize: "30px" }).setOrigin(0.5).setDepth(42);
