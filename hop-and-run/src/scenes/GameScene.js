@@ -134,7 +134,10 @@ export class GameScene extends Phaser.Scene {
       // media) → zancada izq → paso (rodilla alta) = alternancia real de piernas.
       this.anims.create({
         key: "run",
-        frames: [1, 2, 4, 5].map((i) => ({ key: `p-cristian-run-${i}` })),
+        // ciclo natural SIN el frame 5 (recorte roto: halo blanco y proporciones
+        // distintas — parpadeaba una vez por ciclo y se veía "raro", feedback
+        // fundadora): contacto(1) → avance(3) → rodilla alta(2) → vuelo(4)
+        frames: [1, 3, 2, 4].map((i) => ({ key: `p-cristian-run-${i}` })),
         frameRate: 13,
         repeat: -1,
       });
