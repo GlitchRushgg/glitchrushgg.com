@@ -33,17 +33,16 @@ export const ROOMS = {
       { key: "dollhouse", x: 96, y: 700, h: 215, tap: "dollhouse" },
       { key: "ball", x: 255, y: 706, h: 84, tap: "ball", movable: true },
       { key: "teddy", x: 452, y: 704, h: 112, tap: "wiggle", movable: true },
-      // CHIMENEA (encargo fundadora, de sus referencias): tap = se enciende
-      { key: "fireplace", x: 870, y: 652, h: 215, tap: "fire" },
-      // INTERIORISMO lote 1 (refs Toca de la fundadora: "se mueven todas las
-      // cosas pequeñas, desde los libros"): repisa en la pared vacía con
-      // LIBROS INDIVIDUALES movibles + cositas
+      // INTERIORISMO lote 1 (refs Toca): repisa en la pared vacía con LIBROS
+      // INDIVIDUALES movibles + cositas. SIN wall: al arrastrarlos, o vuelven
+      // a la repisa o caen al suelo (feedback fundadora: "en la pared no es
+      // real"). La chimenea se mudó al dormitorio: aquí tapaba TV/estantería.
       { key: "wallshelf", x: 460, y: 432, h: 55, wall: true },
-      { key: "book-1", x: 372, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
-      { key: "book-2", x: 408, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
-      { key: "book-3", x: 444, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
-      { key: "birdie", x: 505, y: 394, h: 48, wall: true, tap: "wiggle", movable: true },
-      { key: "alarmclock", x: 555, y: 396, h: 58, wall: true, tap: "wiggle", movable: true },
+      { key: "book-1", x: 372, y: 398, h: 54, tap: "wiggle", movable: true, shelf: true },
+      { key: "book-2", x: 408, y: 398, h: 54, tap: "wiggle", movable: true, shelf: true },
+      { key: "book-3", x: 444, y: 398, h: 54, tap: "wiggle", movable: true, shelf: true },
+      { key: "birdie", x: 505, y: 396, h: 48, tap: "wiggle", movable: true, shelf: true },
+      { key: "alarmclock", x: 555, y: 398, h: 58, tap: "wiggle", movable: true, shelf: true },
       { key: "toycar", x: 350, y: 708, h: 68, tap: "wiggle", movable: true },
       { key: "toyblocks", x: 545, y: 706, h: 78, tap: "wiggle", movable: true },
       { key: "vase-roses", x: 600, y: 598, h: 88, tap: "wiggle", movable: true },
@@ -99,6 +98,8 @@ export const ROOMS = {
       { key: "slippers", x: 450, y: 700, h: 60, tap: "wiggle", movable: true },
       // interiorismo: ordenador retro sobre el escritorio (ref Toca)
       { key: "retropc", x: 900, y: 508, h: 118, tap: "glow" },
+      // CHIMENEA junto a la cama (venía del salón, donde tapaba la TV)
+      { key: "fireplace", x: 128, y: 664, h: 200, tap: "fire" },
       { key: "moonmobile", x: 640, y: 260, h: 170, wall: true, tap: "wiggle" },
     ],
   },

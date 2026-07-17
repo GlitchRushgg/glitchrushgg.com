@@ -1061,7 +1061,9 @@ export class HouseScene extends Phaser.Scene {
     spr.x = Phaser.Math.Clamp(x, z.x - z.displayWidth * 0.32, z.x + z.displayWidth * 0.32);
     spr.setAngle(0);
     if (spr.displayHeight > z.displayHeight * 0.8) {
-      spr.y = seatY + spr.displayHeight * 0.06;
+      // hundir MÁS a los altos: solo cabeza y torso sobre el respaldo — antes
+      // parecía "de pie detrás del sofá" (feedback fundadora: no se sienta)
+      spr.y = seatY + spr.displayHeight * 0.3;
       this.layerRoom.add(spr);
       this.layerRoom.moveTo(spr, Math.max(0, this.layerRoom.getIndex(z)));
     } else {
@@ -1523,7 +1525,19 @@ export class HouseScene extends Phaser.Scene {
         if (!obj._dragMoved) { if (f.tap) this._tapFurniture(obj, f); return; }
         obj.x = Phaser.Math.Clamp(obj.x, 40, W - 40);
         if (f.wall) obj.y = Phaser.Math.Clamp(obj.y, 150, WALL_BOT - 10);
-        else obj.y = Phaser.Math.Clamp(obj.y, FLOOR_Y + 24, H - 6);
+        else if (f.shelf) {
+          // objetos de repisa (feedback fundadora: "en la pared no es real"):
+          // o se quedan DE PIE sobre la repisa o caen al suelo
+          const sh = this.layerRoom.list.find((s) => s._furn?.key === "wallshelf");
+          if (sh && Math.abs(obj.x - sh.x) < sh.displayWidth / 2 + 24 && obj.y < sh.y + 90) {
+            obj.x = Phaser.Math.Clamp(obj.x, sh.x - sh.displayWidth / 2 + 16, sh.x + sh.displayWidth / 2 - 16);
+            obj.y = sh.y - sh.displayHeight * 0.6;
+            this.snd.drop();
+          } else {
+            obj.y = Phaser.Math.Clamp(Math.max(obj.y, FLOOR_Y + 60), FLOOR_Y + 24, H - 6);
+            this._dust(obj.x, obj.y);
+          }
+        } else obj.y = Phaser.Math.Clamp(obj.y, FLOOR_Y + 24, H - 6);
         if (obj._glow) { obj._glow.x = obj.x; obj._glow.y = obj.y - obj.displayHeight * 0.72; }
         if (f.key === "ball") { this.snd.boing(); this.tweens.add({ targets: obj, y: obj.y - 60, duration: 240, yoyo: true, ease: "Quad.out" }); }
         else this.snd.drop();
