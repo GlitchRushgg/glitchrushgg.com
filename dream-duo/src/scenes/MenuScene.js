@@ -43,6 +43,14 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-SPACE", start);
     this.input.keyboard.on("keydown-ENTER", start);
 
+    // C8: DUO CHALLENGE — el modo dos-mundos-desde-el-segundo-0 se DESBLOQUEA
+    // (el juego base empieza con una columna y Flofy despierta)
+    if (sv.duoUnlocked) {
+      const duo = this.add.text(W / 2, 366, "⚡ DUO CHALLENGE", f("17px", { backgroundColor: "#241a4a", color: "#8ef5c9" }))
+        .setOrigin(0.5).setPadding(22, 9, 22, 9).setInteractive({ useHandCursor: true });
+      duo.on("pointerdown", () => { this.snd.resume(); this.snd.ui(); this.scene.start("Game", { duo: true }); });
+    }
+
     // cómo se juega — dos mundos, un tap por mano
     const how = this.add.container(0, 0);
     how.add(this.add.rectangle(W / 2, 405, 330, 84, 0x241a4a, 0.82).setStrokeStyle(2, 0xb9a6ff, 0.7));
@@ -77,8 +85,9 @@ export class MenuScene extends Phaser.Scene {
       this.snd.setMuted(!this.snd.muted);
       this._muteBtn.setText(this.snd.muted ? "🔇" : "🔊");
     });
-    const share = this.add.text(W - 14, 62, "SHARE", f("13px", { backgroundColor: "#3a2260cc", color: "#cbb7ff" }))
-      .setOrigin(1, 0).setPadding(11, 7, 11, 7).setInteractive({ useHandCursor: true });
+    // (P2 QA: antes en y=62 pisaba la "O" del título)
+    const share = this.add.text(W - 14, H - 14, "SHARE", f("13px", { backgroundColor: "#3a2260cc", color: "#cbb7ff" }))
+      .setOrigin(1, 1).setPadding(11, 7, 11, 7).setInteractive({ useHandCursor: true });
     share.on("pointerdown", () => this._share());
     if (window.self === window.top) {
       const home = this.add.text(14, 12, "🏠", f("18px", { backgroundColor: "#3a2260cc" }))

@@ -36,7 +36,9 @@ export class GameOverScene extends Phaser.Scene {
 
     panel.add(this.add.text(W / 2, H / 2 - 158, isBest ? "★ NEW BEST! ★" : "SWEET DREAMS…", f("26px", { color: isBest ? "#ffd94e" : "#ff9ed2" })).setOrigin(0.5));
     panel.add(this.add.text(W / 2, H / 2 - 108, String(this.res.score), f("56px")).setOrigin(0.5));
-    panel.add(this.add.text(W / 2, H / 2 - 62, `BEST ${sv.best} · ${this.res.time}s · ×${this.res.multMax} · ${this.res.syncs} syncs`, f("14px", { color: "#cbb7ff", fontStyle: "normal" })).setOrigin(0.5));
+    // C6: morir con dignidad — lo que GANASTE, no lo que perdiste
+    panel.add(this.add.text(W / 2, H / 2 - 62, `⭐ You saved ${this.res.stars} stars!`, f("17px", { color: "#ffd94e" })).setOrigin(0.5));
+    panel.add(this.add.text(W / 2, H / 2 - 38, `BEST ${sv.best} · ${this.res.time}s · ×${this.res.multMax} · ${this.res.syncs} syncs`, f("13px", { color: "#cbb7ff", fontStyle: "normal" })).setOrigin(0.5));
 
     this.starLine = this.add.text(W / 2, H / 2 - 30, `★ +${this.res.stars} stars`, f("18px", { color: "#ffd94e" })).setOrigin(0.5);
     panel.add(this.starLine);
@@ -101,8 +103,11 @@ export class GameOverScene extends Phaser.Scene {
 
   _retry() {
     deathsSinceAd++;
-    if (deathsSinceAd >= 3) { deathsSinceAd = 0; SDK.midgameAd(() => this.scene.start("Game")); }
-    else this.scene.start("Game");
+    const sv = Save.get();
+    sv.retries = (sv.retries || 0) + 1; Save.persist();   // C6: métrica retry-rate
+    const data = { duo: this.res.duo };                    // C8: el reto se rejuega como reto
+    if (deathsSinceAd >= 3) { deathsSinceAd = 0; SDK.midgameAd(() => this.scene.start("Game", data)); }
+    else this.scene.start("Game", data);
   }
 
   async _share() {

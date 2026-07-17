@@ -10,7 +10,7 @@
 
 import {
   W, H, DIV_X, LANES, CHAR_Y, HIT_WIN, SPAWN_Y, LERP_MS,
-  SPEED0, RAMP_STEP, RAMP_EVERY, MAX_RAMP, PX_PER_M,
+  SPEED0, RAMP_STEP, RAMP_EVERY, MAX_RAMP, EARLY_CAP, EARLY_SECS, WAKE_STARS, PX_PER_M,
   SYNC_WINDOW, MAX_MULT, METER_MAX, RUSH_SECS, SHIELD_SECS, REVIVE_STARS,
   TINTS, TINT_EVERY,
 } from "../const.js";
@@ -21,15 +21,17 @@ import { TRAILS } from "../items.js";
 import { startRun, report } from "../missions.js";
 
 const FONT = "'Segoe UI', system-ui, sans-serif";
+// C3: la BURBUJA fuera del pool (parecía un premio — un niño intentaba cogerla)
 const PARK_OBS = ["hedge", "bench", "birdbath", "pigeon"];
-const DREAM_OBS = ["cloud", "blocks", "top", "bubble"];
+const DREAM_OBS = ["cloud", "blocks", "top"];
 const OB_SIZE = { hedge: 64, bench: 62, birdbath: 74, pigeon: 52, cloud: 60, blocks: 76, top: 54, bubble: 58 };
 
 export class GameScene extends Phaser.Scene {
   constructor() { super("Game"); }
 
-  create() {
+  create(data) {
     window.__dd = this;
+    this._duoMode = !!(data && data.duo);   // C8: DUO CHALLENGE = dos mundos desde el s.0
     this.snd = new Sound();
     this.snd.resume();
 
@@ -53,6 +55,8 @@ export class GameScene extends Phaser.Scene {
     this.sweepT = 0;           // Cristian: sin obstáculos unos segundos
     this.invuln = 0;
     this.slowmo = 0;
+    this.rubberT = 0;                        // C4: alivio de velocidad tras un golpe
+    this.duoAwake = this._duoMode;           // C2: el sueño empieza dormido
     this.dead = false;
     this.paused = false;
     this.usedRevive = false;
@@ -78,6 +82,25 @@ export class GameScene extends Phaser.Scene {
     this._buildCharacters();
     this._buildHUD();
     this._bindInput();
+
+    // C0 (legibilidad): velo índigo suave sobre el sueño — Flofy blanco deja
+    // de fundirse con las nubes pastel — y halo oscuro tras él
+    this.dreamShade = this.add.rectangle(W * 0.75, H / 2, DIV_X, H, 0x241a4e, 0.15).setDepth(4);
+    this.flofyHalo = this.add.image(this.F.x, CHAR_Y - 45, "glow").setDepth(5).setScale(1.6).setTint(0x2c1e5c).setAlpha(0.5);
+
+    // C3: cara de enfado para TODO obstáculo (lo oscuro = malo, lo dorado = premio)
+    if (!this.textures.exists("angry-eyes")) {
+      const g = this.make.graphics({ x: 0, y: 0, add: false });
+      g.fillStyle(0xffffff); g.fillEllipse(15, 14, 20, 15); g.fillEllipse(37, 14, 20, 15);
+      g.fillStyle(0x1a1030); g.fillEllipse(17, 15, 9, 10); g.fillEllipse(35, 15, 9, 10);
+      g.lineStyle(5, 0xd83a5e);
+      g.beginPath(); g.moveTo(3, 3); g.lineTo(25, 10); g.strokePath();
+      g.beginPath(); g.moveTo(49, 3); g.lineTo(27, 10); g.strokePath();
+      g.generateTexture("angry-eyes", 52, 26); g.destroy();
+    }
+
+    // C2: el mundo del sueño arranca DORMIDO (una sola columna al empezar)
+    if (!this.duoAwake) this._sleepDream();
     this._ghostSetup(sv);
 
     startRun();
@@ -271,12 +294,42 @@ export class GameScene extends Phaser.Scene {
      Fases: 0 (0-6s solo estrellas · tutorial) → 1 (obstáculos sueltos)
      → 2 (20s eventos simultáneos asimétricos) → 3 (40s movers y fintas).
      Fairness: por columna, nunca dos acciones exigidas en <0.55s. */
+  /* ============ C2: FLOFY DESPIERTA (onboarding una-columna) ============ */
+  _sleepDream() {
+    this.sleepVeil = this.add.rectangle(W * 0.75, H / 2, DIV_X, H, 0x150f38, 0.44).setDepth(20);
+    this.F.spr.setAlpha(0.85);
+    this._zzzT = this.time.addEvent({
+      delay: 1400, loop: true, callback: () => {
+        if (this.duoAwake) return;
+        const z = this.add.text(this.F.x + 26, CHAR_Y - 92, "💤", { fontSize: "24px" }).setDepth(21);
+        this.tweens.add({ targets: z, y: z.y - 42, alpha: 0, duration: 1200, onComplete: () => z.destroy() });
+      },
+    });
+    this._toast(`⭐ Catch ${WAKE_STARS} stars to wake Flofy!`, 0xffd94e);
+  }
+
+  _wakeDuo() {
+    this.duoAwake = true;
+    if (this._zzzT) { this._zzzT.remove(); this._zzzT = null; }
+    if (this.sleepVeil) { this.tweens.add({ targets: this.sleepVeil, alpha: 0, duration: 700, onComplete: () => { this.sleepVeil.destroy(); this.sleepVeil = null; } }); }
+    this.F.spr.setAlpha(1);
+    this.tweens.add({ targets: this.F.spr, y: this.F.spr.y - 60, duration: 260, yoyo: true, ease: "Quad.out" });
+    this.cameras.main.flash(400, 255, 240, 180);
+    this.snd.fanfare();
+    this._toast("🐰 FLOFY WAKES UP!\nNow guide BOTH worlds!", 0x8ef5c9);
+    for (let i = 0; i < 14; i++) this._spark(this.F.x + (Math.random() * 120 - 60), CHAR_Y - 40 - Math.random() * 90, 0xbfa8ff);
+    const sv = Save.get();
+    if (!sv.duoUnlocked) { sv.duoUnlocked = true; Save.persist(); }
+    // que el primer evento del sueño llegue con aire
+    this._colT[1] = 1.6;
+  }
+
   _phase() { return this.time_ < 6 ? 0 : this.time_ < 20 ? 1 : this.time_ < 40 ? 2 : 3; }
 
   _spawner(dt) {
     const ph = this._phase();
 
-    for (let col = 0; col < 2; col++) {
+    for (let col = 0; col < (this.duoAwake ? 2 : 1); col++) {
       this._colT[col] -= dt;
       // finta programada (obstáculo tras estrella en el mismo carril)
       const feint = this._feint[col];
@@ -298,7 +351,8 @@ export class GameScene extends Phaser.Scene {
         this._addStar(col, lane); // en el rush solo llueven estrellas
       } else {
         const roll = Math.random();
-        if (roll < 0.62 || this.sweepT > 0) {
+        // C4: nada de obstáculos antes del segundo 10
+        if (this.time_ < 10 || roll < 0.62 || this.sweepT > 0) {
           this._addStar(col, lane);
           // finta: solo fase 3, con margen justo para recoger y cambiar
           if (ph === 3 && Math.random() < 0.15) this._feint[col] = { lane, t: 0.65 };
@@ -311,7 +365,7 @@ export class GameScene extends Phaser.Scene {
       const base = ph === 0 ? 1.5 : Math.max(0.62, 1.18 - this.time_ * 0.004);
       this._colT[col] = Math.max(0.55, base + Math.random() * 0.35);
       // fase 2+: a veces evento simultáneo en la otra columna (asimétrico)
-      if (ph >= 2 && this.rushT <= 0 && Math.random() < 0.22) {
+      if (ph >= 2 && this.duoAwake && this.rushT <= 0 && Math.random() < 0.22) {
         const other = 1 - col;
         if (this._colT[other] > 0.55) {
           const oLane = Math.random() < 0.5 ? 0 : 1;
@@ -323,7 +377,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // SYNC pairs — frecuentes: el FAIRY RUSH debe verse en la primera sesión
-    if (this.time_ > 8 && this.rushT <= 0) {
+    if (this.duoAwake && this.time_ > 8 && this.rushT <= 0) {
       this._syncT -= dt;
       if (this._syncT <= 0) {
         this._addPair();
@@ -382,7 +436,15 @@ export class GameScene extends Phaser.Scene {
     const key = `ob-${type}`;
     const spr = this.add.image(x, SPAWN_Y, key).setDepth(8);
     spr.setScale(OB_SIZE[type] / spr.height);
-    const o = { kind: "ob", spr, col, lane, y: SPAWN_Y, type, taken: false };
+    // C3: el MAL se ve MALO — silueta ensombrecida + halo rojo pulsante
+    // (el halo va en o.glow: ya lo siguen y limpian los bucles existentes)
+    spr.setTint(0x9a86b0);
+    const halo = this.add.image(x, SPAWN_Y, "glow").setDepth(7).setTint(0xff5050).setScale(1.15).setAlpha(0.4);
+    this.tweens.add({ targets: halo, alpha: { from: 0.22, to: 0.55 }, duration: 430, yoyo: true, repeat: -1 });
+    const o = { kind: "ob", spr, glow: halo, col, lane, y: SPAWN_Y, type, taken: false };
+    // ceño enfadado encima (un niño de 6 años lee "eso no se toca")
+    o.eyes = this.add.image(x, SPAWN_Y - spr.displayHeight * 0.16, "angry-eyes").setDepth(9).setScale(Math.min(1, spr.displayWidth / 70));
+    o.eyeOff = spr.displayHeight * 0.16;
     if (type === "top") this.tweens.add({ targets: spr, angle: { from: -8, to: 8 }, duration: 160, yoyo: true, repeat: -1 });
     if (type === "pigeon" || type === "bubble") {
       o.mover = { from: lane, t: 0, dur: 1.6 + Math.random() * 0.6 }; // cruza al otro carril
@@ -391,7 +453,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   _addPickup(kind) {
-    const col = Math.random() < 0.5 ? 0 : 1;
+    const col = this.duoAwake ? (Math.random() < 0.5 ? 0 : 1) : 0;
     const lane = Math.random() < 0.5 ? 0 : 1;
     const x = this._laneX(col, lane);
     const glow = this.add.image(x, SPAWN_Y, "glow").setDepth(6).setScale(1.3).setTint(0xfff2b0);
@@ -414,8 +476,11 @@ export class GameScene extends Phaser.Scene {
 
     this.time_ += dt;
     // velocidad por escalones (+5% cada 8s, constante dentro del escalón)
+    // C4: tope suave los 2 primeros minutos + alivio -10% tras un golpe
+    if (this.rubberT > 0) this.rubberT -= dt;
     const steps = Math.floor(this.time_ / RAMP_EVERY);
-    this.speed = SPEED0 * Math.min(MAX_RAMP, 1 + RAMP_STEP * steps) * (this.rushT > 0 ? 1.15 : 1);
+    const cap = this.time_ < EARLY_SECS ? EARLY_CAP : MAX_RAMP;
+    this.speed = SPEED0 * Math.min(cap, 1 + RAMP_STEP * steps) * (this.rushT > 0 ? 1.15 : 1) * (this.rubberT > 0 ? 0.9 : 1);
     this.dist += this.speed * dt;
 
     // scroll de mundos (el tile es 512 de ancho escalado)
@@ -493,6 +558,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.shieldE.setPosition(this.E.x, CHAR_Y - 55);
     this.shieldF.setPosition(this.F.x, CHAR_Y - 45);
+    if (this.flofyHalo) this.flofyHalo.setPosition(this.F.x, CHAR_Y - 45);
   }
 
   _moveObjs(dt) {
@@ -509,6 +575,7 @@ export class GameScene extends Phaser.Scene {
       }
       o.spr.y = o.y;
       if (o.glow) { o.glow.y = o.y; o.glow.x = o.spr.x; }
+      if (o.eyes) { o.eyes.y = o.y - o.eyeOff; o.eyes.x = o.spr.x; }
 
       if (!o.taken) {
         const contact = Math.abs(o.y - CHAR_Y + 34) <= HIT_WIN;
@@ -530,7 +597,7 @@ export class GameScene extends Phaser.Scene {
       if (o.y > H + 80) kill.push(o);
     }
     for (const o of kill) {
-      o.spr.destroy(); if (o.glow) o.glow.destroy();
+      o.spr.destroy(); if (o.glow) o.glow.destroy(); if (o.eyes) o.eyes.destroy();
       this.objs.splice(this.objs.indexOf(o), 1);
     }
   }
@@ -545,6 +612,13 @@ export class GameScene extends Phaser.Scene {
     Save.addStars(1);
     this.starTxt.setText(String(this.starsRun));
     this.snd.star(this.mult);
+    // C5: fiesta de acierto — el "+N" se VE
+    const pop = this.add.text(o.spr.x, o.y - 24, "+" + (bonus * this.mult), {
+      fontFamily: FONT, fontSize: this.mult > 1 ? "22px" : "17px", color: "#ffd94e", fontStyle: "bold", stroke: "#3a2260", strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(35);
+    this.tweens.add({ targets: pop, y: pop.y - 40, alpha: 0, duration: 620, onComplete: () => pop.destroy() });
+    // C2: al llegar a WAKE_STARS, Flofy despierta
+    if (!this.duoAwake && this.starsRun >= WAKE_STARS) this._wakeDuo();
     for (let i = 0; i < 6; i++) this._spark(o.spr.x, o.y, 0xffd94e);
     this.tweens.add({ targets: [o.spr, o.glow].filter(Boolean), scale: 0, alpha: 0, duration: 160, onComplete: () => { o.spr.destroy(); if (o.glow) o.glow.destroy(); } });
     this._missionToast(report("stars", 1));
@@ -587,27 +661,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   _missStar(o) {
+    // C1 (rediseño): la estrella perdida NUNCA quita corazón — solo rompe el
+    // combo y se va con un "plin" triste. Los corazones son SOLO por choque.
     if (this.rushT > 0 || this.shieldT > 0) return;             // el rush/escudo perdona
     if (o.pairId) this.pairs.delete(o.pairId);
     this.mult = 1;
     this.multTxt.setText("×1");
     this.snd.deny();
-    // GRACIA de onboarding: los primeros 10s un fallo no cuesta corazón,
-    // solo enseña la regla (trip-not-death para la primera partida).
-    if (this.time_ < 10) {
-      if (!this._graceShown) { this._graceShown = true; this._toast("⭐ Catch EVERY star!", 0xffd94e); }
-      const miss = this.add.text(o.spr.x, CHAR_Y - 90, "MISS", { fontFamily: FONT, fontSize: "17px", color: "#ff9d8a", fontStyle: "bold", stroke: "#3a2260", strokeThickness: 4 }).setOrigin(0.5).setDepth(35);
-      this.tweens.add({ targets: miss, y: miss.y - 34, alpha: 0, duration: 700, onComplete: () => miss.destroy() });
-      o.spr.setTint(0x8b93a3);
-      this.tweens.add({ targets: o.spr, alpha: 0, y: o.y + 40, angle: 90, duration: 380 });
-      return;
-    }
-    // la estrella se rompe con pena (feedback cálido, castigo real)
+    if (!this._graceShown) { this._graceShown = true; this._toast("⭐ Catch EVERY star!", 0xffd94e); }
     o.spr.setTint(0x8b93a3);
     this.tweens.add({ targets: o.spr, alpha: 0, y: o.y + 40, angle: 90, duration: 380 });
-    const miss = this.add.text(o.spr.x, CHAR_Y - 90, "MISS", { fontFamily: FONT, fontSize: "17px", color: "#ff9d8a", fontStyle: "bold", stroke: "#3a2260", strokeThickness: 4 }).setOrigin(0.5).setDepth(35);
-    this.tweens.add({ targets: miss, y: miss.y - 34, alpha: 0, duration: 700, onComplete: () => miss.destroy() });
-    this._loseHeart(o, "miss");
   }
 
   _hitOb(o) {
@@ -637,7 +700,9 @@ export class GameScene extends Phaser.Scene {
     (window.__ddLoss = window.__ddLoss || []).push({ t: +this.time_.toFixed(1), why, type: o?.type || "star", col: o?.col });
     this.hearts--;
     this.heartIcons.forEach((h, i) => h.setAlpha(i < this.hearts ? 1 : 0.22));
-    this.invuln = 1.2;
+    // C4: gracia generosa + alivio de velocidad (rubber-band) tras el golpe
+    this.invuln = 2.5;
+    this.rubberT = 4;
     if (this.hearts <= 0) this._death(o, why);
   }
 
@@ -659,7 +724,7 @@ export class GameScene extends Phaser.Scene {
       // Cristian barre los obstáculos en pantalla
       for (const x of this.objs) if (x.kind === "ob" && !x.taken) {
         x.taken = true;
-        this.tweens.add({ targets: x.spr, x: x.spr.x + (x.col === 0 ? -240 : 240), angle: 60, alpha: 0, duration: 420 });
+        this.tweens.add({ targets: [x.spr, x.eyes, x.glow].filter(Boolean), x: x.spr.x + (x.col === 0 ? -240 : 240), angle: 60, alpha: 0, duration: 420 });
       }
       this.snd.dash();
       this._toast("🛹 Cristian clears the way!", 0x8ef5c9);
@@ -720,6 +785,9 @@ export class GameScene extends Phaser.Scene {
     SDK.gameplayStop();
     const sv = Save.get();
     sv.lastDeath = { dist: this.dist, lane: (o ? o.col * 2 + o.lane : 0) };
+    // C6: contadores locales para medir el rediseño (duración mediana, runs)
+    sv.runs = (sv.runs || 0) + 1;
+    sv.playSecs = (sv.playSecs || 0) + Math.round(this.time_);
     Save.persist();
 
     // rewarded revive 1×run (o 100★) — requisito CG, siempre con alternativa
@@ -798,6 +866,7 @@ export class GameScene extends Phaser.Scene {
       time: Math.floor(this.time_),
       syncs: this.syncsRun,
       multMax: this.multMax,
+      duo: this._duoMode,
     });
   }
 
