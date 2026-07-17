@@ -35,6 +35,18 @@ export const ROOMS = {
       { key: "teddy", x: 452, y: 704, h: 112, tap: "wiggle", movable: true },
       // CHIMENEA (encargo fundadora, de sus referencias): tap = se enciende
       { key: "fireplace", x: 870, y: 652, h: 215, tap: "fire" },
+      // INTERIORISMO lote 1 (refs Toca de la fundadora: "se mueven todas las
+      // cosas pequeñas, desde los libros"): repisa en la pared vacía con
+      // LIBROS INDIVIDUALES movibles + cositas
+      { key: "wallshelf", x: 460, y: 432, h: 55, wall: true },
+      { key: "book-1", x: 372, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
+      { key: "book-2", x: 408, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
+      { key: "book-3", x: 444, y: 396, h: 54, wall: true, tap: "wiggle", movable: true },
+      { key: "birdie", x: 505, y: 394, h: 48, wall: true, tap: "wiggle", movable: true },
+      { key: "alarmclock", x: 555, y: 396, h: 58, wall: true, tap: "wiggle", movable: true },
+      { key: "toycar", x: 350, y: 708, h: 68, tap: "wiggle", movable: true },
+      { key: "toyblocks", x: 545, y: 706, h: 78, tap: "wiggle", movable: true },
+      { key: "vase-roses", x: 600, y: 598, h: 88, tap: "wiggle", movable: true },
     ],
   },
   kitchen: {
@@ -71,6 +83,9 @@ export const ROOMS = {
       { key: "soap", x: 545, y: 672, h: 66, tap: "soap", movable: true },
       { key: "toothbrush", x: 626, y: 676, h: 96, tap: "brush", movable: true },
       { key: "cream", x: 700, y: 670, h: 70, tap: "wiggle", movable: true },
+      // interiorismo: champú y toallas dobladas (refs Toca)
+      { key: "shampoo", x: 762, y: 674, h: 68, tap: "wiggle", movable: true },
+      { key: "towels", x: 962, y: 698, h: 78, tap: "towel", movable: true },
     ],
   },
   bedroom: {
@@ -82,6 +97,8 @@ export const ROOMS = {
       { key: "rockinghorse", x: 640, y: 668, h: 180, tap: "rock" },
       { key: "starlamp", x: 760, y: 590, h: 130, tap: "glow" },
       { key: "slippers", x: 450, y: 700, h: 60, tap: "wiggle", movable: true },
+      // interiorismo: ordenador retro sobre el escritorio (ref Toca)
+      { key: "retropc", x: 900, y: 508, h: 118, tap: "glow" },
       { key: "moonmobile", x: 640, y: 260, h: 170, wall: true, tap: "wiggle" },
     ],
   },
