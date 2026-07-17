@@ -26,8 +26,8 @@ export class MenuScene extends Phaser.Scene {
     // title
     this.add.text(W / 2 + 3, 96, "DREAM DUO", f("42px", { color: "#3a2260" })).setOrigin(0.5).setAlpha(0.6);
     this.add.text(W / 2, 92, "DREAM DUO", f("42px", { color: "#ffd6ec", stroke: "#3a2260", strokeThickness: 7 })).setOrigin(0.5);
-    this.add.text(W / 2, 138, "Elizabeth & Flofy", f("20px", { color: "#cbb7ff" })).setOrigin(0.5);
-    this.add.text(W / 2, 172, "One brain. Two worlds.", f("16px", { color: "#ffe6b0", fontStyle: "normal" })).setOrigin(0.5);
+    this.add.text(W / 2, 138, "Elizabeth & Floffy", f("20px", { color: "#cbb7ff" })).setOrigin(0.5);
+    this.add.text(W / 2, 172, "Run, jump… and FLING the bunny!", f("16px", { color: "#ffe6b0", fontStyle: "normal" })).setOrigin(0.5);
 
     // best + stars
     this.add.text(W / 2 - 60, 214, sv.best > 0 ? `BEST ${sv.best}` : "NEW GAME", f("17px")).setOrigin(0.5);
@@ -43,22 +43,14 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard.on("keydown-SPACE", start);
     this.input.keyboard.on("keydown-ENTER", start);
 
-    // C8: DUO CHALLENGE — el modo dos-mundos-desde-el-segundo-0 se DESBLOQUEA
-    // (el juego base empieza con una columna y Flofy despierta)
-    if (sv.duoUnlocked) {
-      const duo = this.add.text(W / 2, 366, "⚡ DUO CHALLENGE", f("17px", { backgroundColor: "#241a4a", color: "#8ef5c9" }))
-        .setOrigin(0.5).setPadding(22, 9, 22, 9).setInteractive({ useHandCursor: true });
-      duo.on("pointerdown", () => { this.snd.resume(); this.snd.ui(); this.scene.start("Game", { duo: true }); });
-    }
-
-    // cómo se juega — dos mundos, un tap por mano
+    // cómo se juega — un mundo, un pulgar (pivote Floffy Fling)
     const how = this.add.container(0, 0);
     how.add(this.add.rectangle(W / 2, 405, 330, 84, 0x241a4a, 0.82).setStrokeStyle(2, 0xb9a6ff, 0.7));
-    how.add(this.add.text(W / 4 + 10, 382, "🌳 LEFT tap", f("15px", { color: "#8ef5c9" })).setOrigin(0.5));
-    how.add(this.add.text(W / 4 + 10, 408, "Elizabeth\nswitches path", f("13px", { color: "#e8dcff", align: "center", fontStyle: "normal" })).setOrigin(0.5, 0));
-    how.add(this.add.text((3 * W) / 4 - 10, 382, "RIGHT tap 🌙", f("15px", { color: "#b9a6ff" })).setOrigin(0.5));
-    how.add(this.add.text((3 * W) / 4 - 10, 408, "Flofy\nswitches cloud", f("13px", { color: "#e8dcff", align: "center", fontStyle: "normal" })).setOrigin(0.5, 0));
-    this.add.text(W / 2, 462, "Catch EVERY star · dodge everything else", f("14px", { color: "#ffd94e", fontStyle: "normal" })).setOrigin(0.5);
+    how.add(this.add.text(W / 4 + 10, 382, "👆 TAP", f("15px", { color: "#8ef5c9" })).setOrigin(0.5));
+    how.add(this.add.text(W / 4 + 10, 408, "Elizabeth\njumps", f("13px", { color: "#e8dcff", align: "center", fontStyle: "normal" })).setOrigin(0.5, 0));
+    how.add(this.add.text((3 * W) / 4 - 10, 382, "FLICK 🐰", f("15px", { color: "#b9a6ff" })).setOrigin(0.5));
+    how.add(this.add.text((3 * W) / 4 - 10, 408, "throw Floffy —\nhe always comes back!", f("13px", { color: "#e8dcff", align: "center", fontStyle: "normal" })).setOrigin(0.5, 0));
+    this.add.text(W / 2, 462, "Gold = catch it · Grumpy = fling Floffy!", f("14px", { color: "#ffd94e", fontStyle: "normal" })).setOrigin(0.5);
 
     // misiones del día
     const ms = getMissions();

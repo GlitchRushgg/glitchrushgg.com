@@ -8,11 +8,15 @@ import { SDK } from "../utils/SDK.js";
 const ART = [
   "eliz-back-a", "eliz-back-b", "eliz-fairy",   // retro-vista v2 + hada (rush)
   "flofy-back-a", "flofy-back-b", "flofy-front",
+  // FLOFFY FLING v3 (side-view): zancada de 4 fases + salto + Floffy
+  "eliz-r1", "eliz-r2", "eliz-r3", "eliz-r4", "eliz-jump",
+  "flofy-hop", "flofy-fall",
   "ob-hedge", "ob-bench", "ob-birdbath", "ob-pigeon",
   "ob-cloud", "ob-blocks", "ob-top",
   "pw-mama", "pw-papa", "pw-cristian", "shop-fairy",
 ];
-const BGS = ["bg-col-park", "bg-col-dream", "duo-hero"];
+const BGS = ["bg-col-park", "bg-col-dream", "duo-hero",
+  "bg-park-day", "bg-park-sunset", "bg-park-night"];
 
 export class BootScene extends Phaser.Scene {
   constructor() { super("Boot"); }
