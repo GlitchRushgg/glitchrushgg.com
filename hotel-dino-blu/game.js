@@ -3045,36 +3045,40 @@ HANDS.visible = false;
   const skin = handSkinMat, sleeve = handSleeveMat, cloth = lamb(0xfff2b0);
   // esfera con MATERIAL (el sph de la camarera es local suyo y recibe color)
   const sph = (r, m, seg = 12) => new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), m);
-  // Manos v2 (feedback Cristian: "se ven peor, mejorar"): geometría REDONDEADA
-  // — antebrazo cilíndrico con puño blanco, palma y dedos con puntas de esfera
-  // en vez de las cajas planas que se leían como bloques.
-  const buildArm = (s) => {                // s = -1 izquierda, +1 derecha
+  // Manos v3 (3ª petición de la fundadora — las de piel "realistas" se veían
+  // raras/uncanny). CLAVE: una camarera limpia con GUANTES DE GOMA, así que
+  // una forma simple, gordita y redonda se lee como guante INTENCIONADO
+  // (mono, no como dedos-salchicha fallidos). Guante amarillo de limpieza.
+  const glove = lamb(0xffcf5a);           // guante de goma amarillo
+  const buildArm = (s) => {               // s = -1 izquierda, +1 derecha
     const a = new THREE.Group();
-    const fore = cyl(0.06, 0.072, 0.3, sleeve, 12);           // manga (más ancha al codo)
-    fore.rotation.x = Math.PI / 2; add(a, fore, 0, 0, 0.03);
-    const cuff = cyl(0.064, 0.064, 0.045, lamb(0xffffff), 12); // puño blanco del uniforme
-    cuff.rotation.x = Math.PI / 2; add(a, cuff, 0, 0, -0.13);
-    add(a, sph(0.052, skin, 12), 0, 0, -0.17);                // muñeca
-    const palm = add(a, sph(0.074, skin, 12), 0, 0, -0.29);   // palma (esfera achatada)
-    palm.scale.set(1, 0.6, 1.15);
-    // 4 dedos: cilindros finos con puntas redondas, en ligero abanico
+    const fore = cyl(0.062, 0.08, 0.26, sleeve, 14);          // manga del uniforme
+    fore.rotation.x = Math.PI / 2; add(a, fore, 0, 0, 0.06);
+    // puño ACAMPANADO del guante: la silueta que lo delata como guante de goma
+    const cuff = cyl(0.092, 0.072, 0.075, glove, 16);
+    cuff.rotation.x = Math.PI / 2; add(a, cuff, 0, 0, -0.10);
+    // dorso/palma: esfera ancha y achatada (mano enguantada, NO piel)
+    const palm = add(a, sph(0.086, glove, 16), 0, 0, -0.23);
+    palm.scale.set(1.06, 0.72, 1.02);
+    // 4 dedos GORDOS y cortos con punta redonda (cápsulas), abanico suave
     for (let i = 0; i < 4; i++) {
-      const x = -0.048 + i * 0.032;
-      const f = cyl(0.015, 0.018, 0.11, skin, 8);
-      f.rotation.x = Math.PI / 2; f.rotation.z = (i - 1.5) * 0.04;
-      add(a, f, x, 0.01, -0.4);
-      add(a, sph(0.017, skin, 8), x, 0.01, -0.455);
+      const x = -0.052 + i * 0.034;
+      const f = cyl(0.025, 0.027, 0.07, glove, 10);
+      f.rotation.x = Math.PI / 2; f.rotation.z = (i - 1.5) * 0.05;
+      add(a, f, x, 0.006, -0.32);
+      add(a, sph(0.027, glove, 10), x, 0.006, -0.352);        // yema gorda redonda
     }
-    const th = cyl(0.019, 0.022, 0.09, skin, 8);              // pulgar
-    th.rotation.x = Math.PI / 2; th.rotation.y = s * 0.6;
-    add(a, th, -s * 0.088, -0.01, -0.32);
-    add(a, sph(0.02, skin, 8), -s * 0.115, -0.01, -0.355);
-    if (s > 0) { // trapo amarillo en la mano derecha
-      const c = add(a, bx(0.17, 0.026, 0.16, cloth), 0, -0.06, -0.4);
-      c.rotation.z = 0.05;
+    // pulgar gordo
+    const th = cyl(0.03, 0.032, 0.058, glove, 10);
+    th.rotation.x = Math.PI / 2; th.rotation.y = s * 0.7;
+    add(a, th, -s * 0.084, 0.0, -0.26);
+    add(a, sph(0.032, glove, 10), -s * 0.104, 0.0, -0.29);
+    if (s > 0) { // paño de limpieza pequeño y redondeado en la mano derecha
+      const c = add(a, bx(0.14, 0.03, 0.12, cloth), 0.0, -0.05, -0.31);
+      c.rotation.z = 0.06;
     }
-    a.position.set(s * 0.26, -0.34, -0.58);
-    a.rotation.set(-0.5, s * 0.14, s * 0.1);
+    a.position.set(s * 0.24, -0.37, -0.53);
+    a.rotation.set(-0.55, s * 0.12, s * 0.08);
     a.userData.base = { pos: a.position.clone(), rot: a.rotation.clone() };
     return a;
   };
