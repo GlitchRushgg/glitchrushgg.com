@@ -7,12 +7,13 @@ import { W, H } from "../const.js";
 const ART = "assets/art/";
 
 // Cristian frames → normalized boxes (w, h, drawn character height).
+// Ciclo de carrera de 4 fases (contacto/recoil/paso/vuelo), regenerado con
+// Replicate. El antiguo run-5 (recorte roto) se eliminó: no se usaba.
 const FRAMES = {
   "cristian-run-1": [210, 190, 172],
   "cristian-run-2": [210, 190, 172],
   "cristian-run-3": [210, 190, 172],
   "cristian-run-4": [210, 190, 172],
-  "cristian-run-5": [210, 190, 172], // fase opuesta real (rodilla alta) — ciclo natural
 
   "cristian-jump": [210, 190, 168],
   "cristian-skate": [230, 190, 176],
@@ -74,17 +75,44 @@ export class BootScene extends Phaser.Scene {
   }
 
   // Draw each Cristian frame into a fixed-size canvas, scaled to a common
-  // character height and anchored bottom-center → stable feet line.
+  // character height and anchored bottom-center. Los 4 frames de carrera se
+  // anclan por su PIE MÁS BAJO real (no por el borde de la imagen): las fases
+  // "paso" y "vuelo" traen los pies dibujados más arriba, así que anclar por
+  // el borde los hacía FLOTAR ~20px una vez por ciclo (rebote tosco). Anclando
+  // por el pie a una línea común (FEET_Y = base de la fase de contacto) el
+  // corredor pisa el tejado de forma estable y el movimiento lo dan las piernas.
   _normalizeFrames() {
+    const FEET_Y = 176; // línea de pies común (= base histórica del frame de contacto)
     for (const [name, [bw, bh, ch]] of Object.entries(FRAMES)) {
       const src = this.textures.get("raw-" + name).getSourceImage();
       const scale = ch / src.height;
       const dw = src.width * scale;
       const canvas = this.textures.createCanvas("p-" + name, bw, bh);
       const ctx = canvas.getContext();
-      ctx.drawImage(src, (bw - dw) / 2, bh - ch, dw, ch);
+      let top = bh - ch; // por defecto: borde inferior de la imagen al borde del canvas
+      if (name.startsWith("cristian-run-")) {
+        const ly = this._lowestOpaqueRow(src);      // fila del pie más bajo (en la fuente)
+        top = FEET_Y - (ly + 1) * scale;            // ese pie cae en FEET_Y
+      }
+      ctx.drawImage(src, (bw - dw) / 2, top, dw, ch);
       canvas.refresh();
     }
+  }
+
+  // Fila (y) del píxel opaco más bajo de una imagen — para anclar por los pies.
+  _lowestOpaqueRow(src) {
+    const w = src.width, h = src.height;
+    const tmp = document.createElement("canvas");
+    tmp.width = w; tmp.height = h;
+    const tc = tmp.getContext("2d");
+    tc.drawImage(src, 0, 0);
+    const data = tc.getImageData(0, 0, w, h).data;
+    for (let y = h - 1; y >= 0; y--) {
+      for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] > 30) return y;
+      }
+    }
+    return h - 1;
   }
 
   _genSpark() {

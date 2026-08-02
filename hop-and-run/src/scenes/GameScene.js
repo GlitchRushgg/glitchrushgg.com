@@ -128,17 +128,16 @@ export class GameScene extends Phaser.Scene {
 
   _buildPlayer() {
     if (!this.anims.exists("run")) {
-      // Ciclo NATURAL de 4 fases (feedback fundadora: "lo más natural posible").
-      // Antes: 1→2→3→4 repetía la misma zancada (el frame 3 duplica al 1) →
-      // parecía que arrastraba los pies. Ahora: zancada dcha → paso (rodilla
-      // media) → zancada izq → paso (rodilla alta) = alternancia real de piernas.
       this.anims.create({
         key: "run",
-        // ciclo natural SIN el frame 5 (recorte roto: halo blanco y proporciones
-        // distintas — parpadeaba una vez por ciclo y se veía "raro", feedback
-        // fundadora): contacto(1) → avance(3) → rodilla alta(2) → vuelo(4)
-        frames: [1, 3, 2, 4].map((i) => ({ key: `p-cristian-run-${i}` })),
-        frameRate: 13,
+        // Ciclo de 4 FASES reales (regeneradas con Replicate, orden fundadora
+        // "mejora el movimiento"): las 4 antiguas eran casi la misma zancada
+        // (3 fotogramas «pierna adelante» idénticos) → parecía arrastrar los
+        // pies. Ahora hay arco vertical y de piernas real:
+        //   1 contacto (de pie, pie plantado) → 2 recoil (agachado, punto bajo)
+        //   → 3 paso (rodilla ALTA, subiendo) → 4 vuelo (en el aire, punto alto).
+        frames: [1, 2, 3, 4].map((i) => ({ key: `p-cristian-run-${i}` })),
+        frameRate: 14,
         repeat: -1,
       });
     }
@@ -150,18 +149,19 @@ export class GameScene extends Phaser.Scene {
     this.player.body.setOffset((this.player.width - 70) / 2, this.player.height - 155);
     this.player.setDepth(10);
     this.player.play("run");
-    // Micro-polvo en las pisadas de CONTACTO (frames 1 y 4): la carrera
-    // "pisa" el tejado en vez de flotar (orden de la fundadora: mejorar
-    // el movimiento de correr de Cristian).
+    // Micro-polvo en la PISADA de contacto (frame 1): la carrera "pisa" el
+    // tejado en vez de flotar. Con el ciclo de una sola pierna de apoyo hay
+    // una pisada por ciclo → un puff por ciclo (antes se disparaba también en
+    // el frame de vuelo, que no toca el suelo). Orden fundadora: mejorar el
+    // movimiento de correr de Cristian.
     this.player.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => {
       if (this.dead || this.paused) return;
       const g = this.player.body.blocked.down || this.player.body.touching.down;
       if (!g) return;
-      const k = this.player.texture.key;
-      if (k === "p-cristian-run-1" || k === "p-cristian-run-4") {
+      if (this.player.texture.key === "p-cristian-run-1") {
         const d = this.add.image(PLAYER_X - 16, this.player.body.bottom, "dust")
-          .setDepth(5).setAlpha(0.45).setScale(0.45);
-        this.tweens.add({ targets: d, x: d.x - 26, y: d.y - 5, alpha: 0, scale: 0.85, duration: 260, onComplete: () => d.destroy() });
+          .setDepth(5).setAlpha(0.5).setScale(0.5);
+        this.tweens.add({ targets: d, x: d.x - 28, y: d.y - 6, alpha: 0, scale: 0.9, duration: 280, onComplete: () => d.destroy() });
       }
     });
     // Contact shadow.
