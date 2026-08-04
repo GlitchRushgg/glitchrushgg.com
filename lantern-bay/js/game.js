@@ -1,12 +1,12 @@
 /* ============================================================
-   SPIRIT REEL — lower your lantern into a bottomless haunted
-   well. Dodge spirits on the way down; catch them on the way
-   up; sell your haul; upgrade; go deeper.
+   LANTERN BAY — lower your glowing lantern into the dark night
+   water. Dodge fish on the way down; reel them in on the way
+   up; sell your catch; upgrade; go deeper.
 
-   • 6 zones, 18 species, 10 named Legendaries at fixed depths
-   • Spirit Museum collection with catch-count frames
-   • Séance offline earnings, daily Wanted Ghost, first-run ×3
-   • Prestige: The Great Release → permanent Blessings
+   • 6 depth zones, 18 fish, 10 named catches at fixed depths
+   • Aquarium collection with catch-count frames
+   • Night-Trawl offline earnings, daily Today's Catch, first-run ×3
+   • Prestige: New Season → permanent Pearls
    • Tiny-Fishing-proven loop; all art procedural canvas
 
    ============================================================ */
@@ -104,9 +104,9 @@
   const ST = { SURFACE: 0, DESCEND: 1, ASCEND: 2, SUMMARY: 3, PAUSED: 4 };
   let state = ST.SURFACE;
   let tt = 0, timeScale = 1;
-  let lx = LW / 2, ly = 0;           // lantern pos (world px; ly 0 = well mouth)
+  let lx = LW / 2, ly = 0;           // lantern pos (world px; ly 0 = surface)
   let steerX = LW / 2, pointerHeld = false;
-  let ghosts = [], caught = [], spawnedTo = 0;
+  let fishes = [], caught = [], spawnedTo = 0;
   let combo = 0, wardsLeft = 0, usedSW = false, offeredSW = false;
   let runValue = 0, runByKind = {};  // id -> {name,n,val,rar}
   let newBestShown = false, lastZone = -1;
@@ -134,7 +134,7 @@
       for (let i = 0; i < n; i++) {
         const sp = speciesOfZone(z);
         const rar = rarityRoll();
-        ghosts.push({
+        fishes.push({
           sp, rar, radiant: Math.random() < 0.01,
           baseX: rand(WALL + 30, LW - WALL - 30),
           y: y + rand(0, 100), x: 0,
@@ -150,7 +150,7 @@
         if (ndPx >= y && ndPx < y + 100) {
           const caughtBefore = (save.named[nd.id] || 0) > 0;
           if (!caughtBefore || Math.random() < 0.25) {
-            ghosts.push({
+            fishes.push({
               sp: null, named: nd, rar: 4, radiant: false,
               baseX: LW / 2, y: ndPx, x: 0,
               ph: rand(0, 6), amp: 90, spd: 0.6,
@@ -167,12 +167,12 @@
     if (state !== ST.SURFACE) return;
     state = ST.DESCEND;
     ly = 10; lx = LW / 2; steerX = LW / 2;
-    ghosts = []; caught = []; spawnedTo = 0;
+    fishes = []; caught = []; spawnedTo = 0;
     combo = 0; runValue = 0; runByKind = {};
     runMaxY = 0;
     wardsLeft = save.up.ward; offeredSW = false;
     newBestShown = false; lastZone = 0;
-    spawnBand(40, 900); // spirits from 4m so the very first 12m rope catches
+    spawnBand(40, 900); // fish from 4m so the very first 12m line catches
     spawnedTo = 900;
     hide('sheet');
     show('runHud');
@@ -186,9 +186,9 @@
     A.turn();
   }
 
-  /* Touching a spirit on descent HOOKS it (Tiny-Fishing rule):
-     it's caught, and the ascent begins. Warding phases through it
-     instead; Second Wind releases it and keeps you sinking. */
+  /* Touching a fish on descent HOOKS it (Tiny-Fishing rule):
+     it's caught, and the ascent begins. Slack Line slips past it
+     instead; a re-cast lets it go and keeps you sinking. */
   let pendingBump = null;
   function bump(g, idx) {
     if (wardsLeft > 0) {
@@ -208,14 +208,14 @@
     hookAndTurn(g, idx);
   }
   function hookAndTurn(g, idx) {
-    if (idx === undefined || ghosts[idx] !== g) idx = ghosts.indexOf(g);
-    if (idx >= 0) catchGhost(g, idx);
+    if (idx === undefined || fishes[idx] !== g) idx = fishes.indexOf(g);
+    if (idx >= 0) catchFish(g, idx);
     shake = Math.max(shake, 0.12);
     beginAscent();
   }
 
-  function catchGhost(g, idx) {
-    ghosts.splice(idx, 1);
+  function catchFish(g, idx) {
+    fishes.splice(idx, 1);
     combo++;
     const depthM = g.y / PXM;
     let val, kindId, kindName, rarIdx = g.rar;
@@ -240,7 +240,7 @@
           save.wantedDone = dayNum();
           const bounty = 200 * Math.pow(g.sp.zone + 1, 2) * Math.round(valueMult(null));
           runValue += bounty;
-          banner('WANTED BOUNTY +' + fmt(bounty) + '!', '#f0c04d');
+          banner("TODAY'S CATCH BONUS +" + fmt(bounty) + '!', '#f0c04d');
           A.best();
         }
         updateWantedChip();
@@ -254,7 +254,7 @@
       mrec.best = Math.max(mrec.best, Math.round(depthM));
       if (wasNew) {
         A.card();
-        banner('NEW SPIRIT: ' + kindName, DATA.rarities[g.rar].c);
+        banner('NEW FISH: ' + kindName, DATA.rarities[g.rar].c);
         if (zoneComplete(g.sp.zone)) { banner(DATA.zones[g.sp.zone].name.toUpperCase() + ' COMPLETE! +10%', '#5de08a'); A.best(); }
       } else if (frameLvl(mrec.n) > oldFrame) {
         banner(kindName + ' — ' + ['', 'BRONZE', 'SILVER', 'GOLD'][frameLvl(mrec.n)] + ' FRAME! +5%', '#f0c04d');
@@ -290,7 +290,7 @@
     const kinds = Object.values(runByKind).sort((a, b) => b.val - a.val).slice(0, 5);
     $('sumList').innerHTML = kinds.map(k =>
       `<div class="sum-row"><span style="color:${DATA.rarities[k.rar] ? DATA.rarities[k.rar].c : '#f0c04d'}">${k.name} ×${k.n}</span><b>+${fmt(k.val)}</b></div>`
-    ).join('') || '<div class="sum-row empty">The well was quiet…</div>';
+    ).join('') || '<div class="sum-row empty">The water was quiet…</div>';
     $('btnDouble').classList.toggle('hidden', total <= 0);
     show('sumModal');
     hide('runHud');
@@ -308,7 +308,7 @@
   }
   function backToSurface() {
     state = ST.SURFACE;
-    ly = 0; caught = []; ghosts = [];
+    ly = 0; caught = []; fishes = [];
     show('sheet');
     renderShop(); updateHUD();
     persist();
@@ -353,10 +353,10 @@
         if (ly <= 0) { ly = 0; surface(); return; }
       }
 
-      // ghosts update + collision
-      for (let i = ghosts.length - 1; i >= 0; i--) {
-        const g = ghosts[i];
-        if (g.scared > 0) { g.scared -= dt * 2; if (g.scared <= 0) { ghosts.splice(i, 1); continue; } }
+      // fishes update + collision
+      for (let i = fishes.length - 1; i >= 0; i--) {
+        const g = fishes[i];
+        if (g.scared > 0) { g.scared -= dt * 2; if (g.scared <= 0) { fishes.splice(i, 1); continue; } }
         if (Math.abs(g.y - ly) > LH) { // off-screen: cheap update
           g.x = g.baseX + Math.sin(tt * g.spd + g.ph) * g.amp;
           continue;
@@ -379,7 +379,7 @@
         const ddx = g.x - lx, ddy = g.y - ly;
         if (ddx * ddx + ddy * ddy < rr2 * rr2) {
           if (state === ST.DESCEND) { bump(g, i); if (state !== ST.DESCEND) break; }
-          else if (caught.length < capacity()) catchGhost(g, i);
+          else if (caught.length < capacity()) catchFish(g, i);
         }
       }
     }
@@ -453,14 +453,14 @@
     if (camY < 120) drawSurfaceScene(camY);
     drawBestDepthLine(camY);
 
-    // ghosts
-    for (const gh of ghosts) {
+    // fishes
+    for (const gh of fishes) {
       const sy = gh.y - camY;
       if (sy < -80 || sy > LH + 80) continue;
       const hue = gh.named ? gh.named.hue : gh.sp.hue;
       const acc = gh.named ? gh.named.acc : gh.sp.acc;
       const eyes = gh.named ? 2 : gh.sp.eyes;
-      drawGhost(ctx, gh.x, sy + Math.sin(tt * 2 + gh.ph) * 4, gh.size, hue,
+      drawFish(ctx, gh.x, sy + Math.sin(tt * 2 + gh.ph) * 4, gh.size, hue,
                 { acc, eyes, radiant: gh.radiant, rar: gh.rar, named: !!gh.named, alpha: gh.scared > 0 ? gh.scared : 1 });
     }
 
@@ -541,7 +541,7 @@
 
   function drawSurfaceScene(camY) {
     const horizon = -camY;
-    // night sky above the well mouth
+    // night sky above the water's surface
     const sky = ctx.createLinearGradient(0, horizon - 260, 0, horizon);
     sky.addColorStop(0, '#0a1030'); sky.addColorStop(1, '#141d3d');
     ctx.fillStyle = sky;
@@ -613,7 +613,7 @@
       const cx2 = lx + Math.sin(tt * 3 + i * 0.9) * (8 + i * 1.5);
       if (cy2 < -40) break;
       const hue = g.named ? g.named.hue : g.sp.hue;
-      drawGhost(ctx, cx2, cy2, (g.named ? g.named.size : g.sp.size) * 0.6, hue,
+      drawFish(ctx, cx2, cy2, (g.named ? g.named.size : g.sp.size) * 0.6, hue,
                 { acc: 'none', eyes: 2, radiant: g.radiant, rar: g.rar, named: !!g.named, alpha: 0.8, happy: true });
     }
     if (caught.length > show) {
@@ -624,85 +624,119 @@
     }
   }
 
-  /* ---------- the ghost painter (shared with museum cards) ---------- */
-  function drawGhost(c, x, y, r, hue, o) {
+  /* ---------- the fish painter (shared with aquarium cards) ---------- */
+  /* Draws a glowing fish, nose to the RIGHT, tail to the LEFT:
+     ellipse body + triangular (wagging) tail + one eye + a dorsal fin,
+     all tinted by `hue`. `acc` adds a small feature. */
+  function drawFish(c, x, y, r, hue, o) {
     o = o || {};
     const light = o.radiant ? 88 : 68;
     const sat = o.radiant ? 55 : 75;
+    const bw = r * 1.25, bh = r * 0.78;          // body half-extents
+    const wag = Math.sin(tt * 6 + x * 0.05) * r * 0.14;
     c.save();
     c.globalAlpha = (o.alpha !== undefined ? o.alpha : 1) * 0.95;
     c.translate(x, y);
     // aura
     c.shadowColor = o.radiant ? '#fff2c0' : `hsl(${hue},90%,65%)`;
     c.shadowBlur = o.named ? 30 : (o.rar >= 3 ? 20 : 12);
-    // body: dome + wavy hem
-    const grad = c.createRadialGradient(0, -r * 0.3, r * 0.15, 0, 0, r * 1.5);
-    grad.addColorStop(0, `hsla(${hue},${sat}%,${light + 8}%,.95)`);
-    grad.addColorStop(0.7, `hsla(${hue},${sat}%,${light - 14}%,.75)`);
-    grad.addColorStop(1, `hsla(${hue},${sat}%,${light - 24}%,.15)`);
+    const grad = c.createRadialGradient(bw * 0.25, -bh * 0.3, r * 0.12, 0, 0, bw * 1.25);
+    grad.addColorStop(0, `hsla(${hue},${sat}%,${light + 10}%,.97)`);
+    grad.addColorStop(0.7, `hsla(${hue},${sat}%,${light - 12}%,.85)`);
+    grad.addColorStop(1, `hsla(${hue},${sat}%,${light - 22}%,.6)`);
     c.fillStyle = grad;
+    // tail (triangular, gently wagging), behind the body
     c.beginPath();
-    c.arc(0, -r * 0.15, r, Math.PI, 0);
-    const hem = r * 0.85, waves = 3;
-    for (let i = 0; i <= waves; i++) {
-      const x1 = r - (i + 0.5) * (2 * r / waves) + r / waves * 0.5;
-      const xEnd = r - (i + 1) * (2 * r / waves);
-      c.quadraticCurveTo(x1, hem + (i % 2 ? -r * 0.12 : r * 0.28), xEnd, hem * 0.75);
-    }
+    c.moveTo(-bw * 0.55, 0);
+    c.lineTo(-bw * 1.3, -bh * 0.95 + wag);
+    c.lineTo(-bw * 1.12, 0);
+    c.lineTo(-bw * 1.3, bh * 0.95 + wag);
     c.closePath();
     c.fill();
+    // dorsal fin (taller when acc === 'fin')
+    const finH = o.acc === 'fin' ? bh * 1.7 : bh * 1.0;
+    c.beginPath();
+    c.moveTo(-bw * 0.3, -bh * 0.6);
+    c.quadraticCurveTo(0, -finH, bw * 0.3, -bh * 0.55);
+    c.closePath();
+    c.fill();
+    // belly fin (small)
+    c.beginPath();
+    c.moveTo(0, bh * 0.55);
+    c.quadraticCurveTo(bw * 0.1, bh * 1.15, bw * 0.35, bh * 0.6);
+    c.closePath();
+    c.fill();
+    // body
+    c.beginPath();
+    c.ellipse(0, 0, bw, bh, 0, 0, 7);
+    c.fill();
     c.shadowBlur = 0;
-    // eyes
-    c.fillStyle = 'rgba(10,10,25,.9)';
-    const n = o.eyes || 2, ey = -r * 0.25;
-    for (let i = 0; i < n; i++) {
-      const ex = (i - (n - 1) / 2) * r * 0.42;
-      c.beginPath();
-      c.ellipse(ex, ey, r * 0.13, o.happy ? r * 0.06 : r * 0.18, 0, 0, 7);
-      c.fill();
-    }
-    if (o.happy) { // closed happy mouth
-      c.strokeStyle = 'rgba(10,10,25,.8)'; c.lineWidth = Math.max(1, r * 0.08); c.lineCap = 'round';
-      c.beginPath(); c.arc(0, r * 0.08, r * 0.22, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
-    } else {
-      c.beginPath(); c.ellipse(0, r * 0.18, r * 0.1, r * 0.16, 0, 0, 7); c.fill();
-    }
-    // accessories
+
+    // ---- features ----
     c.lineWidth = Math.max(1.5, r * 0.1);
-    if (o.acc === 'hood') {
-      c.strokeStyle = `hsla(${hue},60%,25%,.9)`;
-      c.beginPath(); c.arc(0, -r * 0.15, r * 1.02, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
-    } else if (o.acc === 'crown') {
+    if (o.acc === 'stripes') {                   // clownfish / zebrafish bands
+      c.save();
+      c.beginPath(); c.ellipse(0, 0, bw, bh, 0, 0, 7); c.clip();
+      c.fillStyle = `hsla(${hue},${sat}%,${light - 28}%,.7)`;
+      for (let i = -1; i <= 1; i++) {
+        c.beginPath(); c.ellipse(i * bw * 0.5, 0, bw * 0.12, bh, 0, 0, 7); c.fill();
+      }
+      c.restore();
+    } else if (o.acc === 'spikes') {             // pufferfish / lionfish spines
+      c.strokeStyle = `hsla(${hue},${sat}%,${light + 4}%,.9)`;
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2;
+        const ex = Math.cos(a) * bw, ey = Math.sin(a) * bh;
+        c.beginPath(); c.moveTo(ex, ey);
+        c.lineTo(ex + Math.cos(a) * r * 0.4, ey + Math.sin(a) * r * 0.4); c.stroke();
+      }
+    } else if (o.acc === 'shell') {              // turtle shell dome on the back
+      c.fillStyle = `hsla(${hue},${sat + 5}%,${light - 18}%,.85)`;
+      c.beginPath(); c.ellipse(-bw * 0.05, -bh * 0.1, bw * 0.7, bh * 0.85, 0, Math.PI, 0); c.fill();
+      c.strokeStyle = `hsla(${hue},40%,25%,.6)`;
+      c.beginPath(); c.moveTo(-bw * 0.45, -bh * 0.15); c.lineTo(-bw * 0.05, -bh * 0.9);
+      c.moveTo(bw * 0.35, -bh * 0.15); c.lineTo(-bw * 0.05, -bh * 0.9); c.stroke();
+    } else if (o.acc === 'whisker') {            // anglerfish glowing lure
+      c.strokeStyle = `hsla(${hue},40%,80%,.9)`;
+      c.beginPath(); c.moveTo(bw * 0.15, -bh * 0.7);
+      c.quadraticCurveTo(bw * 1.1, -bh * 1.7, bw * 1.15, -bh * 0.6); c.stroke();
+      c.fillStyle = '#fff6cf'; c.shadowColor = '#ffe89a'; c.shadowBlur = 12;
+      c.beginPath(); c.arc(bw * 1.15, -bh * 0.6, r * 0.16, 0, 7); c.fill();
+      c.shadowBlur = 0;
+    } else if (o.acc === 'crown') {              // a little king's crown
       c.fillStyle = '#f0c04d';
       c.beginPath();
-      c.moveTo(-r * 0.5, -r * 1.0);
+      c.moveTo(-bw * 0.35, -bh * 0.85);
       for (let i = 0; i < 3; i++) {
-        c.lineTo(-r * 0.5 + (i * 2 + 1) * r / 3, -r * 1.45);
-        c.lineTo(-r * 0.5 + (i + 1) * r / 1.5, -r * 1.0);
+        c.lineTo(-bw * 0.35 + (i * 2 + 1) * (bw * 0.7) / 3, -bh * 1.5);
+        c.lineTo(-bw * 0.35 + (i + 1) * (bw * 0.7) / 1.5, -bh * 0.85);
       }
       c.closePath(); c.fill();
-    } else if (o.acc === 'halo') {
-      c.strokeStyle = 'rgba(240,220,120,.85)';
-      c.beginPath(); c.ellipse(0, -r * 1.35, r * 0.55, r * 0.16, 0, 0, 7); c.stroke();
-    } else if (o.acc === 'chains') {
-      c.strokeStyle = 'rgba(160,170,185,.8)';
-      c.beginPath(); c.arc(-r * 0.7, r * 0.5, r * 0.3, 0, Math.PI); c.stroke();
-      c.beginPath(); c.arc(r * 0.6, r * 0.6, r * 0.25, 0, Math.PI); c.stroke();
-    } else if (o.acc === 'bell') {
-      c.fillStyle = '#d8b23c';
-      c.beginPath(); c.moveTo(0, -r * 1.5); c.lineTo(0, -r * 1.15); c.stroke();
-      c.arc(0, -r * 1.05, r * 0.22, 0, 7); c.fill();
-    } else if (o.acc === 'beak') {
-      c.fillStyle = `hsla(${hue},50%,35%,.95)`;
-      c.beginPath(); c.moveTo(0, -r * 0.1); c.lineTo(r * 0.55, r * 0.15); c.lineTo(0, r * 0.3); c.closePath(); c.fill();
     }
+
+    // gill line
+    c.strokeStyle = `hsla(${hue},${sat}%,${light - 26}%,.5)`;
+    c.lineWidth = Math.max(1, r * 0.06);
+    c.beginPath(); c.arc(bw * 0.34, 0, bh * 0.72, -1.05, 1.05); c.stroke();
+    // mouth (small smile if happy)
+    c.strokeStyle = 'rgba(10,10,25,.55)'; c.lineCap = 'round';
+    c.beginPath();
+    if (o.happy) c.arc(bw * 0.82, -bh * 0.02, r * 0.2, 0.1 * Math.PI, 0.7 * Math.PI);
+    else { c.moveTo(bw * 0.98, bh * 0.06); c.lineTo(bw * 0.82, bh * 0.14); }
+    c.stroke();
+    // one eye, near the nose
+    c.fillStyle = '#fff';
+    c.beginPath(); c.arc(bw * 0.6, -bh * 0.22, r * 0.19, 0, 7); c.fill();
+    c.fillStyle = 'rgba(10,10,25,.92)';
+    c.beginPath(); c.arc(bw * 0.64, -bh * 0.22, r * 0.1, 0, 7); c.fill();
+
     // radiant sparkles
     if (o.radiant) {
       c.fillStyle = '#fff';
       for (let i = 0; i < 3; i++) {
         const a = tt * 2 + i * 2.1;
         c.globalAlpha = 0.5 + 0.5 * Math.sin(a * 3);
-        c.beginPath(); c.arc(Math.cos(a) * r * 0.9, -r * 0.2 + Math.sin(a) * r * 0.7, r * 0.08, 0, 7); c.fill();
+        c.beginPath(); c.arc(Math.cos(a) * bw * 0.8, -r * 0.2 + Math.sin(a) * bh * 0.9, r * 0.08, 0, 7); c.fill();
       }
     }
     c.restore();
@@ -745,7 +779,7 @@
   /* ================= HUD / DOM ================= */
   function updateHUD() {
     $('coins').textContent = fmt(save.coins);
-    $('blessTag').textContent = save.blessings > 0 ? '☩ ' + save.blessings : '';
+    $('blessTag').textContent = save.blessings > 0 ? '🦪 ' + save.blessings : '';
     $('surfBest').textContent = save.bestDepth + 'm';
     // golden lantern button
     const gb = $('btnGolden');
@@ -778,7 +812,7 @@
     chip.classList.remove('hidden');
     chip.innerHTML = done
       ? '✓ Bounty claimed'
-      : 'WANTED: <b>' + sp.name + '</b> ×' + Math.max(0, 3 - wantedCaught) + ' <i>×5 coins</i>';
+      : "TODAY'S CATCH: <b>" + sp.name + '</b> ×' + Math.max(0, 3 - wantedCaught) + ' <i>×5 coins</i>';
     chip.classList.toggle('done', done);
   }
   function rollWanted() {
@@ -799,7 +833,7 @@
   }
   function renderUpgrades() {
     $('sheetBody').innerHTML = '<div class="up-head">Depth <b>' + maxDepthM() + 'm</b> · Cage <b>' + capacity() + '</b> · ' +
-      (mod().id !== 'none' ? '<span class="mod-tag">' + mod().name + '</span>' : 'The Still Well') + '</div>' +
+      (mod().id !== 'none' ? '<span class="mod-tag">' + mod().name + '</span>' : 'Calm Waters') + '</div>' +
       DATA.upgrades.map(u => {
         const lvl = save.up[u.id];
         const maxed = lvl >= u.max;
@@ -828,7 +862,7 @@
       cards.push(museumCard(nd.id, nd.name, nd.hue, nd.size, nd, cnt > 0 ? { n: cnt, best: nd.depth } : null, true));
     }
     $('sheetBody').innerHTML =
-      '<div class="up-head">Spirit Museum · <b>' + museumCount() + '/' + (DATA.species.length + DATA.named.length) + '</b> souls carded</div>' +
+      '<div class="up-head">Aquarium · <b>' + museumCount() + '/' + (DATA.species.length + DATA.named.length) + '</b> fish carded</div>' +
       '<div class="mus-grid">' + cards.join('') + '</div>';
     // paint portraits
     document.querySelectorAll('.mus-canvas').forEach(cnv => {
@@ -837,7 +871,7 @@
       const known = named ? (save.named[id] || 0) > 0 : !!save.mus[id];
       const c2 = cnv.getContext('2d');
       c2.clearRect(0, 0, 72, 72);
-      if (known) drawGhost(c2, 36, 40, Math.min(20, def.size * 1.1), def.hue, { acc: def.acc, eyes: def.eyes || 2, named, rar: named ? 4 : 0 });
+      if (known) drawFish(c2, 36, 40, Math.min(20, def.size * 1.1), def.hue, { acc: def.acc, eyes: def.eyes || 2, named, rar: named ? 4 : 0 });
       else {
         c2.fillStyle = 'rgba(255,255,255,.06)';
         c2.beginPath(); c2.arc(36, 38, 20, 0, 7); c2.fill();
@@ -861,45 +895,45 @@
       <canvas class="mus-canvas" width="72" height="72" data-id="${id}" data-named="${named ? 1 : 0}"></canvas>
       <div class="mus-name">${known ? name : '???'}</div>
       <div class="mus-sub">${known ? (named ? 'Legendary · ' + def.depth + 'm' : '×' + rec.n + (rec.rad ? ' ✦' + rec.rad : '')) : (named ? def.depth + 'm' : DATA.zones[def.zone].name)}</div>
-      ${known ? `<div class="mus-epi">${def.epitaph}</div>` : ''}
+      ${known ? `<div class="mus-epi">${def.fact}</div>` : ''}
     </div>`;
   }
   function renderWell() {
     const unlocked = save.bestDepth >= DATA.PRESTIGE_DEPTH || save.blessings > 0;
     const pend = Math.max(0, DATA.blessingsFor(save.lifetime) - save.blessings);
     $('sheetBody').innerHTML = `<div class="well-page">
-      <div class="well-title">☩ THE GREAT RELEASE</div>
-      <p class="well-text">Release every captured soul back into the well.<br>
-      Coins and upgrades reset — but each <b>Blessing</b> grants <b>+2% income forever</b>,
-      and your Museum records are eternal.</p>
+      <div class="well-title">🦪 NEW SEASON</div>
+      <p class="well-text">Release your whole catch and start a fresh season.<br>
+      Coins and upgrades reset — but each <b>Pearl</b> grants <b>+2% income forever</b>,
+      and your Aquarium records stay.</p>
       <div class="well-stats">
-        <span>Blessings <b>${save.blessings}</b></span>
-        <span>Lifetime souls-worth <b>${fmt(save.lifetime)}</b></span>
+        <span>Pearls <b>${save.blessings}</b></span>
+        <span>Lifetime catch value <b>${fmt(save.lifetime)}</b></span>
       </div>
       ${unlocked
         ? `<button id="btnRelease" class="release-btn ${pend > 0 ? 'ready' : 'cant'}">
-             RELEASE THE SOULS<small>${pend > 0 ? '+' + pend + ' ☩ Blessings' : 'earn more lifetime coins for the next Blessing'}</small></button>`
+             START SEASON<small>${pend > 0 ? '+' + pend + ' 🦪 Pearls' : 'earn more lifetime coins for the next Pearl'}</small></button>`
         : `<div class="well-locked">Reach <b>${DATA.PRESTIGE_DEPTH}m</b> to open the way.<br>Best: ${save.bestDepth}m</div>`}
-      ${save.releases > 0 ? `<div class="well-mod">Current well: <b>${mod().name}</b><br><i>${mod().desc}</i></div>` : ''}
+      ${save.releases > 0 ? `<div class="well-mod">Current tide: <b>${mod().name}</b><br><i>${mod().desc}</i></div>` : ''}
     </div>`;
     const rb = $('btnRelease');
     if (rb) rb.addEventListener('click', () => {
       if (pend <= 0) { A.deny(); return; }
-      $('relGain').textContent = '+' + pend + ' ☩';
+      $('relGain').textContent = '+' + pend + ' 🦪';
       show('relModal');
     });
   }
 
   /* ================= OFFLINE / SÉANCE ================= */
-  let pendingSeance = 0;
-  function checkSeance() {
-    if (save.up.seance <= 0 || save.bestHaul <= 0) return;
+  let pendingTrawl = 0;
+  function checkTrawl() {
+    if (save.up.trawl <= 0 || save.bestHaul <= 0) return;
     const mins = (Date.now() - save.lastSeen) / 60000;
     if (mins < 3) return;
     const capped = Math.min(mins, 480);
-    const gain = Math.round(save.bestHaul * 0.004 * save.up.seance * capped);
+    const gain = Math.round(save.bestHaul * 0.004 * save.up.trawl * capped);
     if (gain < 1) return;
-    pendingSeance = gain;
+    pendingTrawl = gain;
     $('seaAmount').textContent = fmt(gain);
     $('seaTime').textContent = fmtTime(capped * 60);
     show('seaModal');
@@ -967,12 +1001,12 @@
   });
   $('seaDouble').addEventListener('click', () => {
     SR.SDK.rewardedAd(() => {
-      save.coins += pendingSeance * 2; save.lifetime += pendingSeance * 2;
+      save.coins += pendingTrawl * 2; save.lifetime += pendingTrawl * 2;
       hide('seaModal'); A.best(); updateHUD(); persist();
-    }, () => { save.coins += pendingSeance; save.lifetime += pendingSeance; hide('seaModal'); updateHUD(); });
+    }, () => { save.coins += pendingTrawl; save.lifetime += pendingTrawl; hide('seaModal'); updateHUD(); });
   });
   $('seaCollect').addEventListener('click', () => {
-    save.coins += pendingSeance; save.lifetime += pendingSeance;
+    save.coins += pendingTrawl; save.lifetime += pendingTrawl;
     hide('seaModal'); A.buy(); updateHUD(); persist();
   });
   $('swTake').addEventListener('click', () => {
@@ -982,7 +1016,7 @@
       if (pendingBump) { pendingBump.scared = 1; puff(pendingBump); pendingBump = null; }
       state = ST.DESCEND;
       slowmoT = 0.5;
-      banner('SECOND WIND — KEEP SINKING!', '#5de08a');
+      banner('LINE HOLDS — KEEP SINKING!', '#5de08a');
       A.best();
     }, () => { hide('swModal'); declineSW(); });
   });
@@ -1007,7 +1041,7 @@
     save.modifier = DATA.modifiers[1 + (save.releases % (DATA.modifiers.length - 1))].id;
     A.blessing();
     SR.SDK.happyTime();
-    banner('☩ ' + pend + ' BLESSINGS EARNED', '#f0c04d');
+    banner('🦪 ' + pend + ' PEARLS EARNED', '#f0c04d');
     flashA = 0.7;
     persist();
     rollWanted();
@@ -1023,11 +1057,11 @@
   $('btnShare').addEventListener('click', share);
   async function share() {
     const namedCount = DATA.named.filter(n => (save.named[n.id] || 0) > 0).length;
-    const text = `I've reached ${save.bestDepth}m in the haunted well and captured ${namedCount}/10 named spirits in SPIRIT REEL 🏮 How deep can you go?`;
+    const text = `I've reached ${save.bestDepth}m in the night bay and landed ${namedCount}/10 named catches in LANTERN BAY 🏮 How deep can you fish?`;
     let url = location.href;
     const cg = await SR.SDK.invite({ depth: save.bestDepth });
     if (cg) url = cg;
-    try { if (navigator.share) { await navigator.share({ title: 'Spirit Reel', text, url }); return; } } catch (e) {}
+    try { if (navigator.share) { await navigator.share({ title: 'Lantern Bay', text, url }); return; } } catch (e) {}
     try { await navigator.clipboard.writeText(text + ' ' + url); banner('COPIED — CHALLENGE A FRIEND!', '#fff'); } catch (e) {}
   }
 
@@ -1039,7 +1073,7 @@
   (function boot() {
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     rollWanted();
-    checkSeance();
+    checkTrawl();
     renderShop(); updateHUD();
     requestAnimationFrame(loop);
     SR.SDK.init().then(() => SR.SDK.gameplayStart());

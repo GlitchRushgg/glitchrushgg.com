@@ -3,8 +3,8 @@
 @font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-600.woff2') format('woff2');font-weight:600;font-style:normal;font-display:swap;}
 @font-face{font-family:'Rajdhani';src:url('../assets/fonts/rajdhani-700.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap;}
 /* ============================================================
-   SPIRIT REEL — UI styles (the well is canvas-rendered).
-   Haunted teal-and-lantern-gold on deep darkness.
+   LANTERN BAY — UI styles (the water is canvas-rendered).
+   Cozy teal-and-lantern-gold on deep night water.
    ============================================================ */
 :root{
   --glow:#4dd6c8; --gold:#f0c04d; --good:#5de08a; --bless:#d8b6ff;
@@ -97,10 +97,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .uic-cage::after{border-radius:4px;inset:7px 10px;background:transparent;border:2.5px solid var(--glow);}
 .uic-reel::after{border-radius:50%;background:transparent;border:2.5px solid var(--glow);border-top-color:transparent;}
 .uic-coin::after{background:var(--gold);}
-.uic-candle::after{inset:6px 13px;border-radius:2px;background:linear-gradient(180deg,#f0c04d 20%,#e8e2d0 20%);}
-.uic-eye::after{border-radius:50% 0 50% 0;transform:rotate(45deg);}
-.uic-ward::after{background:transparent;border:2.5px solid var(--bless);border-radius:3px;transform:rotate(45deg);inset:9px;}
-.uic-incense::after{background:linear-gradient(180deg,#b47aff,#4dd6c8);}
+.uic-trawl::after{inset:8px;border-radius:50%;background:var(--gold);} /* night-trawl float */
+.uic-sonar::after{background:transparent;border:2.5px solid var(--glow);box-shadow:0 0 0 2px rgba(77,214,200,.25);} /* fish-finder ping */
+.uic-guard::after{background:transparent;border:2.5px solid var(--bless);border-radius:3px;transform:rotate(45deg);inset:9px;} /* slack-line guard */
+.uic-bait::after{border-radius:50% 50% 50% 0;transform:rotate(45deg);background:linear-gradient(180deg,#f0c04d,#4dd6c8);} /* fresh bait */
 .mid{flex:1;min-width:0;}
 .nm{font-size:13.5px;font-weight:800;color:#fff;display:flex;gap:6px;align-items:center;}
 .nm i{font-style:normal;font-size:10px;background:rgba(77,214,200,.15);color:var(--glow);
