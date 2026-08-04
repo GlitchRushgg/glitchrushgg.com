@@ -1,7 +1,7 @@
 // Service worker de "Don't Drown, Noah!"
 // IMPORTANTE: al añadir/renombrar archivos del juego, añádelos a ASSETS
 // y sube la versión de CACHE — si no, los jugadores instalados verán la versión vieja.
-const CACHE = 'noah-v17';
+const CACHE = 'noah-v18';
 
 const ASSETS = [
   './',
@@ -40,7 +40,7 @@ const ASSETS = [
   './assets/icon-192.png',
   './assets/icon-512.png',
   './assets/apple-touch-icon.png',
-  'https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js',
+  './vendor/phaser.min.js',
 ];
 
 self.addEventListener('install', (e) => {
