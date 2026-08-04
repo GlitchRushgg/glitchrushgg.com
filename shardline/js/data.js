@@ -1,5 +1,5 @@
 /* ============================================================
-   GLITCHDASH — game data: sectors, generation vocabulary,
+   SHARDLINE — game data: sectors, generation vocabulary,
    skins, trails, feats, economy. Tune everything here.
    ============================================================ */
 const DATA = {};

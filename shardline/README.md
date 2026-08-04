@@ -1,4 +1,4 @@
-# 💀 GlitchDash
+# 💀 Shardline
 
 > **Tap. Jump. Die at 98%. Scream. One more try.**
 > The studio's namesake game — built on the loop having a massive teen resurgence right now (Geometry Dash: 103K concurrent Steam players in 2026, 1.2M daily players, TikTok rage-clip fuel) while the web supply is decade-old Lite clones. One-tap rhythm rage runner with fixed-seed levels — **identical for every player on earth** — because "I died at 91% on MALWARE" only slaps if your friends play the same MALWARE. 100% procedural — zero assets, the soundtrack is synthesized on the beat grid the obstacles sit on.
@@ -53,7 +53,7 @@ Off-platform all ad calls no-op and grant rewards instantly, so the game is alwa
 ## 📁 Folder structure
 
 ```
-GlitchDash/
+Shardline/
 ├── index.html        ← entry point
 ├── css/style.css     ← UI styles (HUD, sheet, death/clear panels)
 ├── js/
@@ -70,7 +70,7 @@ GlitchDash/
 1. Test locally — die at 99% at least once (feat included), clear TUTORIAL IS A LIE, check the Daily.
 2. Zip the folder contents (`index.html` at zip root):
    ```powershell
-   Compress-Archive -Path ".\GlitchDash\*" -DestinationPath ".\zips\GlitchDash-submission.zip" -Force
+   Compress-Archive -Path ".\Shardline\*" -DestinationPath ".\zips\Shardline-submission.zip" -Force
    ```
 3. Upload at **https://developer.crazygames.com** → Submit game.
 4. Tags: *geometry dash, one-button, platformer, rage, arcade, casual, mobile*. Thumbnail suggestion: the cube mid-jump over a triple spike, "ATTEMPT 247" glowing behind it.

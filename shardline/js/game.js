@@ -1,5 +1,5 @@
 /* ============================================================
-   GLITCHDASH — one-tap rhythm rage runner. The studio game.
+   SHARDLINE — one-tap rhythm rage runner. The studio game.
 
    Tap to jump. Hold to keep jumping. The cube never stops.
    7 fixed-seed Sectors (identical for every player on earth —
@@ -922,7 +922,7 @@
 
   $('cMenu').addEventListener('click', toMenu);
   $('cShare').addEventListener('click', () => shareText(
-    `👑 just 100%'d ${level.sector.name} in ${fmtInt(attsOf(level.sector))} attempts — GLITCHDASH. beat that.`));
+    `👑 just 100%'d ${level.sector.name} in ${fmtInt(attsOf(level.sector))} attempts — SHARDLINE. beat that.`));
   $('cDouble').addEventListener('click', () => {
     GD.SDK.rewardedAd(() => {
       save.shards += runShards;
@@ -978,13 +978,13 @@
 
   $('btnShare').addEventListener('click', () => {
     const sec = sectorById(save.sel);
-    shareText(`💀 my best on ${sec.name} is ${bestOf(sec)}% after ${fmtInt(attsOf(sec))} attempts — GLITCHDASH. beat that.`);
+    shareText(`💀 my best on ${sec.name} is ${bestOf(sec)}% after ${fmtInt(attsOf(sec))} attempts — SHARDLINE. beat that.`);
   });
   async function shareText(text) {
     let url = location.href;
     const cg = await GD.SDK.invite({});
     if (cg) url = cg;
-    try { if (navigator.share) { await navigator.share({ title: 'GlitchDash', text, url }); return; } } catch (e) {}
+    try { if (navigator.share) { await navigator.share({ title: 'Shardline', text, url }); return; } } catch (e) {}
     try {
       await navigator.clipboard.writeText(text + ' ' + url);
       const el = $('shareToast');
