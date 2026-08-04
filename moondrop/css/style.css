@@ -58,7 +58,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   radial-gradient(ellipse at 50% 42%,rgba(10,10,31,.28),rgba(10,10,31,.88) 78%),
   url("../assets/nebula.jpg") center/cover no-repeat #0a0a1f;}
 
-.logo{font-size:min(16vw,74px);font-weight:800;letter-spacing:6px;color:#fff;line-height:1;
+.logo{font-size:min(14vw,74px);font-weight:800;letter-spacing:clamp(2px,1vw,6px);color:#fff;line-height:1;
   text-shadow:0 0 30px var(--lav),0 0 70px rgba(167,139,250,.5);}
 .logo span{color:var(--pink);text-shadow:0 0 30px var(--pink),0 0 70px rgba(255,157,245,.4);}
 .tagline{font-size:14px;font-weight:700;color:var(--dim);letter-spacing:1px;}

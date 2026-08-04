@@ -845,6 +845,10 @@
       B.z += 260 * dt;
       B.x = trackAt(B.z).x + Math.sin(menuDrift * 0.7) * 30;
       ensure(((B.z / SEG) | 0) + 130);
+      // El attract del menú rueda sin fin y acumulaba segmentos indefinidamente
+      // (fuga de memoria si el menú se deja abierto). Al pasar del tope, regenerar
+      // la misma pista (semilla 42) y devolver la bola al inicio → memoria acotada.
+      if (segs.length > 2400) { trackReset(42); B.z = SEG * 2; ensure(((B.z / SEG) | 0) + 130); }
     }
     update(dt);
     render();

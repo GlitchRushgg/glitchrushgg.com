@@ -27,7 +27,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:14px;font-weight:800;}
 .chip.coins b{color:var(--green);}
 .corner{position:absolute;right:10px;top:0;display:flex;gap:6px;}
-.mini-btn{width:36px;height:36px;border-radius:10px;font-size:15px;
+.mini-btn{width:42px;height:42px;border-radius:10px;font-size:15px;
   background:rgba(3,7,7,.85);border:1px solid rgba(93,255,138,.28);
   display:flex;align-items:center;justify-content:center;pointer-events:auto;}
 .mini-btn:active{transform:scale(.92);}

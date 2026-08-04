@@ -32,7 +32,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .hud-corner{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;
   display:flex;flex-direction:column;gap:6px;}
-.mini-btn{width:36px;height:36px;border-radius:10px;font-size:15px;font-weight:800;
+.mini-btn{width:42px;height:42px;border-radius:10px;font-size:15px;font-weight:800;
   background:rgba(15,10,6,.8);border:1px solid rgba(255,157,77,.25);
   display:flex;align-items:center;justify-content:center;}
 .mini-btn:active{transform:scale(.92);}
@@ -44,7 +44,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:linear-gradient(180deg,#f5c542,#d8901c);color:#3d2400;
   box-shadow:0 3px 0 #9c6300,0 6px 14px rgba(0,0,0,.4);transition:transform .08s;}
 .boost-btn:active{transform:translateY(2px);}
-.boost-btn small{font-size:8.5px;font-weight:700;opacity:.8;}
+.boost-btn small{font-size:10.5px;font-weight:700;opacity:.8;}
 .boost-btn.armed{background:linear-gradient(180deg,#ff7a5c,#d84315);color:#fff;
   box-shadow:0 3px 0 #93290a,0 0 18px rgba(255,122,92,.5);animation:pulse .8s infinite;}
 @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}

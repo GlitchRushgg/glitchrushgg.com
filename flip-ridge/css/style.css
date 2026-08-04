@@ -28,7 +28,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .chip.coins b{color:var(--gold);}
 .chip.coins em{font-style:normal;font-size:11px;color:var(--medal);}
 .corner{position:absolute;right:10px;top:0;display:flex;gap:6px;}
-.mini-btn{width:36px;height:36px;border-radius:10px;font-size:15px;
+.mini-btn{width:42px;height:42px;border-radius:10px;font-size:15px;
   background:rgba(5,10,18,.82);border:1px solid rgba(93,224,138,.25);
   display:flex;align-items:center;justify-content:center;pointer-events:auto;}
 .mini-btn:active{transform:scale(.92);}

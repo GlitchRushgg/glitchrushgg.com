@@ -29,7 +29,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .chip.coins b{color:var(--gold);}
 .chip.coins em{font-style:normal;font-size:11px;color:var(--rep);}
 .corner{position:absolute;right:10px;top:0;display:flex;gap:6px;}
-.mini-btn{width:36px;height:36px;border-radius:10px;font-size:15px;
+.mini-btn{width:42px;height:42px;border-radius:10px;font-size:15px;
   background:rgba(5,13,13,.82);border:1px solid rgba(63,224,208,.25);
   display:flex;align-items:center;justify-content:center;pointer-events:auto;}
 .mini-btn:active{transform:scale(.92);}
@@ -65,7 +65,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   font-size:12px;font-weight:800;background:linear-gradient(180deg,#f0c04d,#c2901c);color:#3a2800;
   box-shadow:0 3px 0 #8a6300;transition:transform .08s;}
 .gold-btn:active{transform:translateY(2px);}
-.gold-btn small{font-size:8.5px;font-weight:700;opacity:.8;}
+.gold-btn small{font-size:10.5px;font-weight:700;opacity:.8;}
 .gold-btn.on{background:linear-gradient(180deg,#5de08a,#22a555);color:#052914;box-shadow:0 3px 0 #157a3c;}
 .gold-btn.cooling{filter:grayscale(.6) brightness(.7);}
 .best-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -106,7 +106,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:linear-gradient(180deg,#5de08a,#22a555);color:#052914;font-weight:800;font-size:12.5px;
   padding:7px 11px;border-radius:10px;box-shadow:0 3px 0 #157a3c;min-width:82px;transition:transform .08s;}
 .buy:active{transform:translateY(2px);}
-.buy small{font-size:8.5px;font-weight:800;opacity:.8;letter-spacing:.5px;}
+.buy small{font-size:10.5px;font-weight:800;opacity:.8;letter-spacing:.5px;}
 .buy.cant{background:#182628;color:#5c757c;box-shadow:0 3px 0 #0e191b;}
 .buy.maxed{background:#182628;color:var(--gold);box-shadow:0 3px 0 #0e191b;}
 
@@ -121,7 +121,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .trick-ico{font-size:26px;line-height:1;}
 .trick-name{font-size:11px;font-weight:800;color:#fff;margin-top:4px;}
 .trick-sub{font-size:9px;font-weight:700;color:var(--dim);margin-top:1px;}
-.trick-hint{font-size:8.5px;font-style:italic;color:var(--dim);margin-top:3px;line-height:1.3;}
+.trick-hint{font-size:10.5px;font-style:italic;color:var(--dim);margin-top:3px;line-height:1.3;}
 
 /* house / prestige */
 .house-page{text-align:center;padding:6px 8px 14px;}
