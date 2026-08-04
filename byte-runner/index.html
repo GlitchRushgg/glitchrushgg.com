@@ -8,7 +8,14 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2c3.5 0 6 2.6 6 6v3l-2 8h-8l-2-8V8c0-3.4 2.5-6 6-6z' fill='%23ff2d95'/%3E%3Crect x='8.5' y='8' width='7' height='2.8' rx='1.4' fill='%23d4ff3c'/%3E%3Crect x='9' y='19' width='2.4' height='4' rx='1.2' fill='%23ff2d95'/%3E%3Crect x='12.6' y='19' width='2.4' height='4' rx='1.2' fill='%23ff2d95'/%3E%3C/svg%3E" />
   <!-- CrazyGames SDK v3 (only activates on crazygames.com) -->
-  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+  <script>
+    /* CrazyGames SDK: se carga SOLO en el portal (y en localhost para pruebas).
+       En glitchrushgg.com no se contacta ningun tercero (GDPR). js/sdk.js degrada
+       con gracia cuando window.CrazyGames no existe. */
+    if (/(^|\.)crazygames\.|^localhost$|^127\.0\.0\.1$/.test(location.hostname)) {
+      document.write('<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"><\/script>');
+    }
+  </script>
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -70,5 +77,35 @@
   <script src="js/sdk.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/game.js"></script>
+  <script data-honest-copy-v1>
+  /* Copy honesto: fuera de CrazyGames no se reproduce ningun anuncio, asi que
+     los botones "watch ad" mienten. En el sitio propio (cualquier host que no
+     sea crazygames.com) se reetiquetan a "FREE"; en el portal se mantiene el
+     texto porque alli si hay anuncio real. Cubre etiquetas estaticas y las que
+     el juego vuelve a pintar (MutationObserver). No toca ninguna logica. */
+  (function () {
+    if (/(^|\.)crazygames\./.test(location.hostname)) return;
+    function relabel(node) {
+      if (node.nodeType === 3) {
+        var v = node.nodeValue, nv = v.replace(/watch ad/gi, 'FREE');
+        if (nv !== v) node.nodeValue = nv;
+      } else if (node.nodeType === 1) {
+        for (var i = 0; i < node.childNodes.length; i++) relabel(node.childNodes[i]);
+      }
+    }
+    function start() {
+      relabel(document.body);
+      new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var m = muts[i];
+          if (m.type === 'characterData') relabel(m.target);
+          else for (var j = 0; j < m.addedNodes.length; j++) relabel(m.addedNodes[j]);
+        }
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+  </script>
 </body>
 </html>

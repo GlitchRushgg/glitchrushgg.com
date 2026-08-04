@@ -74,5 +74,35 @@
   <script src="js/sdk.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/game.js"></script>
+  <script data-honest-copy-v1>
+  /* Copy honesto: fuera de CrazyGames no se reproduce ningun anuncio, asi que
+     los botones "watch ad" mienten. En el sitio propio (cualquier host que no
+     sea crazygames.com) se reetiquetan a "FREE"; en el portal se mantiene el
+     texto porque alli si hay anuncio real. Cubre etiquetas estaticas y las que
+     el juego vuelve a pintar (MutationObserver). No toca ninguna logica. */
+  (function () {
+    if (/(^|\.)crazygames\./.test(location.hostname)) return;
+    function relabel(node) {
+      if (node.nodeType === 3) {
+        var v = node.nodeValue, nv = v.replace(/watch ad/gi, 'FREE');
+        if (nv !== v) node.nodeValue = nv;
+      } else if (node.nodeType === 1) {
+        for (var i = 0; i < node.childNodes.length; i++) relabel(node.childNodes[i]);
+      }
+    }
+    function start() {
+      relabel(document.body);
+      new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
+          var m = muts[i];
+          if (m.type === 'characterData') relabel(m.target);
+          else for (var j = 0; j < m.addedNodes.length; j++) relabel(m.addedNodes[j]);
+        }
+      }).observe(document.body, { subtree: true, childList: true, characterData: true });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  })();
+  </script>
 </body>
 </html>
