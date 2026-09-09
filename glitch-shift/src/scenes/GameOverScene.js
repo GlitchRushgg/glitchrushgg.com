@@ -74,8 +74,8 @@ export class GameOverScene extends Phaser.Scene {
 
     // Volver a la web propia (no en iframe/CrazyGames).
     if (window.self === window.top) {
-      const home = this.add.text(24, 24, "🏠", f("24px", { backgroundColor: "#1a2a4acc" }))
-        .setOrigin(0, 0).setPadding(14, 12, 14, 12).setDepth(20).setInteractive({ useHandCursor: true });
+      const home = this.add.image(24, 24, "homeBolt").setOrigin(0, 0).setDisplaySize(24, 35).setDepth(20)
+        .setInteractive({ useHandCursor: true });
       home.on("pointerdown", () => { window.location.href = "/"; });
     }
 

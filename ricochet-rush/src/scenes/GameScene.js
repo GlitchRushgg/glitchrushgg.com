@@ -152,8 +152,8 @@ export class GameScene extends Phaser.Scene {
 
     // Botón 🏠 volver a la web (solo si no es iframe/CrazyGames).
     if (window.self === window.top) {
-      const home = S0(this.add.text(W - 236, 12, "🏠", f("34px", { backgroundColor: "#2a1f10cc" }))
-        .setOrigin(1, 0).setPadding(18, 16, 18, 16).setDepth(22).setInteractive({ useHandCursor: true }));
+      const home = S0(this.add.image(W - 236, 12, "homeBolt").setOrigin(1, 0).setDisplaySize(24, 35).setDepth(22)
+        .setInteractive({ useHandCursor: true }));
       home.on("pointerdown", () => { window.location.href = "/"; });
     }
 

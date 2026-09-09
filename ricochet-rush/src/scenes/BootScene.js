@@ -7,6 +7,11 @@ export class BootScene extends Phaser.Scene {
     super("Boot");
   }
 
+  preload() {
+    // Rayo de marca para el botón "volver a la web" (reemplaza el emoji 🏠).
+    this.load.svg("homeBolt", "/brand/bolt.svg", { width: 40, height: 58 });
+  }
+
   create() {
     this._genPlayer();
     this._genEnemies();

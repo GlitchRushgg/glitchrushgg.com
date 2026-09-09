@@ -63,8 +63,8 @@ export class MenuScene extends Phaser.Scene {
     // Volver a glitchrushgg.com — SOLO cuando se juega en la web propia. En un
     // portal (CrazyGames embebe en iframe) window.self !== window.top → oculto.
     if (window.self === window.top) {
-      const home = this.add.text(24, 20, "🏠", f("26px", { backgroundColor: "#23324acc" }))
-        .setOrigin(0, 0).setPadding(14, 12, 14, 12).setInteractive({ useHandCursor: true });
+      const home = this.add.image(24, 20, "homeBolt").setOrigin(0, 0).setDisplaySize(24, 35)
+        .setInteractive({ useHandCursor: true });
       home.on("pointerdown", () => { window.location.href = "/"; });
     }
 

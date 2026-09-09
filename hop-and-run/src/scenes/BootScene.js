@@ -31,6 +31,9 @@ export class BootScene extends Phaser.Scene {
     this.add.rectangle(W / 2, H / 2, 320, 16).setStrokeStyle(2, 0xffffff);
     this.load.on("progress", (p) => (bar.width = 314 * p));
 
+    // Rayo de marca para el botón "volver a la web" (reemplaza el emoji 🏠).
+    this.load.svg("homeBolt", "/brand/bolt.svg", { width: 40, height: 58 });
+
     for (const name of Object.keys(FRAMES)) this.load.image("raw-" + name, ART + name + "-cut.png");
     this.load.image("cristian-celebrate", ART + "cristian-celebrate-cut.png");
 

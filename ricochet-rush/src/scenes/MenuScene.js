@@ -79,8 +79,8 @@ export class MenuScene extends Phaser.Scene {
 
     // Volver a glitchrushgg.com — solo en la web propia (no en iframe/CrazyGames).
     if (window.self === window.top) {
-      const home = this.add.text(24, 20, "🏠", f("18px", { backgroundColor: "#2a1f10" }))
-        .setOrigin(0, 0).setPadding(12, 8, 12, 8).setInteractive({ useHandCursor: true });
+      const home = this.add.image(24, 20, "homeBolt").setOrigin(0, 0).setDisplaySize(24, 35)
+        .setInteractive({ useHandCursor: true });
       home.on("pointerdown", () => { window.location.href = "/"; });
     }
   }
