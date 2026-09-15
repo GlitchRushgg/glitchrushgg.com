@@ -30,7 +30,7 @@
 
   /* ================= PERSISTENCE ================= */
   const SAVE_KEY = 'moondrop_v1';
-  const save = { best: 0, sound: true, plays: 0, maxTier: 0 };
+  const save = { best: 0, sound: true, plays: 0, maxTier: 0, tutSeen: false };
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
   A.enabled = save.sound;
@@ -76,6 +76,7 @@
   let runMaxTier = 0;
   let bannerT = 0, bannerTxt = '';
   let gamesSinceAd = 0;
+  let tutFromTitle = false;
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const mass = (r) => r * r;
@@ -111,11 +112,13 @@
     hide('title'); hide('over'); show('hud');
     MD.SDK.gameplayStart();
     A.resume();
+    A.music.start();
   }
 
   function gameOver() {
     state = ST.OVER;
     A.over();
+    A.music.stop();
     MD.SDK.gameplayStop();
     shake = 0.35;
     const final = Math.floor(score);
@@ -145,6 +148,7 @@
     overflowT = 0;
     state = ST.PLAY;
     A.revive();
+    A.music.start();
     hide('over'); show('hud');
     MD.SDK.gameplayStart();
   }
@@ -665,10 +669,11 @@
       cb.classList.remove('hidden');
       cb.textContent = '×' + Math.min(comboN, 5) + ' COMBO';
     } else cb.classList.add('hidden');
-    // next preview dot
+    // next preview — a real little planet (color-matched, capped so big tiers fit)
     const nx = $('nextDot');
     nx.style.background = TIERS[nextTier].c;
-    nx.style.width = nx.style.height = Math.min(26, TIERS[nextTier].r) + 'px';
+    nx.style.color = TIERS[nextTier].c; // drives the box-shadow glow
+    nx.style.width = nx.style.height = (14 + Math.min(20, nextTier * 3)) + 'px';
   }
   function renderLadder() {
     $('ladder').innerHTML = TIERS.map((t, i) =>
@@ -688,7 +693,11 @@
   window.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button, .panel')) return;
     A.resume();
-    if (state === ST.TITLE) { startRun(); aimFrom(e); return; }
+    if (state === ST.TITLE) {
+      // first-timers see a quick how-to; returning players tap straight in
+      if (!save.tutSeen) { tutFromTitle = false; show('tutorial'); return; }
+      startRun(); aimFrom(e); return;
+    }
     if (state === ST.PLAY) aimFrom(e);
   });
   window.addEventListener('pointerup', (e) => {
@@ -731,6 +740,15 @@
     persist();
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     A.click();
+    if (save.sound && state === ST.PLAY) A.music.start(); else A.music.stop();
+  });
+  // Tutorial: replayable from the title, gates the first-ever play.
+  $('btnHelp').addEventListener('click', () => { A.click(); tutFromTitle = true; show('tutorial'); });
+  $('btnTutPlay').addEventListener('click', () => {
+    A.click();
+    save.tutSeen = true; persist();
+    hide('tutorial');
+    if (!tutFromTitle) startRun();
   });
   // Back to glitchrushgg.com — hidden inside the CrazyGames iframe.
   for (const id of ['btnHome', 'btnHome2']) {
@@ -754,15 +772,19 @@
   }
 
   /* ================= BOOT + LOOP ================= */
-  (async function boot() {
-    MD.SDK.loadingStart();
-    await MD.SDK.init();
-    MD.SDK.loadingStop();
+  (function boot() {
+    // Render the title/canvas immediately — SDK init runs in the background and
+    // must never block first paint (it can take up to 3s on the portal).
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     $('titleBest').textContent = fmtNum(save.best);
     renderLadder();
     updateHUD();
     requestAnimationFrame(loop);
+    (async () => {
+      MD.SDK.loadingStart();
+      await MD.SDK.init();
+      MD.SDK.loadingStop();
+    })();
   })();
 
   function loop(now) {

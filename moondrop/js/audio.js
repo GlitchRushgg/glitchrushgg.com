@@ -46,10 +46,33 @@ MD.Audio = (function () {
     } catch (e) {}
   }
 
+  /* ---- ambient cosmic music bed (procedural, no files) ----
+     A slow drifting drone + high pentatonic shimmer — a calm "deep
+     space" pad that never fights the merge blips. CrazyGames wants
+     music that complements the visuals. */
+  let musicTimer = null, mStep = 0;
+  const M_ROOTS = [65.41, 55.00, 73.42, 82.41];   // C2 A1 D2 E2 (one per bar)
+  const M_ARP = [5, 7, 9, 7, 6, 8, 9, 8];         // high pentatonic shimmer
+  function musicStart() {
+    if (musicTimer || !enabled) return;
+    try { ac().resume(); } catch (e) {}
+    mStep = 0;
+    musicTimer = setInterval(() => {
+      if (!enabled) return;
+      const bar = (mStep >> 3) & 3;
+      if ((mStep & 7) === 0) beep(M_ROOTS[bar], 2.2, 'sine', 0.045);          // deep drone
+      if ((mStep & 3) === 0) beep(M_ROOTS[bar] * 2, 1.2, 'triangle', 0.015);  // octave pad
+      if ((mStep & 1) === 0) beep(PENTA[M_ARP[(mStep >> 1) % M_ARP.length]], 0.7, 'sine', 0.010); // shimmer
+      mStep = (mStep + 1) & 31;
+    }, 300);
+  }
+  function musicStop() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+
   return {
     resume,
     get enabled() { return enabled; },
     set enabled(v) { enabled = v; },
+    music: { start: musicStart, stop: musicStop },
     /* merge blip — chain index picks the pentatonic step */
     merge: (chain, tier) => {
       const i = Math.min(PENTA.length - 1, (chain - 1));

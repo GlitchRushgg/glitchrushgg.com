@@ -27,7 +27,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .hud-next{display:flex;flex-direction:column;align-items:center;gap:4px;
   background:rgba(16,12,40,.6);border:1px solid rgba(167,139,250,.3);border-radius:14px;padding:7px 12px;}
 .hud-next-label{font-size:9px;font-weight:800;letter-spacing:2px;color:var(--dim);}
-#nextDot{display:block;border-radius:50%;box-shadow:0 0 10px currentColor;}
+#nextDot{display:block;border-radius:50%;box-shadow:0 0 10px currentColor;
+  border:2px solid rgba(255,255,255,.55);transition:width .15s,height .15s;}
 
 #comboBadge{position:absolute;top:calc(86px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
   font-size:16px;font-weight:800;letter-spacing:2px;color:var(--gold);
@@ -97,6 +98,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
   background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:var(--txt);transition:transform .08s;}
 .mini-btn:active{transform:scale(.94);}
 .mini-btn.wide{width:100%;}
+
+/* ================= TUTORIAL ================= */
+.title-foot{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.tut-panel{width:min(94%,360px);display:flex;flex-direction:column;align-items:center;gap:15px;text-align:center;
+  animation:pop .3s cubic-bezier(.34,1.5,.64,1);}
+.tut-title{font-size:20px;font-weight:800;letter-spacing:3px;color:var(--lav);
+  text-shadow:0 0 14px rgba(167,139,250,.55);}
+.tut-demo{display:flex;align-items:center;justify-content:center;gap:9px;height:62px;font-weight:800;color:var(--dim);}
+.tut-orb{display:inline-block;border-radius:50%;}
+.tut-orb.o1,.tut-orb.o2{width:26px;height:26px;background:#8ea6f5;box-shadow:0 0 10px #8ea6f5;
+  animation:tutMerge 3s infinite;}
+.tut-orb.o2{animation-delay:0s;}
+.tut-orb.o3{width:42px;height:42px;background:#54d6c8;box-shadow:0 0 16px #54d6c8;animation:tutPop 3s infinite;}
+.tut-eq{font-size:18px;}
+.tut-arrow{font-size:20px;}
+.tut-bh{font-size:30px;animation:comboPulse 1.4s infinite;}
+@keyframes tutMerge{0%,22%{transform:scale(1) translateX(0);opacity:1;}
+  38%{transform:scale(.5) translateX(6px);opacity:.15;}44%,100%{opacity:0;}}
+.tut-orb.o1{animation-name:tutMergeL;}
+@keyframes tutMergeL{0%,22%{transform:scale(1) translateX(0);opacity:1;}
+  38%{transform:scale(.5) translateX(-6px);opacity:.15;}44%,100%{opacity:0;}}
+@keyframes tutPop{0%,38%{transform:scale(0);opacity:0;}
+  50%{transform:scale(1.18);opacity:1;}64%,100%{transform:scale(1);opacity:1;}}
+.tut-steps{text-align:left;font-size:13.5px;line-height:1.5;color:var(--txt);
+  list-style-position:inside;display:flex;flex-direction:column;gap:5px;padding:0 4px;}
+.tut-steps b{color:var(--gold);}
 
 #shareToast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(20px);z-index:60;
   background:var(--panel);border:1px solid var(--lav);color:#fff;padding:10px 20px;border-radius:20px;
