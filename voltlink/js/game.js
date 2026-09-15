@@ -32,7 +32,7 @@
 
   /* ================= PERSISTENCE ================= */
   const SAVE_KEY = 'voltlink_v1';
-  const save = { best: 0, sound: true, plays: 0, dailyDay: '', dailyBest: 0, maxTile: 0 };
+  const save = { best: 0, sound: true, plays: 0, dailyDay: '', dailyBest: 0, maxTile: 0, tutSeen: false };
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
   function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
   A.enabled = save.sound;
@@ -92,6 +92,7 @@
   let particles = [], floats = [], bolts = [], flashA = 0, shake = 0;
   let bannerTxt = '', bannerT = 0;
   let runMaxTile = 0;
+  let tutFromTitle = false, tutPendingMode = 'endless';
 
   const rand = (a, b) => a + Math.random() * (b - a);
 
@@ -155,11 +156,13 @@
     updateHUD();
     VL.SDK.gameplayStart();
     A.resume();
+    A.music.start();
   }
 
   function gameOver() {
     state = ST.OVER;
     A.over();
+    A.music.stop();
     VL.SDK.gameplayStop();
     shake = 0.3;
     const final = Math.floor(score);
@@ -197,6 +200,7 @@
     collapseAndRefill();
     state = ST.PLAY;
     A.revive();
+    A.music.start();
     hide('over'); show('hud');
     VL.SDK.gameplayStart();
     updateHUD();
@@ -764,11 +768,24 @@
   window.addEventListener('pointercancel', () => { dragging = false; chain = []; });
 
   /* ================= BUTTONS ================= */
-  $('btnEndless').addEventListener('click', () => { A.click(); startRun('endless'); });
-  $('btnDaily').addEventListener('click', () => { A.click(); startRun('daily'); });
+  // First-time players see a quick how-to before their first run; returning
+  // players go straight in (1 tap). Tutorial is replayable from the title.
+  function maybeStart(m) {
+    if (!save.tutSeen) { tutPendingMode = m; tutFromTitle = false; show('tutorial'); return; }
+    startRun(m);
+  }
+  $('btnEndless').addEventListener('click', () => { A.click(); maybeStart('endless'); });
+  $('btnDaily').addEventListener('click', () => { A.click(); maybeStart('daily'); });
+  $('btnHelp').addEventListener('click', () => { A.click(); tutFromTitle = true; show('tutorial'); });
+  $('btnTutPlay').addEventListener('click', () => {
+    A.click();
+    save.tutSeen = true; persist();
+    hide('tutorial');
+    if (!tutFromTitle) startRun(tutPendingMode);
+  });
   $('btnRetry').addEventListener('click', () => { A.click(); playAgain(); });
   $('btnHome').addEventListener('click', () => {
-    A.click(); hide('over'); show('title'); state = ST.TITLE; refreshTitle();
+    A.click(); A.music.stop(); hide('over'); show('title'); state = ST.TITLE; refreshTitle();
   });
   $('btnRevive').addEventListener('click', () => {
     VL.SDK.rewardedAd(revive, () => A.deny());
@@ -792,6 +809,7 @@
     persist();
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     A.click();
+    if (save.sound && state === ST.PLAY) A.music.start(); else A.music.stop();
   });
   $('btnShare').addEventListener('click', share);
   async function share() {
@@ -847,12 +865,7 @@
   window.addEventListener('pagehide', persist);
   document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
 
-  // surface any unexpected runtime error on screen (debug aid)
-  window.addEventListener('error', (e) => {
-    try {
-      const el = $('shareToast');
-      el.textContent = '⚠ ' + (e.message || 'unknown error');
-      el.classList.add('show');
-    } catch (err) {}
-  });
+  // Log unexpected runtime errors to the console only — never surface raw
+  // error text to players (CrazyGames-quality polish).
+  window.addEventListener('error', (e) => { try { console.error('[voltlink]', e.message); } catch (err) {} });
 })();

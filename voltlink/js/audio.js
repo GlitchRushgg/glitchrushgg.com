@@ -47,10 +47,32 @@ VL.Audio = (function () {
     } catch (e) {}
   }
 
+  /* ---- ambient music bed (procedural, subtle, no files) ----
+     A slow C-pentatonic drone + shimmer over a I-I-IV-V bass so it
+     never clashes with the chain SFX. CrazyGames wants "music that
+     complements the visuals"; this is a calm circuit-board hum. */
+  let musicTimer = null, mStep = 0;
+  const M_ROOTS = [65.41, 65.41, 87.31, 98.00];   // C2 C2 F2 G2 (one per bar)
+  const M_ARP = [0, 2, 4, 5, 7, 5, 4, 2];         // indices into PENTA, up-and-down
+  function musicStart() {
+    if (musicTimer || !enabled) return;
+    try { ac().resume(); } catch (e) {}
+    mStep = 0;
+    musicTimer = setInterval(() => {
+      if (!enabled) return;
+      const bar = (mStep >> 3) & 3;
+      if ((mStep & 7) === 0) beep(M_ROOTS[bar], 1.4, 'sine', 0.05);          // bass drone
+      if ((mStep & 1) === 0) beep(PENTA[M_ARP[(mStep >> 1) % M_ARP.length]], 0.5, 'triangle', 0.014); // shimmer
+      mStep = (mStep + 1) & 31;
+    }, 250);
+  }
+  function musicStop() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+
   return {
     resume,
     get enabled() { return enabled; },
     set enabled(v) { enabled = v; },
+    music: { start: musicStart, stop: musicStop },
     /* rising note per link — i = chain index */
     link:  (i) => beep(PENTA[Math.min(PENTA.length - 1, i)], 0.09, 'sine', 0.06),
     unlink:() => beep(200, 0.05, 'sine', 0.03),

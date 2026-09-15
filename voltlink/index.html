@@ -47,7 +47,30 @@
       <button id="btnEndless" class="big-btn go">ENDLESS<small>classic score chase</small></button>
       <button id="btnDaily" class="big-btn daily">⚡ DAILY CIRCUIT<small>CIRCUIT #1 · not played</small></button>
     </div>
-    <button id="btnShare" class="mini-btn">SHARE</button>
+    <div class="title-foot">
+      <button id="btnHelp" class="mini-btn">HOW TO PLAY</button>
+      <button id="btnShare" class="mini-btn">SHARE</button>
+    </div>
+  </div>
+
+  <!-- ===== TUTORIAL ===== -->
+  <div id="tutorial" class="overlay hidden">
+    <div class="panel tut-panel">
+      <h2 class="tut-title">HOW TO PLAY</h2>
+      <div class="tut-demo" aria-hidden="true">
+        <div class="tut-tile t2">2</div>
+        <div class="tut-tile t2b">2</div>
+        <div class="tut-tile t4">4</div>
+        <div class="tut-finger"></div>
+        <div class="tut-pop">→ 8</div>
+      </div>
+      <ol class="tut-steps">
+        <li><b>Drag</b> to link nodes — start on two <b>equal</b> numbers.</li>
+        <li>Keep going through <b>equal or double</b> values.</li>
+        <li><b>Release</b> to merge. <b>6+ links</b> forge a ⚡ <b>VOLT ORB</b>, and every link charges the <b>SURGE</b>.</li>
+      </ol>
+      <button id="btnTutPlay" class="big-btn go">GOT IT — PLAY ⚡</button>
+    </div>
   </div>
 
   <!-- ===== GAME OVER ===== -->

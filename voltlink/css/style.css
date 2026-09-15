@@ -101,6 +101,36 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .big-btn.ad{background:linear-gradient(180deg,#ffd93b,#e8a11c);color:#3d2800;
   box-shadow:0 4px 0 #a86e00,0 0 22px rgba(255,217,59,.3);}
 
+/* ================= TUTORIAL ================= */
+.title-foot{display:flex;gap:10px;margin-top:2px;}
+.tut-panel{width:min(94%,360px);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  animation:pop .3s cubic-bezier(.34,1.5,.64,1);}
+.tut-title{font-size:20px;font-weight:800;letter-spacing:3px;color:var(--cyan);
+  text-shadow:0 0 14px rgba(56,232,255,.5);}
+.tut-demo{position:relative;display:flex;gap:12px;padding:8px 8px 4px;height:74px;align-items:center;}
+.tut-tile{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+.tut-tile.t2,.tut-tile.t2b{background:linear-gradient(180deg,hsl(185,95%,66%),hsl(185,90%,42%));}
+.tut-tile.t4{background:linear-gradient(180deg,hsl(223,95%,66%),hsl(223,90%,42%));}
+.tut-tile.t2{animation:tutlight 3s infinite .2s;}
+.tut-tile.t2b{animation:tutlight 3s infinite .7s;}
+.tut-tile.t4{animation:tutlight 3s infinite 1.2s;}
+@keyframes tutlight{0%,8%{box-shadow:0 0 0 rgba(255,217,59,0);transform:scale(1);}
+  16%{box-shadow:0 0 20px rgba(255,217,59,.9);transform:scale(1.14);}
+  40%,100%{box-shadow:0 0 0 rgba(255,217,59,0);transform:scale(1);}}
+.tut-finger{position:absolute;top:50%;left:34px;width:20px;height:20px;border-radius:50%;margin:-10px 0 0 -10px;
+  background:radial-gradient(circle at 35% 35%,#fff,#ffd93b);box-shadow:0 0 14px var(--volt);
+  opacity:0;animation:tutfinger 3s infinite;}
+@keyframes tutfinger{0%,8%{left:34px;opacity:0;}14%{opacity:1;}33%{left:98px;}
+  52%{left:162px;}62%{left:162px;opacity:1;}70%{opacity:0;}100%{opacity:0;}}
+.tut-pop{position:absolute;right:-4px;top:0;font-size:17px;font-weight:800;color:var(--volt);
+  text-shadow:0 0 12px var(--volt);opacity:0;animation:tutpop 3s infinite;}
+@keyframes tutpop{0%,55%{opacity:0;transform:translateY(6px) scale(.7);}
+  66%{opacity:1;transform:translateY(-2px) scale(1.18);}86%{opacity:1;}100%{opacity:0;}}
+.tut-steps{text-align:left;font-size:13.5px;line-height:1.5;color:var(--txt);
+  list-style-position:inside;display:flex;flex-direction:column;gap:5px;padding:0 4px;}
+.tut-steps b{color:var(--volt);}
+
 #shareToast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(20px);z-index:60;
   background:var(--panel);border:1px solid var(--cyan);color:#fff;padding:10px 20px;border-radius:20px;
   font-size:13px;font-weight:700;opacity:0;transition:all .25s;pointer-events:none;}
