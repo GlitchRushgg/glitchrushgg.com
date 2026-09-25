@@ -43,10 +43,33 @@ SS.Audio = (function () {
     } catch (e) {}
   }
 
+  /* ---- ambient storm music bed (procedural, no files) ----
+     A brooding low drone + sparse high shimmer — distant-storm
+     ambience that sits under the thunder SFX without fighting them. */
+  let musicTimer = null, mStep = 0;
+  const M_ROOTS = [55.00, 55.00, 73.42, 65.41];               // A1 A1 D2 C2
+  const M_HI = [220.0, 246.9, 293.7, 329.6, 392.0, 440.0];    // A-minor-ish shimmer
+  const M_ARP = [0, 2, 3, 2, 4, 3];
+  function musicStart() {
+    if (musicTimer || !enabled) return;
+    try { ac().resume(); } catch (e) {}
+    mStep = 0;
+    musicTimer = setInterval(() => {
+      if (!enabled) return;
+      const bar = (mStep >> 3) & 3;
+      if ((mStep & 7) === 0) beep(M_ROOTS[bar], 2.4, 'sine', 0.05);          // storm drone
+      if ((mStep & 3) === 0) beep(M_ROOTS[bar] * 2, 1.3, 'triangle', 0.013); // pad
+      if ((mStep & 1) === 0) beep(M_HI[M_ARP[(mStep >> 1) % M_ARP.length]], 0.6, 'sine', 0.009); // shimmer
+      mStep = (mStep + 1) & 31;
+    }, 300);
+  }
+  function musicStop() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+
   return {
     resume,
     get enabled() { return enabled; },
     set enabled(v) { enabled = v; },
+    music: { start: musicStart, stop: musicStop },
     zap: () => {                                 // rate-limited bolt snap
       const now = Date.now();
       if (now - zapGate < 70) return;

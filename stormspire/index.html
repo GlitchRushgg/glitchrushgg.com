@@ -22,8 +22,24 @@
 
   <!-- ===== TOP CORNER (always) ===== -->
   <div class="corner">
+    <button id="btnHelp" class="mini-btn">?</button>
     <button id="btnShare" class="mini-btn">⤴</button>
     <button id="btnSound" class="mini-btn">🔊</button>
+  </div>
+
+  <!-- ===== INTRO / HOW TO PLAY ===== -->
+  <div id="intro" class="overlay hidden">
+    <div class="intro-panel">
+      <button id="btnIntroClose" class="intro-x" aria-label="close">✕</button>
+      <h1 class="intro-logo">STORM<span>SPIRE</span></h1>
+      <p class="intro-tag">Defend the last lightning spire against the storm armada.</p>
+      <ul class="intro-steps">
+        <li><b>⚡ Your spire auto-fires</b> at the nearest raiders — you don't aim it.</li>
+        <li><b>👆 Hold &amp; drag anywhere</b> to sweep your lightning Arc across the swarm.</li>
+        <li><b>🛠️ Spend cash on upgrades</b> and survive as many waves as you can!</li>
+      </ul>
+      <button id="btnIntroPlay" class="launch-btn">⚡ DEFEND THE SPIRE</button>
+    </div>
   </div>
 
   <!-- ===== RUN UI ===== -->

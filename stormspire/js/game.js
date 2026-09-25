@@ -31,7 +31,7 @@
     coins: 0, lifetime: 0, cores: 0, coresEarned: 0, releases: 0,
     ws: {}, resDone: {}, research: null,
     bestWave: 0, offRate: 0, lastSeen: Date.now(),
-    reactionsSeen: {}, sound: true, runs: 0,
+    reactionsSeen: {}, sound: true, runs: 0, introSeen: false,
   };
   DATA.workshop.forEach(w => save.ws[w.id] = 0);
   try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
@@ -73,6 +73,7 @@
   let bannerTxt = '', bannerT = 0, bannerCol = '#ffd88a';
   let runStart = 0, sessionRuns = 0;
   let autoBuyT = 0;
+  let arcHint = false;   // first-run "hold & drag" coach prompt
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const dist2 = (ax, ay, bx, by) => (ax - bx) ** 2 + (ay - by) ** 2;
@@ -115,10 +116,12 @@
     runStart = tt;
     state = ST.RUN;
     sessionRuns++; save.runs++;
+    arcHint = (save.runs === 1);   // teach the Arc live on the very first run
     hide('baseSheet'); hide('resModal'); show('runUI');
     renderRunShop();
     SS.SDK.gameplayStart();
     A.resume();
+    A.music.start();
   }
 
   function startWave() {
@@ -185,6 +188,7 @@
   function endRun() {
     state = ST.RESULTS;
     A.death();
+    A.music.stop();
     SS.SDK.gameplayStop();
     shake = 0.4; flashA = 0.5;
     hide('runUI');
@@ -785,6 +789,22 @@
       ctx.globalAlpha = 1;
     }
 
+    // first-run Arc coach prompt (dismisses when the player holds the Arc)
+    if (state === ST.RUN && arcHint) {
+      const pulse = 0.55 + 0.45 * Math.sin(tt * 4);
+      ctx.globalAlpha = pulse;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#7fd4ff'; ctx.shadowBlur = 16;
+      ctx.font = '800 18px "Rajdhani","Segoe UI", sans-serif';
+      ctx.fillStyle = '#eaf7ff';
+      ctx.fillText('👆 HOLD & DRAG ANYWHERE', LW / 2, 152);
+      ctx.font = '800 12px "Rajdhani","Segoe UI", sans-serif';
+      ctx.fillStyle = '#9fd4ff';
+      ctx.fillText('to sweep your lightning arc across the swarm ⚡', LW / 2, 172);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
+
     // low HP vignette
     const hpFrac = spireHp / maxHp();
     if (state === ST.RUN && hpFrac < 0.35) {
@@ -989,7 +1009,22 @@
 
   /* ---------- base (between runs) ---------- */
   let baseTab = 'ws';
+  // Progressive disclosure: don't overwhelm a new player with the deep meta.
+  // LAB appears after the first run; TEMPEST only once prestige is reachable.
+  function updateBaseTabs() {
+    const labTab = document.querySelector('.btab[data-tab="lab"]');
+    const tempTab = document.querySelector('.btab[data-tab="tempest"]');
+    const showLab = save.runs >= 1;
+    const showTemp = save.bestWave >= DATA.PRESTIGE_WAVE || save.cores > 0;
+    if (labTab) labTab.classList.toggle('hidden', !showLab);
+    if (tempTab) tempTab.classList.toggle('hidden', !showTemp);
+    if ((!showLab && baseTab === 'lab') || (!showTemp && baseTab === 'tempest')) {
+      baseTab = 'ws';
+      document.querySelectorAll('.btab').forEach(x => x.classList.toggle('active', x.dataset.tab === 'ws'));
+    }
+  }
   function renderBase() {
+    updateBaseTabs();
     $('baseCoins').textContent = fmt(save.coins);
     $('baseBest').textContent = save.bestWave;
     $('baseCores').textContent = save.cores;
@@ -1098,6 +1133,7 @@
     A.resume();
     if (state !== ST.RUN) return;
     arcHeld = true;
+    arcHint = false;   // player found the Arc — dismiss the coach prompt
     ptr = toL(e.clientX, e.clientY);
   });
   window.addEventListener('pointermove', (e) => {
@@ -1204,6 +1240,22 @@
     persist();
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     A.click();
+    if (save.sound && state === ST.RUN) A.music.start(); else A.music.stop();
+  });
+  // Intro / how-to (first-run front door; replayable from the "?" button)
+  function showIntro() { show('intro'); }
+  $('btnHelp').addEventListener('click', () => { A.click(); showIntro(); });
+  $('btnIntroPlay').addEventListener('click', () => {
+    A.click();
+    save.introSeen = true; persist();
+    hide('intro');
+    if (state === ST.BASE) newRun();
+  });
+  $('btnIntroClose').addEventListener('click', () => {
+    A.click();
+    save.introSeen = true; persist();
+    hide('intro');
+    if (state === ST.BASE) show('baseSheet');
   });
   $('btnShare').addEventListener('click', share);
   async function share() {
@@ -1224,6 +1276,9 @@
     $('btnSound').textContent = save.sound ? '🔊' : '🔇';
     checkOffline();
     renderBase();
+    // First-timers get a clean front door (title + how-to) instead of landing
+    // straight in the Workshop meta — CrazyGames wants gameplay in ~1 click.
+    if (!save.introSeen) { hide('baseSheet'); showIntro(); }
     requestAnimationFrame(loop);
     SS.SDK.init().then(() => SS.SDK.gameplayStart());
   })();
@@ -1252,7 +1307,7 @@
   setInterval(persist, 15000);
   window.addEventListener('pagehide', persist);
   document.addEventListener('visibilitychange', () => { if (document.hidden) persist(); });
-  window.addEventListener('error', (e) => {
-    try { banner('⚠ ' + (e.message || 'error'), '#ff5b6e'); } catch (err) {}
-  });
+  // Log unexpected runtime errors to the console only — never surface raw
+  // error text to players (CrazyGames-quality polish).
+  window.addEventListener('error', (e) => { try { console.error('[stormspire]', e.message); } catch (err) {} });
 })();
