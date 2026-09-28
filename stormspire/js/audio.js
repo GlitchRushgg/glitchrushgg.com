@@ -43,25 +43,28 @@ SS.Audio = (function () {
     } catch (e) {}
   }
 
-  /* ---- ambient storm music bed (procedural, no files) ----
-     A brooding low drone + sparse high shimmer — distant-storm
-     ambience that sits under the thunder SFX without fighting them. */
+  /* ---- driving storm music bed (procedural, no files) ----
+     A four-on-the-floor pulse + syncopated lead riff — arcade energy
+     to match the lightning, NOT a sleepy drone. ~109 BPM, 4-bar loop. */
   let musicTimer = null, mStep = 0;
-  const M_ROOTS = [55.00, 55.00, 73.42, 65.41];               // A1 A1 D2 C2
-  const M_HI = [220.0, 246.9, 293.7, 329.6, 392.0, 440.0];    // A-minor-ish shimmer
-  const M_ARP = [0, 2, 3, 2, 4, 3];
+  const M_CHORDS = [110.00, 87.31, 130.81, 98.00];                       // A2 F2 C3 G2 (i-VI-III-VII)
+  const M_SCALE = [220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3];     // A-minor-pentatonic-ish
+  const M_RIFF = [4, -1, 2, 4, -1, 6, 5, -1, 4, -1, 2, 6, -1, 5, 4, -1]; // 16-step lead; -1 = rest
   function musicStart() {
     if (musicTimer || !enabled) return;
     try { ac().resume(); } catch (e) {}
     mStep = 0;
     musicTimer = setInterval(() => {
       if (!enabled) return;
-      const bar = (mStep >> 3) & 3;
-      if ((mStep & 7) === 0) beep(M_ROOTS[bar], 2.4, 'sine', 0.05);          // storm drone
-      if ((mStep & 3) === 0) beep(M_ROOTS[bar] * 2, 1.3, 'triangle', 0.013); // pad
-      if ((mStep & 1) === 0) beep(M_HI[M_ARP[(mStep >> 1) % M_ARP.length]], 0.6, 'sine', 0.009); // shimmer
-      mStep = (mStep + 1) & 31;
-    }, 300);
+      const bar = (mStep >> 4) & 3, s = mStep & 15;
+      const root = M_CHORDS[bar];
+      if ((s & 3) === 0) beep(root, 0.17, 'square', 0.045, root * 0.99);   // kick-bass (four on the floor)
+      if ((s & 3) === 2) beep(root * 2, 0.10, 'triangle', 0.02);          // off-beat pluck for groove
+      if ((s & 1) === 1) noise(0.02, 0.012, 7000);                        // hi-hat tick
+      const n = M_RIFF[s];
+      if (n >= 0) beep(M_SCALE[n], 0.13, 'triangle', 0.024);             // lead riff
+      mStep = (mStep + 1) & 63;                                           // 4 bars × 16 steps
+    }, 138);
   }
   function musicStop() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
 

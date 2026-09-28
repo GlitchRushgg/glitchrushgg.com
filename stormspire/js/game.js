@@ -74,6 +74,7 @@
   let runStart = 0, sessionRuns = 0;
   let autoBuyT = 0;
   let arcHint = false;   // first-run "hold & drag" coach prompt
+  let novaKills = 0;     // Chain Reaction perk kill counter
 
   const rand = (a, b) => a + Math.random() * (b - a);
   const dist2 = (ax, ay, bx, by) => (ax - bx) ** 2 + (ay - by) ** 2;
@@ -92,10 +93,10 @@
   const multiC = () => 0.02 * run.multi + 0.15 * pk('multi15');
   const chainJ = () => Math.min(5, pk('chain1'));
   const chainRet = () => Math.min(0.95, 0.4 + 0.12 * run.chain);
-  const maxHp = () => 140 * (1 + 0.02 * save.ws.whp) * Math.pow(1.06, run.hp);
+  const maxHp = () => 140 * (1 + 0.02 * save.ws.whp) * Math.pow(1.06, run.hp) * Math.pow(1.2, pk('hpCore'));
   const regen = () => 0.5 * run.regen;
   const dr = () => Math.min(0.7, 0.015 * run.aegis + 0.15 * pk('aegis15'));
-  const cashMult = () => (1 + 0.05 * run.cashk) * Math.pow(1.2, pk('cash20'));
+  const cashMult = () => (1 + 0.05 * run.cashk) * Math.pow(1.2, pk('cash20')) * Math.pow(1.4, pk('bounty'));
   const arcMax = () => 100 + 4 * save.ws.warc;
   const arcRegen = () => 8 * (1 + 0.04 * run.charge) * Math.pow(1.4, pk('arcRegen')) * over();
   const arcRadius = () => 8 * U * Math.pow(1.4, pk('arcWide'));
@@ -107,12 +108,13 @@
     run = {}; DATA.runUps.forEach(u => run[u.id] = 0);
     perks = {}; rotation = ['spark']; rotIdx = 0;
     cash = 10 * save.ws.wcash; cashEarned = 0;
-    wave = 0; waveT = 0; spawnQ = []; gapT = 1.5; bossAlive = false;
+    wave = 0; waveT = 0; spawnQ = []; gapT = 1.2; bossAlive = false;
     enemies = []; bolts = []; cells = []; particles = []; floats = [];
     spireHp = maxHp(); fireT = 0; boltCount = 0;
     arc = arcMax(); arcHeld = false;
     hasOrbit = false; usedRevive = false;
     overchargeUntil = 0; overUsed = 0;
+    novaKills = 0;
     runStart = tt;
     state = ST.RUN;
     sessionRuns++; save.runs++;
@@ -135,7 +137,7 @@
       A.bossIn();
     } else {
       const n = DATA.countW(wave);
-      for (let i = 0; i < n; i++) spawnQ.push({ t: (i / n) * 18, boss: false });
+      for (let i = 0; i < n; i++) spawnQ.push({ t: (i / n) * 11, boss: false });
       if (wave > 1) A.waveUp();
       // interest on unspent cash
       const int = 0.01 * pk('interest1') + 0.0025 * save.ws.wint;
@@ -305,6 +307,8 @@
     A.kill();
     burst(e.x, e.y, e.boss ? 30 : 8, `hsl(${e.def.hue},85%,65%)`);
     if (pk('arcKill')) arc = Math.min(arcMax(), arc + 2 * pk('arcKill'));
+    if (pk('lifesteal')) spireHp = Math.min(maxHp(), spireHp + maxHp() * 0.015 * pk('lifesteal'));
+    if (pk('novaKill') && ++novaKills >= 10) { novaKills = 0; novaBlast(e.x, e.y); }
     if (e.def.splits) {
       for (let i = 0; i < e.def.splits; i++) {
         enemies.push({
@@ -322,6 +326,17 @@
       shake = 0.4; flashA = 0.4;
       banner('DREADNOUGHT DOWN!', '#ffd45c');
       spireHp = Math.min(maxHp(), spireHp + maxHp() * 0.02 * save.ws.wrecov);
+    }
+  }
+
+  // Chain Reaction perk: an AoE nova that damages everything nearby.
+  function novaBlast(x, y) {
+    burst(x, y, 18, '#ffd45c');
+    shake = Math.max(shake, 0.16); flashA = Math.max(flashA, 0.22);
+    addFloat(x, y - 18, 'CHAIN REACTION!', '#ffd45c', true);
+    A.reaction('overload');
+    for (const o of enemies) {
+      if (!o.dead && dist2(o.x, o.y, x, y) < (18 * U) ** 2) hurt(o, baseDmg() * 3, false, '#ffd45c');
     }
   }
 
@@ -384,7 +399,7 @@
     /* waves */
     if (spawnQ.length === 0 && enemies.length === 0) {
       gapT -= dt;
-      if (gapT <= 0) { gapT = 4; startWave(); }
+      if (gapT <= 0) { gapT = 2; startWave(); }
     } else {
       waveT += dt;
       while (spawnQ.length && spawnQ[0].t <= waveT) {
@@ -503,6 +518,7 @@
       } else {
         // contact damage
         damageSpire(DATA.dpsW(wave) * dt);
+        if (pk('retaliate')) hurt(e, baseDmg() * 1.2 * pk('retaliate') * dt, false, '#7fd4ff');
       }
     }
 

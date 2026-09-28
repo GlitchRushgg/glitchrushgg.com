@@ -70,6 +70,12 @@ DATA.perks = [
   { id: 'aegis15',  name: 'Stone Ward',      desc: '+15% damage reduction', rar: 2 },
   { id: 'stormlord',name: 'STORMLORD',       desc: 'Infuse ALL elements at once', rar: 3, once: true },
   { id: 'godbolt',  name: 'GODBOLT',         desc: 'Every 10th bolt deals ×10', rar: 3, once: true },
+  /* ---- extra powerups (more build variety) ---- */
+  { id: 'hpCore',   name: 'Bulwark Core',    desc: '+20% max Spire HP', rar: 0 },
+  { id: 'bounty',   name: 'Gilded Surge',    desc: '+40% cash per kill', rar: 1 },
+  { id: 'lifesteal',name: 'Storm Siphon',    desc: 'Heal 1.5% Spire HP on every kill', rar: 1 },
+  { id: 'retaliate',name: 'Static Ward',     desc: 'Raiders touching the spire get zapped', rar: 1 },
+  { id: 'novaKill', name: 'Chain Reaction',  desc: 'Every 10 kills: an AoE nova blast', rar: 2 },
 ];
 DATA.perkRarP = [60, 28, 10, 2];
 DATA.rarCol = ['#9fb4bd', '#5b9cf0', '#a06df0', '#f0c04d'];
