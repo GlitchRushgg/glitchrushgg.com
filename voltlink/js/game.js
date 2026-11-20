@@ -57,14 +57,34 @@
   /* ================= CANVAS / LETTERBOX ================= */
   const cv = $('game'), ctx = cv.getContext('2d');
   let W = 0, H = 0, dpr = 1, scale = 1, offX = 0, offY = 0;
+  // Safe-area insets (notch / home bar), measured once through a CSS probe.
+  const safe = (() => {
+    const p = document.createElement('div');
+    p.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;' +
+      'padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+    document.body.appendChild(p);
+    const cs = getComputedStyle(p);
+    const r = { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0 };
+    p.remove();
+    return r;
+  })();
+  // The DOM HUD sits on top of the canvas: score + SURGE bar end ~120px from the top,
+  // the hammer/undo buttons take 12px margin + 58px fixed height (style.css .hud-bottom)
+  // at the bottom. Fit the board (plus the banner line above it) into the band between
+  // them, with a small gap, so no tile is ever hidden under the HUD.
+  const HUD_TOP = 124, HUD_BOTTOM = 12 + 58 + 10;
+  const CONTENT_TOP = BY - 50, CONTENT_BOTTOM = BY + ROWS * PITCH + 6;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth; H = window.innerHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     cv.style.width = W + 'px'; cv.style.height = H + 'px';
-    scale = Math.min(W / LW, H / LH);
+    const top = HUD_TOP + safe.t;
+    const band = Math.max(240, H - top - HUD_BOTTOM - safe.b);
+    const contentH = CONTENT_BOTTOM - CONTENT_TOP;
+    scale = Math.min(W / LW, band / contentH, H / LH);
     offX = (W - LW * scale) / 2;
-    offY = (H - LH * scale) / 2;
+    offY = top + (band - contentH * scale) / 2 - CONTENT_TOP * scale;
   }
   window.addEventListener('resize', resize);
   resize();

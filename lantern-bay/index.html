@@ -2,6 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script data-load-guard>
+  /* Load guard: if a game file fails to arrive (e.g. a momentary 503 from the host),
+     reload once by itself; if it fails again within a minute, show a retry button
+     instead of a frozen screen. Third-party ad/analytics scripts are ignored. */
+  (function () {
+    var KEY = 'gr_load_guard:' + location.pathname, handled = false;
+    function retryScreen() {
+      var d = document.createElement('div');
+      d.setAttribute('role', 'alert');
+      d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;' +
+        'align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;' +
+        'background:rgba(8,12,22,.95);color:#fff;font:600 17px/1.4 system-ui,-apple-system,sans-serif';
+      d.innerHTML = '<div>The game didn’t finish loading.<br>' +
+        '<span style="opacity:.7;font-size:14px">Check your connection and try again.</span></div>';
+      var b = document.createElement('button');
+      b.textContent = 'Tap to retry';
+      b.style.cssText = 'font:700 17px system-ui,-apple-system,sans-serif;padding:13px 30px;border:0;' +
+        'border-radius:14px;background:#38e8ff;color:#06121f;cursor:pointer';
+      b.onclick = function () { location.reload(); };
+      d.appendChild(b);
+      document.body.appendChild(d);
+    }
+    function onFail() {
+      if (handled) return;
+      handled = true;
+      var last = 0;
+      try { last = +sessionStorage.getItem(KEY) || 0; } catch (e) {}
+      if (Date.now() - last > 60000) {
+        try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+        setTimeout(function () { location.reload(); }, 700);
+        return;
+      }
+      if (document.body) retryScreen();
+      else document.addEventListener('DOMContentLoaded', retryScreen);
+    }
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (!t || t === window || !t.tagName) return;
+      var url = t.src || t.href || '';
+      if (/crazygames|google|doubleclick|mailerlite|web3forms/i.test(url)) return;
+      if (t.tagName === 'SCRIPT' || (t.tagName === 'LINK' && /stylesheet/i.test(t.rel))) onFail();
+    }, true);
+  })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#101d22" />
   <title>Lantern Bay</title>
