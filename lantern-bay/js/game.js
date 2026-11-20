@@ -569,14 +569,44 @@
     ctx.fillStyle = '#2c3242';
     ctx.fillRect(0, horizon - 6, WALL + 26, 6);
     ctx.fillRect(LW - WALL - 26, horizon - 6, WALL + 26, 6);
-    // gallows arm holding the rope
-    ctx.strokeStyle = '#4a3826';
-    ctx.lineWidth = 8; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(LW / 2 - 130, horizon - 8);
-    ctx.lineTo(LW / 2 - 130, horizon - 150);
-    ctx.lineTo(LW / 2, horizon - 150);
-    ctx.stroke();
+    // fishing rod holding the line: a bent, tapered rod (cork grip + reel) whose tip sits
+    // exactly where drawRope() starts the line (LW/2, horizon-150). Deliberately curved —
+    // the old right-angle post + hanging rope read as a gallows at night.
+    const p0x = LW / 2 - 150, p0y = horizon - 10;   // butt, resting on the left rim
+    const c1x = LW / 2 - 118, c1y = horizon - 178;  // bend
+    const p2x = LW / 2, p2y = horizon - 150;        // tip
+    const at = (t) => {
+      const u = 1 - t;
+      return { x: u * u * p0x + 2 * u * t * c1x + t * t * p2x, y: u * u * p0y + 2 * u * t * c1y + t * t * p2y };
+    };
+    ctx.lineCap = 'round';
+    // rod rest on the rim
+    ctx.fillStyle = '#5a4630';
+    ctx.fillRect(p0x - 9, horizon - 26, 18, 18);
+    // tapered blank, thick at the butt, thin at the tip
+    const STEPS = 16;
+    ctx.strokeStyle = '#a07a46';
+    for (let i = 0; i < STEPS; i++) {
+      const a = at(i / STEPS), b = at((i + 1) / STEPS);
+      ctx.lineWidth = 7 - 4.6 * (i / STEPS);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    // cork grip
+    const g0 = at(0.02), g1 = at(0.16);
+    ctx.strokeStyle = '#c9a274'; ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(g0.x, g0.y); ctx.lineTo(g1.x, g1.y); ctx.stroke();
+    // reel, just above the grip, on the underside of the rod
+    const r = at(0.2);
+    ctx.fillStyle = '#9aa6b8';
+    ctx.beginPath(); ctx.arc(r.x + 9, r.y + 3, 7, 0, 7); ctx.fill();
+    ctx.fillStyle = '#5d6878';
+    ctx.beginPath(); ctx.arc(r.x + 9, r.y + 3, 2.6, 0, 7); ctx.fill();
+    // line guides along the rod
+    ctx.strokeStyle = '#c8d0dc'; ctx.lineWidth = 1.4;
+    for (const t of [0.45, 0.68, 0.88]) {
+      const q = at(t);
+      ctx.beginPath(); ctx.arc(q.x, q.y + 3, 2.4, 0, 7); ctx.stroke();
+    }
   }
 
   function drawBestDepthLine(camY) {
