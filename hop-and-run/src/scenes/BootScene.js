@@ -48,7 +48,7 @@ export class BootScene extends Phaser.Scene {
       this.load.image(t, ART + t + "-cut.png");
     }
     this.load.image("key-art", ART + "key-art.jpg");
-    // Audio real (Pixabay, licencia libre): solo de guitarra normal + super rock.
+    // Audio real CC0 (Freesound, ver assets/audio/LICENCIAS.md): solo normal + super.
     this.load.audio("guitarSolo", "assets/audio/guitar-solo.mp3");
     this.load.audio("superGuitar", "assets/audio/super-guitar.mp3");
   }

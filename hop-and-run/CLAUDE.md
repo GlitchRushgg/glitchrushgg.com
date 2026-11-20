@@ -7,9 +7,13 @@ with **fairness rules** (no crate in the landing zone after a gap; crate and
 pigeon never share a platform); a **skateboard** power-up; **stored lives**
 (heart pickups → CONTINUE on a rescue platform after falling, max 2); and
 the **GUITAR SOLO** super power (guitar pickup → anime-style **cut-in
-cinematic** of Cristian rocking out, then 9s invincible + faster + higher
-jumps + power trail + real Pixabay riff; the rarer **SUPER GUITAR** at pink
-glow = 14s and its own track — first at 300m so players actually see it).
+cinematic** of Cristian rocking out, then 6s invincible + faster + higher
+jumps + power trail + a real CC0 guitar riff; the rarer **SUPER GUITAR** at pink
+glow = 10s and its own cut of the same riff — first at 500m so players actually
+see it). Audio licences: `assets/audio/LICENCIAS.md` (CC0 only, never Pixabay).
+Power-up balance "option E" (founder, 2026-11-20): skate 220m then every 650m
+(5s), guitar 60m then every 850m, super 500m then every 1100m → invincible
+~30% of a run if every pickup is collected (was ~60%).
 Natural 4-phase run cycle (frames 1→2→4→5: the old 1→2→3→4 repeated the same
 stride). Rescue animals for score+combo. **7 sectors** by distance: day →
 sunset → **BEACH (500m)** → **JUNGLE (900m)** → **LITTLE ITALY (1350m)** →

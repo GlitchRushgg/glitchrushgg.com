@@ -49,7 +49,9 @@ export class GameScene extends Phaser.Scene {
     this.sectorIx = 0;
     this._nextSkateAt = 220;   // monopatín más pronto y más seguido (feedback fundadora)
     this._nextGuitarAt = 60;   // guitarra AÚN más cerca del inicio (~9s)
-    this._nextSuperAt = 300;   // SUPER GUITARRA alcanzable (antes 900m — con récord de ~700m nunca salía)
+    // SUPER GUITARRA alcanzable antes del récord típico (~700m). Balance "opción E"
+    // aprobado por la fundadora 2026-11-20: 300→500m (invencible ~60% → ~30% de la run).
+    this._nextSuperAt = 500;
     this.lives = 0;            // corazones guardados para CONTINUAR tras caer (feedback fundadora)
     this._nextLifeAt = 250;    // primer corazón a los 250m
     this.superSolo = false;
@@ -424,19 +426,21 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: p, y: p.y - 16, duration: 420, yoyo: true, repeat: -1, ease: "Sine.inOut" });
     }
 
-    // Power-ups on a distance schedule.
+    // Power-ups on a distance schedule. Balance "opción E" (fundadora, 2026-11-20):
+    // se mantienen los ganchos tempranos que ella pidió (guitarra 60m, monopatín
+    // 220m, súper antes de ~700m) y se espacian los siguientes. Invencible (si se
+    // recogen todos): ~60% → ~30% de la run (simulación scratchpad/invsim.js).
     if (meters >= this._nextSkateAt) {
-      this._nextSkateAt += 280;   // más seguido (antes 420)
+      this._nextSkateAt += 650;   // antes 280
       this._addPickup(left + width / 2, top - 130, "item-skateboard", "skate", 64);
     }
     if (meters >= this._nextSuperAt) {
-      this._nextSuperAt += 800;   // antes 1200 — que se vea varias veces por buena run
+      this._nextSuperAt += 1100;  // antes 800
       this._addPickup(left + width / 2, top - 155, "item-guitar", "super-guitar", 90);
     }
     if (meters >= this._nextGuitarAt) {
-      // Menos frecuente que antes (auditoría: guitarra cada 400m = ~45% de la
-      // run invencible; ahora cada 550m). La primera sigue a 60m (el hook).
-      this._nextGuitarAt += 550;
+      // La primera sigue a 60m (el hook); después cada 850m (antes 550).
+      this._nextGuitarAt += 850;
       this._addPickup(left + width / 2 - 80, top - 140, "item-guitar", "guitar", 72);
     }
     // Corazón de CONTINUAR: guárdalo y al caer sigues la partida (máx 2).
@@ -493,7 +497,7 @@ export class GameScene extends Phaser.Scene {
       this._float(p.x, p.y, "+1 LIFE!", "#ff8fb0");
       this._refreshLives();
     } else if (kind === "skate") {
-      this.skateT = 9;
+      this.skateT = 5;   // opción E (antes 9 s): el monopatín es un subidón, no media run
       this.snd.skate();
       this._float(p.x, p.y, "SKATEBOARD!", "#3ec8e8");
     } else if (kind === "guitar") {
@@ -508,12 +512,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   _startSolo() {
-    this.soloT = 7;   // algo más corto (auditoría: bajar el % de invencibilidad)
+    this.soloT = 6;   // opción E (antes 7 s); guitar-solo.mp3 dura 6,5 s y se apaga con el poder
     this.superSolo = false;
     this.snd.soloStart();
-    // Nivelado ffmpeg: archivo normalizado a -16 LUFS y volumen bajado para
+    // Nivelado ffmpeg: archivo normalizado a -16.5 LUFS y volumen bajado para
     // que los SFX (saltos/frutas) se oigan POR ENCIMA del riff (orden fundadora)
-    this._playSoloAudio("guitarSolo", 0.66);   // solo de guitarra REAL (Pixabay)
+    this._playSoloAudio("guitarSolo", 0.66);   // guitarra REAL CC0 (Freesound, ver CREDITS)
     // Guitarra normal: FLASH rápido SIN congelar (el cut-in cinemático completo
     // se reserva para la SUPER — auditoría: proteger el flow del runner de un
     // botón y hacer el gran cut-in más raro/especial/clipeable).
@@ -522,10 +526,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   _startSuperSolo() {
-    this.soloT = 13;   // la super dura más y ES el momento cinemático
+    this.soloT = 10;   // opción E (antes 13 s); super-guitar.mp3 = 11,1 s (10 s + ~1,1 s de cut-in)
     this.superSolo = true;
     this.snd.soloStart();
-    this._playSoloAudio("superGuitar", 0.74);   // rock potente (Pixabay) — mantiene jerarquía sobre el solo normal
+    this._playSoloAudio("superGuitar", 0.74);   // misma guitarra CC0, 2.ª pasada +1 tono — jerarquía sobre el solo normal
     this._soloCutIn(true);   // cut-in completo (freeze) solo aquí
   }
 
