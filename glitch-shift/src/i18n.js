@@ -83,8 +83,7 @@ function detect() {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved === "es" || saved === "en") return saved;
   } catch (e) { /* sin storage */ }
-  const nav = (navigator.language || "es").toLowerCase();
-  return nav.startsWith("es") ? "es" : "en";
+  return "en";   // por defecto inglés (regla del estudio); el toggle ES/EN sigue disponible
 }
 
 let current = detect();

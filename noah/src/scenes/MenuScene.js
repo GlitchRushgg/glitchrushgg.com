@@ -14,7 +14,7 @@ export default class MenuScene extends Phaser.Scene {
     // ── drifting clouds (procedural, for life) ───────────────────────────
     this.makeCloudTexture();
     for (let i = 0; i < 5; i++) {
-      const cy = 60 + Math.random() * 720;
+      const cy = 170 + Math.random() * 610;               // nunca detrás del panel del título (y 48–144)
       const sc = 0.6 + Math.random() * 0.9;
       const cloud = this.add.image(-120, cy, 'cloudpuff').setScale(sc).setAlpha(0.85).setDepth(1);
       cloud.x = Math.random() * (W + 120) - 100;          // repartidas por la pantalla al inicio
@@ -42,7 +42,8 @@ export default class MenuScene extends Phaser.Scene {
     });
 
     // ── TITLE (bounce in, then gentle bob) ───────────────────────────────
-    this.roundPanel(W / 2, 96, 372, 96, 0x06243f, 0.42, 22).setDepth(5);
+    // alpha 0.97: las nubes blancas pintadas en background.png se transparentaban como manchas grises tras el título
+    this.roundPanel(W / 2, 96, 372, 96, 0x06243f, 0.97, 22).setDepth(5);
     const t1 = this.add.text(W / 2, 78, "DON'T DROWN,", {
       fontSize: '34px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffe066', stroke: '#7a4200', strokeThickness: 6,
@@ -62,14 +63,16 @@ export default class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: ark, y: 230, duration: 1900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     this.add.text(W / 2, 300, T.arkSafe, {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffffff', stroke: '#1a5a90', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(5);
+    }).setOrigin(0.5).setDepth(7);
 
-    const platY = 400;
+    // platY y el salto de Noah calculados para que su cabeza (72x96 en pantalla)
+    // nunca suba por encima de y≈312 y no tape el cartel del Arca (y≈300)
+    const platY = 426;
     [95, 195, 295].forEach((x) => this.add.image(x, platY, 'platform').setScale(1.15).setDepth(4));
 
     // Noah hops on the middle platform
     const noah = this.add.image(195, platY - 52, 'noah').setScale(1.5).setDepth(6);
-    this.tweens.add({ targets: noah, y: platY - 78, duration: 520, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
+    this.tweens.add({ targets: noah, y: platY - 66, duration: 520, yoyo: true, repeat: -1, ease: 'Quad.easeOut' });
 
     // friends to rescue
     this.placeAnimal('penguin',  95, platY, 56,   0);

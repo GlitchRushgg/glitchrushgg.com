@@ -55,7 +55,7 @@ const STRINGS = {
 export function noahLang() {
   const s = localStorage.getItem('noah-lang');
   if (s === 'es' || s === 'en') return s;
-  return (navigator.language || 'en').toLowerCase().startsWith('es') ? 'es' : 'en';
+  return 'en'; // por defecto inglés (regla del estudio); el toggle ES/EN sigue disponible
 }
 export let LANG = noahLang();
 export let T = STRINGS[LANG];
