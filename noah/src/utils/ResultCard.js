@@ -9,7 +9,7 @@ function loadImg(src) {
   });
 }
 
-export async function buildCardCanvas({ score, level, animalsCollected = 0, won }) {
+export async function buildCardCanvas({ score, level, animalsCollected = 0, won, daily = null }) {
   const [noahImg, arkImg] = await Promise.all([
     loadImg('assets/noah.png'),
     loadImg(won ? 'assets/ark-open.png' : 'assets/ark.png'),
@@ -73,12 +73,18 @@ export async function buildCardCanvas({ score, level, animalsCollected = 0, won 
   ctx.stroke();
 
   // Result label
+  // Result label (Daily Ark cards say which day, so friends can play the same world)
   ctx.font = 'bold 18px Arial';
-  ctx.fillStyle = won ? '#44ff88' : '#ff5555';
-  ctx.fillText(
-    won ? `🏆  Level ${level} Complete!` : `💀  Drowned at Level ${level}`,
-    W / 2, 52,
-  );
+  if (daily) {
+    ctx.fillStyle = '#e8b6ff';
+    ctx.fillText(`🌅  Daily Ark #${daily}  ·  Level ${level}`, W / 2, 52);
+  } else {
+    ctx.fillStyle = won ? '#44ff88' : '#ff5555';
+    ctx.fillText(
+      won ? `🏆  Level ${level} Complete!` : `💀  Drowned at Level ${level}`,
+      W / 2, 52,
+    );
+  }
 
   // ANIMALS SAVED — hero number (the game's share question); points are the small print
   ctx.font = 'bold 58px Arial';

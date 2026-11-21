@@ -1,7 +1,7 @@
 // Service worker de "Don't Drown, Noah!"
 // IMPORTANTE: al añadir/renombrar archivos del juego, añádelos a ASSETS
 // y sube la versión de CACHE — si no, los jugadores instalados verán la versión vieja.
-const CACHE = 'noah-v21';
+const CACHE = 'noah-v22';
 
 const ASSETS = [
   './',
@@ -21,6 +21,7 @@ const ASSETS = [
   './src/utils/Share.js',
   './src/utils/ResultCard.js',
   './src/utils/i18n.js',
+  './src/utils/Daily.js',
   './assets/noah.png',
   './assets/ark.png',
   './assets/ark-open.png',

@@ -2,6 +2,7 @@ import { addScore } from '../utils/Scores.js';
 import { shareScore } from '../utils/Share.js';
 import { buildCardCanvas, shareCard } from '../utils/ResultCard.js';
 import { T } from '../utils/i18n.js';
+import { dailyNumber, recordDailyResult } from '../utils/Daily.js';
 
 export default class WinScene extends Phaser.Scene {
   constructor() { super('Win'); }
@@ -11,7 +12,15 @@ export default class WinScene extends Phaser.Scene {
     this.finalScore = data.score || 0;
     this.animalsCollected = data.animalsCollected || 0;
     this.animalsRun = data.animalsRun || this.animalsCollected;   // whole run so far (all levels)
-    this.rank = addScore(this.finalScore, this.level, this.animalsRun);
+    this.daily = data.daily || null;
+    if (this.daily) {
+      // save progress as today's best so far (the run may end here if the player quits)
+      this.dailyRes = recordDailyResult(this.daily, this.animalsRun, this.finalScore, this.level);
+      this.rank = null;
+    } else {
+      this.dailyRes = null;
+      this.rank = addScore(this.finalScore, this.level, this.animalsRun);
+    }
   }
 
   create() {
@@ -78,8 +87,14 @@ export default class WinScene extends Phaser.Scene {
       fill: '#aaffaa', stroke: '#222', strokeThickness: 2,
     }).setOrigin(0.5).setDepth(11);
 
-    // Rank badge in banner
-    if (this.rank) {
+    // Rank badge in banner (Daily Ark: today's best + attempt instead)
+    if (this.daily) {
+      const s = this.dailyRes.stats;
+      this.add.text(W / 2, 88, T.dailyBest(s.best ? s.best.animals : this.animalsRun, s.attempts), {
+        fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold',
+        fill: '#e8b6ff', stroke: '#222', strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(11);
+    } else if (this.rank) {
       const rankColor = this.rank === 1 ? '#ffd700' : this.rank === 2 ? '#c0c0c0' : this.rank === 3 ? '#cd7f32' : '#aaddff';
       const rankText  = this.add.text(W / 2, 88, T.rank(this.rank), {
         fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold',
@@ -108,7 +123,7 @@ export default class WinScene extends Phaser.Scene {
       this.tweens.add({
         targets: [nextBtn, btnHighlight], scaleX: 0.95, scaleY: 0.95,
         duration: 80, yoyo: true,
-        onComplete: () => this.scene.start('Game', { level: this.level + 1, score: this.finalScore, animalsRun: this.animalsRun }),
+        onComplete: () => this.scene.start('Game', { level: this.level + 1, score: this.finalScore, animalsRun: this.animalsRun, daily: this.daily }),
       });
     });
     this.tweens.add({
@@ -145,6 +160,7 @@ export default class WinScene extends Phaser.Scene {
       level: this.level,
       animalsCollected: this.animalsRun,
       won: true,
+      daily: this.daily ? dailyNumber(this.daily) : null,
     });
 
     const key = 'winCard';
@@ -168,7 +184,9 @@ export default class WinScene extends Phaser.Scene {
     this.tweens.add({ targets: card,  alpha: 1, y: H / 2 - 40, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
-    const text = T.shareTextWin(this.animalsRun, this.level, this.finalScore);
+    const text = this.daily
+      ? T.shareTextDaily(dailyNumber(this.daily), this.animalsRun)
+      : T.shareTextWin(this.animalsRun, this.level, this.finalScore);
     shareCard(cv, text).then(result => {
       if (result === 'copied')     hint.setText(T.linkCopied);
       if (result === 'downloaded') hint.setText(T.imgSaved);

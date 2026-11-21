@@ -2,6 +2,7 @@ import { addScore, getScores } from '../utils/Scores.js';
 import { shareScore } from '../utils/Share.js';
 import { buildCardCanvas, shareCard } from '../utils/ResultCard.js';
 import { T } from '../utils/i18n.js';
+import { todayUTC, dailyNumber, recordDailyResult, startDailyAttempt, msToNextDaily, formatCountdown } from '../utils/Daily.js';
 
 export default class GameOverScene extends Phaser.Scene {
   constructor() { super('GameOver'); }
@@ -11,7 +12,15 @@ export default class GameOverScene extends Phaser.Scene {
     this.level            = data.level || 1;
     this.animalsCollected = data.animalsCollected || 0;
     this.animalsRun       = data.animalsRun || this.animalsCollected;   // whole run (all levels)
-    this.rank             = addScore(this.finalScore, this.level, this.animalsRun);
+    this.daily            = data.daily || null;
+    if (this.daily) {
+      // Daily Ark runs have their own board (today's best); they don't touch the all-time table
+      this.dailyRes = recordDailyResult(this.daily, this.animalsRun, this.finalScore, this.level);
+      this.rank = null;
+    } else {
+      this.dailyRes = null;
+      this.rank = addScore(this.finalScore, this.level, this.animalsRun);
+    }
   }
 
   create() {
@@ -58,8 +67,12 @@ export default class GameOverScene extends Phaser.Scene {
       fontSize: '50px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ff3333', stroke: '#660000', strokeThickness: 7,
     }).setOrigin(0.5).setAlpha(0);
-    this.add.text(W / 2, H * 0.205, T.reachedLevel(this.level), {
-      fontSize: '16px', fontFamily: 'Arial', fill: '#99bbdd', stroke: '#112233', strokeThickness: 2,
+    const subTxt = this.daily
+      ? `${T.dailyTitle(dailyNumber(this.daily))}  ·  ${T.lvAbbr}${this.level}`
+      : T.reachedLevel(this.level);
+    this.add.text(W / 2, H * 0.205, subTxt, {
+      fontSize: '16px', fontFamily: 'Arial', fontStyle: this.daily ? 'bold' : 'normal',
+      fill: this.daily ? '#e8b6ff' : '#99bbdd', stroke: '#112233', strokeThickness: 2,
     }).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: 1, duration: 600, ease: 'Back.easeOut' });
 
@@ -80,11 +93,15 @@ export default class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: hero, scaleX: 1, scaleY: 1, duration: 520, delay: 250, ease: 'Back.easeOut' });
 
     // ── Rankings panel ────────────────────────────────────────────────
-    this._drawLeaderboard(W / 2, 286, this.rank);
+    if (this.daily) this._drawDailyPanel(W / 2, 290);
+    else this._drawLeaderboard(W / 2, 286, this.rank);
 
-    // New record banner
-    if (this.rank === 1 && (this.animalsRun > 0 || this.finalScore > 0)) {
-      const rec = this.add.text(W / 2, H * 0.243, T.newRecord, {
+    // New record banner (all-time) or today's best (Daily Ark)
+    const newBest = this.daily
+      ? (this.dailyRes.isBest && (this.animalsRun > 0 || this.finalScore > 0))
+      : (this.rank === 1 && (this.animalsRun > 0 || this.finalScore > 0));
+    if (newBest) {
+      const rec = this.add.text(W / 2, H * 0.243, this.daily ? T.dailyNewBest : T.newRecord, {
         fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold',
         fill: '#ffd700', stroke: '#664400', strokeThickness: 4,
       }).setOrigin(0.5);
@@ -102,7 +119,16 @@ export default class GameOverScene extends Phaser.Scene {
     retryBtn.on('pointerdown', () => {
       this.tweens.add({
         targets: [retryBtn, retryHL], scaleX: 0.93, scaleY: 0.93, duration: 80, yoyo: true,
-        onComplete: () => this.scene.start('Game', { level: 1, score: 0 }),
+        onComplete: () => {
+          if (this.daily) {
+            // retry today's Daily Ark (if UTC midnight passed meanwhile, that's the new day's)
+            const today = todayUTC();
+            startDailyAttempt(today);
+            this.scene.start('Game', { level: 1, score: 0, daily: today });
+          } else {
+            this.scene.start('Game', { level: 1, score: 0 });
+          }
+        },
       });
     });
     this.tweens.add({ targets: retryBtn, scaleX: 1.05, scaleY: 1.05, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -135,6 +161,7 @@ export default class GameOverScene extends Phaser.Scene {
       level: this.level,
       animalsCollected: this.animalsRun,
       won: false,
+      daily: this.daily ? dailyNumber(this.daily) : null,
     });
 
     const key = 'goCard';
@@ -160,11 +187,33 @@ export default class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
     // Auto-trigger share sheet
-    const text = T.shareTextGO(this.animalsRun, this.level);
+    const text = this.daily
+      ? T.shareTextDaily(dailyNumber(this.daily), this.animalsRun)
+      : T.shareTextGO(this.animalsRun, this.level);
     shareCard(cv, text).then(result => {
       if (result === 'copied')     hint.setText(T.linkCopied);
       if (result === 'downloaded') hint.setText(T.imgSaved);
     });
+  }
+
+  // Daily Ark: today's personal best + attempt counter + countdown to the next one
+  _drawDailyPanel(cx, topY) {
+    const { stats } = this.dailyRes;
+    const best = stats.best || { animals: this.animalsRun };
+    this.add.rectangle(cx, topY + 62, 310, 124, 0x2a0f3a, 0.72).setOrigin(0.5);
+    this.add.text(cx, topY + 16, T.dailyTitle(dailyNumber(this.daily)), {
+      fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#e8b6ff',
+    }).setOrigin(0.5);
+    this.add.text(cx, topY + 48, T.dailyBest(best.animals, stats.attempts), {
+      fontSize: '17px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffe066', stroke: '#3a1250', strokeThickness: 3,
+    }).setOrigin(0.5);
+    this.add.text(cx, topY + 76, T.dailySub, {
+      fontSize: '13px', fontFamily: 'Arial', fill: '#d9c2ea',
+    }).setOrigin(0.5);
+    const cd = this.add.text(cx, topY + 104, T.nextDaily(formatCountdown(msToNextDaily())), {
+      fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#9fe3ff',
+    }).setOrigin(0.5);
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => cd.setText(T.nextDaily(formatCountdown(msToNextDaily()))) });
   }
 
   _drawLeaderboard(cx, topY, newRank) {

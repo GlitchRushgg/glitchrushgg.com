@@ -1,5 +1,6 @@
 import SoundManager from '../utils/SoundManager.js';
 import { T } from '../utils/i18n.js';
+import { withSeed, dailyNumber } from '../utils/Daily.js';
 
 const WORLD_H    = 2800;
 const NOAH_SPEED = 220;
@@ -56,6 +57,8 @@ export default class GameScene extends Phaser.Scene {
     this.score = data.score || 0;
     // animals saved over the WHOLE run (earlier levels); this level's count is _animalsCollected
     this._animalsRun = data.animalsRun || 0;
+    // Daily Ark: UTC date string ('YYYY-MM-DD') when this run is today's seeded challenge
+    this.daily = data.daily || null;
     this.lives = 3;
     this._won   = false;
     this._dying = false;
@@ -124,9 +127,15 @@ export default class GameScene extends Phaser.Scene {
     this._ridingFalling = false;
     this._fallJumpUntil = -1000; // grace window after jumping off a falling platform
 
-    this._generatePlatforms();
-    this._spawnAnimals();
-    this._spawnPowerups();
+    // Level layout. In the Daily Ark it is seeded by (UTC date, level), so every
+    // player in the world gets exactly the same platforms and animals today.
+    const buildLevel = () => {
+      this._generatePlatforms();
+      this._spawnAnimals();
+      this._spawnPowerups();
+    };
+    if (this.daily) withSeed(`noah-daily:${this.daily}:${this.level}`, buildLevel);
+    else buildLevel();
 
     // Rising water — starts just below the screen so it's visible from the first second
     this._waterLevel  = WORLD_H + 40;
@@ -138,7 +147,8 @@ export default class GameScene extends Phaser.Scene {
     this._waterSurface = this.add.tileSprite(195, this._waterLevel + 60, 390, 120, 'water').setDepth(7).setTint(theme.water);
 
     // Cartel de nivel + bioma (que cada nivel se sienta distinto); en tormenta, aviso especial
-    const bannerTxt = this._storm ? `${T.level} ${this.level}\n${T.storm}` : `${T.level} ${this.level}\n${(T.themes && T.themes[theme.name]) || theme.name}`;
+    let bannerTxt = this._storm ? `${T.level} ${this.level}\n${T.storm}` : `${T.level} ${this.level}\n${(T.themes && T.themes[theme.name]) || theme.name}`;
+    if (this.daily) bannerTxt = `${T.dailyTitle(dailyNumber(this.daily))}\n${bannerTxt}`;
     const banner = this.add.text(195, 250, bannerTxt, {
       fontSize: this._storm ? '30px' : '26px', fontFamily: 'Arial', fontStyle: 'bold',
       color: this._storm ? '#ffe066' : '#ffffff',
@@ -710,7 +720,7 @@ export default class GameScene extends Phaser.Scene {
       this.time.delayedCall(900, () => {
         this.scene.stop('UI');
         this.scene.start('GameOver', { score: this.score, level: this.level, animalsCollected: this._animalsCollected,
-          animalsRun: this._animalsRun + this._animalsCollected });
+          animalsRun: this._animalsRun + this._animalsCollected, daily: this.daily });
       });
     } else {
       this._waterPaused = true; // freeze water while respawning
@@ -769,6 +779,7 @@ export default class GameScene extends Phaser.Scene {
                 score: this.score,
                 animalsCollected: this._animalsCollected,
                 animalsRun: this._animalsRun + this._animalsCollected,
+                daily: this.daily,
               });
             });
           },

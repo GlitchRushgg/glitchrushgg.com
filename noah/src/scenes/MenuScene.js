@@ -1,4 +1,5 @@
 import { getScores } from '../utils/Scores.js';
+import { todayUTC, dailyNumber, getDailyStats, startDailyAttempt } from '../utils/Daily.js';
 import { T, LANG, setNoahLang } from '../utils/i18n.js';
 
 export default class MenuScene extends Phaser.Scene {
@@ -87,19 +88,19 @@ export default class MenuScene extends Phaser.Scene {
 
     // ── HIGH SCORES (rounded panel) ──────────────────────────────────────
     const scores = getScores();
-    const panelTop = 512;
-    const rowH = 28;
+    const panelTop = 500;
+    const rowH = 26;
     const rows = Math.min(scores.length, 3);
-    const panelH = 34 + Math.max(rows, 1) * rowH + 10;
+    const panelH = 30 + Math.max(rows, 1) * rowH + 8;
 
     // 0.85: the white clouds painted in background.png showed through as grey blobs behind the rows
     this.roundPanel(W / 2, panelTop + panelH / 2, 320, panelH, 0x05203a, 0.85, 16).setDepth(5);
-    this.add.text(W / 2, panelTop + 16, T.highScores, {
+    this.add.text(W / 2, panelTop + 15, T.highScores, {
       fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffe066',
     }).setOrigin(0.5).setDepth(6);
 
     if (rows === 0) {
-      this.add.text(W / 2, panelTop + 48, T.noScores, {
+      this.add.text(W / 2, panelTop + 44, T.noScores, {
         fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#bcd3e8',
         align: 'center', lineSpacing: 3,
       }).setOrigin(0.5).setDepth(6);
@@ -107,7 +108,7 @@ export default class MenuScene extends Phaser.Scene {
       const MEDAL = ['#ffd700', '#c0c0c0', '#cd7f32'];
       // rank · 🐾 animals saved (headline) · points + level (small print)
       scores.slice(0, 3).forEach(({ score, level, animals }, i) => {
-        const y = panelTop + 34 + i * rowH + rowH / 2;
+        const y = panelTop + 30 + i * rowH + rowH / 2;
         const col = MEDAL[i];
         this.add.text(W / 2 - 130, y, `#${i + 1}`, { fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(0, 0.5).setDepth(6);
         this.add.text(W / 2 - 82, y, `🐾 ${animals || 0}`, { fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(0, 0.5).setDepth(6);
@@ -116,23 +117,23 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     // ── PLAY button (glow + pulse + press) ───────────────────────────────
-    const btnY = panelTop + panelH + 58;
+    const btnY = panelTop + panelH + 46;
     const glow = this.add.graphics().setDepth(5);
-    glow.fillStyle(0xffb43d, 0.45); glow.fillRoundedRect(W / 2 - 138, btnY - 46, 276, 92, 26);
+    glow.fillStyle(0xffb43d, 0.45); glow.fillRoundedRect(W / 2 - 136, btnY - 40, 272, 80, 24);
     this.tweens.add({ targets: glow, alpha: { from: 0.25, to: 0.7 }, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     const btn = this.add.container(W / 2, btnY).setDepth(6);
     const bgfx = this.add.graphics();
-    bgfx.fillStyle(0xe66a00, 1); bgfx.fillRoundedRect(-124, -36, 248, 74, 22);
-    bgfx.fillStyle(0xff8c1a, 1); bgfx.fillRoundedRect(-124, -36, 248, 64, 22);
-    bgfx.fillStyle(0xffb14d, 0.5); bgfx.fillRoundedRect(-114, -28, 228, 22, 12);
-    const label = this.add.text(0, 0, T.play, {
-      fontSize: '34px', fontFamily: 'Arial', fontStyle: 'bold',
+    bgfx.fillStyle(0xe66a00, 1); bgfx.fillRoundedRect(-124, -32, 248, 66, 22);
+    bgfx.fillStyle(0xff8c1a, 1); bgfx.fillRoundedRect(-124, -32, 248, 57, 22);
+    bgfx.fillStyle(0xffb14d, 0.5); bgfx.fillRoundedRect(-114, -25, 228, 20, 12);
+    const label = this.add.text(0, -1, T.play, {
+      fontSize: '32px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffffff', stroke: '#7a3a00', strokeThickness: 5,
     }).setOrigin(0.5);
     btn.add([bgfx, label]);
-    btn.setSize(248, 74);
-    btn.setInteractive(new Phaser.Geom.Rectangle(-124, -37, 248, 74), Phaser.Geom.Rectangle.Contains);
+    btn.setSize(248, 66);
+    btn.setInteractive(new Phaser.Geom.Rectangle(-124, -33, 248, 66), Phaser.Geom.Rectangle.Contains);
     this.tweens.add({ targets: btn, scaleX: 1.05, scaleY: 1.05, duration: 720, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
     const start = () => this.scene.start('Game', { level: 1, score: 0 });
@@ -143,7 +144,40 @@ export default class MenuScene extends Phaser.Scene {
       this.tweens.add({ targets: btn, scaleX: 0.92, scaleY: 0.92, duration: 90, yoyo: true, onComplete: start });
     });
 
-    this.add.text(W / 2, btnY + 56, T.freeTag, {
+    // ── DAILY ARK button: same seeded world for everyone today (UTC) ─────
+    const today = todayUTC();
+    const dNum  = dailyNumber(today);
+    const dStats = getDailyStats(today);
+    const dY = btnY + 72;
+    const dBtn = this.add.container(W / 2, dY).setDepth(6);
+    const dg = this.add.graphics();
+    dg.fillStyle(0x6a2c8a, 1); dg.fillRoundedRect(-124, -25, 248, 52, 18);
+    dg.fillStyle(0x9a46c4, 1); dg.fillRoundedRect(-124, -25, 248, 45, 18);
+    dg.fillStyle(0xffffff, 0.16); dg.fillRoundedRect(-114, -20, 228, 14, 8);
+    const dLabel = this.add.text(0, -3, T.dailyBtn(dNum), {
+      fontSize: '21px', fontFamily: 'Arial', fontStyle: 'bold',
+      fill: '#ffffff', stroke: '#3a1250', strokeThickness: 4,
+    }).setOrigin(0.5);
+    dBtn.add([dg, dLabel]);
+    dBtn.setSize(248, 52);
+    dBtn.setInteractive(new Phaser.Geom.Rectangle(-124, -26, 248, 52), Phaser.Geom.Rectangle.Contains);
+    dBtn.on('pointerover', () => this.input.setDefaultCursor('pointer'));
+    dBtn.on('pointerout', () => this.input.setDefaultCursor('default'));
+    dBtn.on('pointerdown', () => {
+      this.tweens.add({
+        targets: dBtn, scaleX: 0.93, scaleY: 0.93, duration: 90, yoyo: true,
+        onComplete: () => {
+          startDailyAttempt(today);
+          this.scene.start('Game', { level: 1, score: 0, daily: today });
+        },
+      });
+    });
+    const dSub = dStats.best ? T.dailyBest(dStats.best.animals, dStats.attempts) : T.dailySub;
+    this.add.text(W / 2, dY + 40, dSub, {
+      fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffe7ff', stroke: '#3a1250', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(6);
+
+    this.add.text(W / 2, dY + 72, T.freeTag, {
       fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#e9f4ff', stroke: '#0d3a5c', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(6);
   }
