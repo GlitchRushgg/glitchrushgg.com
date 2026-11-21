@@ -10,7 +10,8 @@ export default class WinScene extends Phaser.Scene {
     this.level = data.level || 1;
     this.finalScore = data.score || 0;
     this.animalsCollected = data.animalsCollected || 0;
-    this.rank = addScore(this.finalScore, this.level);
+    this.animalsRun = data.animalsRun || this.animalsCollected;   // whole run so far (all levels)
+    this.rank = addScore(this.finalScore, this.level, this.animalsRun);
   }
 
   create() {
@@ -72,7 +73,7 @@ export default class WinScene extends Phaser.Scene {
       fontSize: '32px', fontFamily: 'Arial', fontStyle: 'bold',
       fill: '#ffe066', stroke: '#7a4200', strokeThickness: 5,
     }).setOrigin(0.5).setDepth(11);
-    this.add.text(W / 2, 58, T.animalsScore(this.animalsCollected, this.finalScore), {
+    this.add.text(W / 2, 58, T.animalsScore(this.animalsRun, this.finalScore), {
       fontSize: '15px', fontFamily: 'Arial',
       fill: '#aaffaa', stroke: '#222', strokeThickness: 2,
     }).setOrigin(0.5).setDepth(11);
@@ -107,7 +108,7 @@ export default class WinScene extends Phaser.Scene {
       this.tweens.add({
         targets: [nextBtn, btnHighlight], scaleX: 0.95, scaleY: 0.95,
         duration: 80, yoyo: true,
-        onComplete: () => this.scene.start('Game', { level: this.level + 1, score: this.finalScore }),
+        onComplete: () => this.scene.start('Game', { level: this.level + 1, score: this.finalScore, animalsRun: this.animalsRun }),
       });
     });
     this.tweens.add({
@@ -142,7 +143,7 @@ export default class WinScene extends Phaser.Scene {
     const cv = await buildCardCanvas({
       score: this.finalScore,
       level: this.level,
-      animalsCollected: this.animalsCollected,
+      animalsCollected: this.animalsRun,
       won: true,
     });
 
@@ -167,7 +168,7 @@ export default class WinScene extends Phaser.Scene {
     this.tweens.add({ targets: card,  alpha: 1, y: H / 2 - 40, duration: 320, ease: 'Back.easeOut' });
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
-    const text = T.shareTextWin(this.animalsCollected, this.level, this.finalScore);
+    const text = T.shareTextWin(this.animalsRun, this.level, this.finalScore);
     shareCard(cv, text).then(result => {
       if (result === 'copied')     hint.setText(T.linkCopied);
       if (result === 'downloaded') hint.setText(T.imgSaved);

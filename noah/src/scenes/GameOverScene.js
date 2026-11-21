@@ -10,7 +10,8 @@ export default class GameOverScene extends Phaser.Scene {
     this.finalScore       = data.score || 0;
     this.level            = data.level || 1;
     this.animalsCollected = data.animalsCollected || 0;
-    this.rank             = addScore(this.finalScore, this.level);
+    this.animalsRun       = data.animalsRun || this.animalsCollected;   // whole run (all levels)
+    this.rank             = addScore(this.finalScore, this.level, this.animalsRun);
   }
 
   create() {
@@ -48,7 +49,7 @@ export default class GameOverScene extends Phaser.Scene {
 
     // Broken hearts
     [-44, 0, 44].forEach((dx) => {
-      this.add.image(W / 2 + dx, H * 0.56, 'heart').setScale(1.4).setTint(0x332222).setAlpha(0.45);
+      this.add.image(W / 2 + dx, 500, 'heart').setScale(1.4).setTint(0x332222).setAlpha(0.45);   // below the 5-row leaderboard (ends ~460)
     });
 
     // GAME OVER title
@@ -62,21 +63,27 @@ export default class GameOverScene extends Phaser.Scene {
     }).setOrigin(0.5);
     this.tweens.add({ targets: title, alpha: 1, duration: 600, ease: 'Back.easeOut' });
 
-    // Score row
-    this.add.rectangle(W / 2, H * 0.285, 300, 44, 0x000000, 0.5);
-    this.add.text(W / 2 - 60, H * 0.285, T.score, {
-      fontSize: '15px', fontFamily: 'Arial', fill: '#88bbdd',
+    // HERO RESULT: animals saved over the whole run (the share-worthy number);
+    // points become the small print underneath.
+    const heroY = 247;
+    this.add.rectangle(W / 2, heroY, 316, 62, 0x000000, 0.5);
+    const hero = this.add.text(W / 2, heroY - 8, `🐾 ${this.animalsRun}`, {
+      fontSize: '34px', fontFamily: 'Arial', fontStyle: 'bold',
+      fill: '#ffe066', stroke: '#5a3a00', strokeThickness: 5,
+    }).setOrigin(1, 0.5).setScale(0.4);
+    this.add.text(W / 2 + 8, heroY - 8, T.animalsSaved(this.animalsRun), {
+      fontSize: '17px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffffff', stroke: '#112233', strokeThickness: 3,
+    }).setOrigin(0, 0.5);
+    this.add.text(W / 2, heroY + 19, T.scoreSmall(this.finalScore), {
+      fontSize: '13px', fontFamily: 'Arial', fill: '#88bbdd',
     }).setOrigin(0.5);
-    this.add.text(W / 2 + 44, H * 0.285, `${this.finalScore}`, {
-      fontSize: '24px', fontFamily: 'Arial', fontStyle: 'bold',
-      fill: '#ffe066', stroke: '#333', strokeThickness: 3,
-    }).setOrigin(0.5);
+    this.tweens.add({ targets: hero, scaleX: 1, scaleY: 1, duration: 520, delay: 250, ease: 'Back.easeOut' });
 
     // ── Rankings panel ────────────────────────────────────────────────
-    this._drawLeaderboard(W / 2, H * 0.325, this.rank);
+    this._drawLeaderboard(W / 2, 286, this.rank);
 
     // New record banner
-    if (this.rank === 1 && this.finalScore > 0) {
+    if (this.rank === 1 && (this.animalsRun > 0 || this.finalScore > 0)) {
       const rec = this.add.text(W / 2, H * 0.243, T.newRecord, {
         fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold',
         fill: '#ffd700', stroke: '#664400', strokeThickness: 4,
@@ -126,7 +133,7 @@ export default class GameOverScene extends Phaser.Scene {
     const cv = await buildCardCanvas({
       score: this.finalScore,
       level: this.level,
-      animalsCollected: this.animalsCollected,
+      animalsCollected: this.animalsRun,
       won: false,
     });
 
@@ -153,7 +160,7 @@ export default class GameOverScene extends Phaser.Scene {
     this.tweens.add({ targets: [hint, close], alpha: 1, delay: 200, duration: 220 });
 
     // Auto-trigger share sheet
-    const text = T.shareTextGO(this.finalScore, this.level);
+    const text = T.shareTextGO(this.animalsRun, this.level);
     shareCard(cv, text).then(result => {
       if (result === 'copied')     hint.setText(T.linkCopied);
       if (result === 'downloaded') hint.setText(T.imgSaved);
@@ -173,14 +180,15 @@ export default class GameOverScene extends Phaser.Scene {
 
     const MEDAL = ['#ffd700', '#c0c0c0', '#cd7f32', '#99aabb', '#99aabb'];
 
-    scores.slice(0, 5).forEach(({ score, level }, i) => {
+    // Rows: rank · 🐾 animals (headline) · points + level (small print)
+    scores.slice(0, 5).forEach(({ score, level, animals }, i) => {
       const y      = topY + 28 + i * rowH + rowH / 2;
       const isNew  = (i + 1 === newRank);
       const col    = isNew ? '#ffee44' : MEDAL[i];
 
       if (isNew) {
         this.add.rectangle(cx, y, 298, rowH - 2, 0xffcc00, 0.18).setOrigin(0.5);
-        const star = this.add.text(cx + 130, y, 'NEW', {
+        const star = this.add.text(cx - 98, y, 'NEW', {
           fontSize: '11px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffee44',
         }).setOrigin(0.5);
         this.tweens.add({ targets: star, alpha: 0.2, duration: 500, yoyo: true, repeat: -1 });
@@ -189,12 +197,12 @@ export default class GameOverScene extends Phaser.Scene {
       this.add.text(cx - 135, y, `#${i + 1}`, {
         fontSize: '14px', fontFamily: 'Arial', fontStyle: 'bold', fill: col,
       }).setOrigin(0, 0.5);
-      this.add.text(cx + 50, y, `${score}`, {
+      this.add.text(cx - 72, y, `🐾 ${animals || 0}`, {
         fontSize: '16px', fontFamily: 'Arial', fontStyle: 'bold', fill: col,
-      }).setOrigin(1, 0.5);
-      this.add.text(cx + 80, y, `${T.lvAbbr}${level}`, {
-        fontSize: '12px', fontFamily: 'Arial', fill: '#88aacc',
       }).setOrigin(0, 0.5);
+      this.add.text(cx + 140, y, `${score} · ${T.lvAbbr}${level}`, {
+        fontSize: '12px', fontFamily: 'Arial', fill: '#88aacc',
+      }).setOrigin(1, 0.5);
     });
   }
 }

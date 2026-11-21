@@ -91,6 +91,27 @@ export default class SoundManager {
     setTimeout(() => this._beep(180, 0.2, 'sawtooth', 0.15), 200);
   }
 
+  // Soft "lub-dub" heartbeat while the flood is close (UIScene paces it).
+  // Kept very quiet on purpose (studio rule: SFX well below everything else).
+  heartbeat() {
+    try {
+      const ctx = this._getCtx();
+      [[0, 0.10], [0.17, 0.07]].forEach(([offset, vol]) => {
+        const t = ctx.currentTime + offset;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(72, t);
+        osc.frequency.exponentialRampToValueAtTime(44, t + 0.12);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(vol, t + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        osc.start(t); osc.stop(t + 0.18);
+      });
+    } catch (_) {}
+  }
+
   // Lost a life — descending chromatic jingle + low thud
   loseLife() {
     this._melody([

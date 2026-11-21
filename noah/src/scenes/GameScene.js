@@ -54,6 +54,8 @@ export default class GameScene extends Phaser.Scene {
   init(data) {
     this.level = data.level || 1;
     this.score = data.score || 0;
+    // animals saved over the WHOLE run (earlier levels); this level's count is _animalsCollected
+    this._animalsRun = data.animalsRun || 0;
     this.lives = 3;
     this._won   = false;
     this._dying = false;
@@ -707,7 +709,8 @@ export default class GameScene extends Phaser.Scene {
       this.sound.stopMusic();
       this.time.delayedCall(900, () => {
         this.scene.stop('UI');
-        this.scene.start('GameOver', { score: this.score, level: this.level, animalsCollected: this._animalsCollected });
+        this.scene.start('GameOver', { score: this.score, level: this.level, animalsCollected: this._animalsCollected,
+          animalsRun: this._animalsRun + this._animalsCollected });
       });
     } else {
       this._waterPaused = true; // freeze water while respawning
@@ -765,6 +768,7 @@ export default class GameScene extends Phaser.Scene {
                 level: this.level,
                 score: this.score,
                 animalsCollected: this._animalsCollected,
+                animalsRun: this._animalsRun + this._animalsCollected,
               });
             });
           },

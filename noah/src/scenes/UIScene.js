@@ -67,6 +67,13 @@ export default class UIScene extends Phaser.Scene {
       fill: '#00e5ff', stroke: '#003060', strokeThickness: 4,
     }).setDepth(55).setOrigin(0.5).setAlpha(0);
 
+    // Danger edge: a red frame that pulses faster and stronger as the flood
+    // closes in (+ a soft heartbeat), so the threat is felt before it kills.
+    this.dangerEdge = this.add.graphics().setDepth(54).setAlpha(0);
+    this.dangerEdge.lineStyle(14, 0xff2a2a, 1).strokeRect(7, 7, width - 14, height - 14);
+    this.dangerEdge.lineStyle(6, 0xff8a6a, 0.6).strokeRect(17, 17, width - 34, height - 34);
+    this._nextBeat = 0;
+
     // ── Event listeners ──────────────────────────────────────────────
 
     this.gameScene.events.on('levelUpdate', (lvl) => {
@@ -108,6 +115,20 @@ export default class UIScene extends Phaser.Scene {
         }
       } else {
         this.waterWarning.setAlpha(0);
+      }
+      // red frame from danger 0.45; pulse rate ~1.2 → 3 Hz as it gets closer
+      const now = this.time.now;
+      if (danger > 0.45) {
+        const k = (danger - 0.45) / 0.55;
+        const pulse = 0.5 + 0.5 * Math.sin(now / 1000 * Math.PI * 2 * (1.2 + 1.8 * k));
+        this.dangerEdge.setAlpha(k * (0.35 + 0.4 * pulse));
+      } else {
+        this.dangerEdge.setAlpha(0);
+      }
+      // heartbeat from danger 0.6: every ~900 ms → ~450 ms at the edge
+      if (danger > 0.6 && now >= this._nextBeat && this.gameScene.sound && this.gameScene.sound.heartbeat) {
+        this.gameScene.sound.heartbeat();
+        this._nextBeat = now + 900 - 450 * Math.min(1, (danger - 0.6) / 0.4);
       }
       this._lastDanger = danger;
     });

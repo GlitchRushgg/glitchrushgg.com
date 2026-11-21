@@ -92,7 +92,8 @@ export default class MenuScene extends Phaser.Scene {
     const rows = Math.min(scores.length, 3);
     const panelH = 34 + Math.max(rows, 1) * rowH + 10;
 
-    this.roundPanel(W / 2, panelTop + panelH / 2, 320, panelH, 0x05203a, 0.56, 16).setDepth(5);
+    // 0.85: the white clouds painted in background.png showed through as grey blobs behind the rows
+    this.roundPanel(W / 2, panelTop + panelH / 2, 320, panelH, 0x05203a, 0.85, 16).setDepth(5);
     this.add.text(W / 2, panelTop + 16, T.highScores, {
       fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#ffe066',
     }).setOrigin(0.5).setDepth(6);
@@ -104,12 +105,13 @@ export default class MenuScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(6);
     } else {
       const MEDAL = ['#ffd700', '#c0c0c0', '#cd7f32'];
-      scores.slice(0, 3).forEach(({ score, level }, i) => {
+      // rank · 🐾 animals saved (headline) · points + level (small print)
+      scores.slice(0, 3).forEach(({ score, level, animals }, i) => {
         const y = panelTop + 34 + i * rowH + rowH / 2;
         const col = MEDAL[i];
         this.add.text(W / 2 - 130, y, `#${i + 1}`, { fontSize: '15px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(0, 0.5).setDepth(6);
-        this.add.text(W / 2 + 70, y, `${score}`, { fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(1, 0.5).setDepth(6);
-        this.add.text(W / 2 + 90, y, `${T.lvAbbr}${level}`, { fontSize: '13px', fontFamily: 'Arial', fill: '#88aacc' }).setOrigin(0, 0.5).setDepth(6);
+        this.add.text(W / 2 - 82, y, `🐾 ${animals || 0}`, { fontSize: '18px', fontFamily: 'Arial', fontStyle: 'bold', fill: col }).setOrigin(0, 0.5).setDepth(6);
+        this.add.text(W / 2 + 140, y, `${score} · ${T.lvAbbr}${level}`, { fontSize: '13px', fontFamily: 'Arial', fontStyle: 'bold', fill: '#d6e8f8', stroke: '#0d3a5c', strokeThickness: 3 }).setOrigin(1, 0.5).setDepth(6);
       });
     }
 

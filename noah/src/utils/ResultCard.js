@@ -1,4 +1,4 @@
-const GAME_URL = 'https://glitchrushgg.github.io/noah/';
+const GAME_URL = 'https://glitchrushgg.com/noah/';   // same as Share.js (custom domain, not github.io)
 
 function loadImg(src) {
   return new Promise((resolve) => {
@@ -80,29 +80,23 @@ export async function buildCardCanvas({ score, level, animalsCollected = 0, won 
     W / 2, 52,
   );
 
-  // Score — hero number, centered in the card
+  // ANIMALS SAVED — hero number (the game's share question); points are the small print
   ctx.font = 'bold 58px Arial';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(score, W / 2, 118);
+  ctx.fillStyle = '#ffe066';
+  ctx.fillText(`🐾 ${animalsCollected}`, W / 2, 118);
 
-  ctx.font = 'bold 11px Arial';
+  ctx.font = 'bold 12px Arial';
+  ctx.fillStyle = '#ffcc44';
+  ctx.fillText(animalsCollected === 1 ? 'ANIMAL SAVED FROM THE FLOOD' : 'ANIMALS SAVED FROM THE FLOOD', W / 2, 136);
+
+  ctx.font = 'bold 13px Arial';
   ctx.fillStyle = '#8899aa';
-  ctx.fillText('POINTS', W / 2, 134);
-
-  // Animals rescued
-  if (animalsCollected > 0) {
-    ctx.font = 'bold 14px Arial';
-    ctx.fillStyle = '#ffcc44';
-    ctx.fillText(
-      `🦁  ${animalsCollected} animal${animalsCollected !== 1 ? 's' : ''} rescued`,
-      W / 2, 156,
-    );
-  }
+  ctx.fillText(`${score} points`, W / 2, 156);
 
   // Challenge hashtag
   ctx.font = 'italic 12px Arial';
   ctx.fillStyle = '#7799bb';
-  ctx.fillText('Can you beat me? #DontDrownNoah', W / 2, 175);
+  ctx.fillText('Beat that. #DontDrownNoah', W / 2, 175);
 
   // URL watermark
   ctx.font = '9px Arial';
